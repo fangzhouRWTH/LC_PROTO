@@ -1,14 +1,26 @@
 {
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
+    // "version": "2.0.0",
+    // "tasks": [
+    //     {
+    //         "label": "setup_python_env",
+    //         "type": "shell",
+    //         "linux": {
+    //             "command": "export CARB_APP_PATH=/home/fangzhou/Nvidia/isaacsim-git/isaacsim/_build/linux-x86_64/release/kit && export ISAAC_PATH=${workspaceFolder} && export EXP_PATH=${workspaceFolder}/apps && source ${workspaceFolder}/setup_python_env.sh && printenv >${workspaceFolder}/.vscode/.standalone_examples.env"
+    //         }
+    //     }
+    // ]
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "setup_python_env",
+            "label": "Run Isaac Minimal Script",
             "type": "shell",
-            "linux": {
-                "command": "export CARB_APP_PATH=${workspaceFolder}/kit && export ISAAC_PATH=${workspaceFolder} && export EXP_PATH=${workspaceFolder}/apps && source ${workspaceFolder}/setup_python_env.sh && printenv >${workspaceFolder}/.vscode/.standalone_examples.env"
-            }
+            "command": "/home/fangzhou/Nvidia/isaacsim-git/isaacsim/_build/linux-x86_64/release/python.sh",
+            "args": [
+                "${workspaceFolder}/scripts/sample.py"
+            ],
+            "problemMatcher": []
         }
     ]
 }

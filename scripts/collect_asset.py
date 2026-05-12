@@ -12,16 +12,16 @@ import filelock
 import progressbar
 from filelock import Timeout
 
-ROOT_DIR = Path(__file__).parent
+ROOT_DIR = Path(__file__).parent.parent
 print(f"ROOT_DIR: {ROOT_DIR}")
 file_id = "1YRA1R0GJMqOe0QRESPxkrvJzetvNL31-"
 # ASSET_URL = f"https://drive.google.com/uc?export=download&id={file_id}"
 # ASSET_URL = "https://drive.google.com/file/d/1YRA1R0GJMqOe0QRESPxkrvJzetvNL31-/view?usp=sharing"
 ASSET_URL = "https://huggingface.co/datasets/Hollis71025/URBAN-SIM-Assets/resolve/main/assets_urbansim.zip?download=true"
-print(f"ASSET_URL: {ASSET_URL}")                                            
+print(f"ASSET_URL: {ASSET_URL}")
 
 
-class MyProgressBar():
+class MyProgressBar:
     def __init__(self):
         self.pbar = None
 
@@ -36,17 +36,19 @@ class MyProgressBar():
         else:
             self.pbar.finish()
 
+
 def wait_asset_lock():
     print(
         f"[INFO] Another instance of this program is already running. "
         "Wait for the asset pulling finished from another program..."
     )
 
+
 def pull_asset():
 
     assets_folder = ROOT_DIR / "assets"
-    zip_path = ROOT_DIR / 'assets.zip'
-    lock_path = ROOT_DIR / 'assets.lock'
+    zip_path = ROOT_DIR / "assets.zip"
+    lock_path = ROOT_DIR / "assets.lock"
     temp_assets_folder = ROOT_DIR / "temp_assets"
 
     lock = filelock.FileLock(lock_path, timeout=1)
@@ -55,26 +57,36 @@ def pull_asset():
     try:
         with lock:
             import gdown
+
             # Download assets
-            print(f"[INFO] Thank you for using URBAN-SIM! We would download assets for you.")
+            print(
+                f"[INFO] Thank you for using URBAN-SIM! We would download assets for you."
+            )
             print("[INFO] Pull assets from {} to {}".format(ASSET_URL, zip_path))
             # gdown.download(ASSET_URL, str(zip_path), fuzzy=True, quiet=False, use_cookies=True)
             os.system(f"wget --no-check-certificate {ASSET_URL} -O {zip_path}")
 
             # Prepare for extraction
             if os.path.exists(assets_folder):
-                print("[INFO] Remove existing assets. Files: {}".format(os.listdir(assets_folder)))
+                print(
+                    "[INFO] Remove existing assets. Files: {}".format(
+                        os.listdir(assets_folder)
+                    )
+                )
                 shutil.rmtree(assets_folder, ignore_errors=True)
             if os.path.exists(temp_assets_folder):
                 shutil.rmtree(temp_assets_folder, ignore_errors=True)
 
             # Extract to temporary directory
             print(f"[INFO] Extracting assets.")
-            shutil.unpack_archive(filename=str(zip_path), extract_dir=temp_assets_folder)
-            shutil.move(str(temp_assets_folder / 'assets'), str(ROOT_DIR))
+            shutil.unpack_archive(
+                filename=str(zip_path), extract_dir=temp_assets_folder
+            )
+            shutil.move(str(temp_assets_folder / "assets"), str(ROOT_DIR))
 
     except Timeout:  # Timeout will be raised if the lock can not be acquired in 1s.
-        print(f"[INFO] Another instance of this program is already running. "
+        print(
+            f"[INFO] Another instance of this program is already running. "
             "Wait for the asset pulling finished from another program..."
         )
         wait_asset_lock()
@@ -91,13 +103,14 @@ def pull_asset():
 
     # Final check
     if not assets_folder.exists():
-        raise ValueError("Assets folder does not exist! Files: {}".format(os.listdir(ROOT_DIR)))
+        raise ValueError(
+            "Assets folder does not exist! Files: {}".format(os.listdir(ROOT_DIR))
+        )
 
     print(f"[INFO] Successfully download assets")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
     pull_asset()
-    

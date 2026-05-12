@@ -45,8 +45,12 @@ import argparse
 from isaaclab.app import AppLauncher
 
 # add argparse arguments
-parser = argparse.ArgumentParser(description="Utility to convert a mesh file into USD format.")
-parser.add_argument("--input_file_list", type=str, default=None, help="The path to the input mesh file.")
+parser = argparse.ArgumentParser(
+    description="Utility to convert a mesh file into USD format."
+)
+parser.add_argument(
+    "--input_file_list", type=str, default=None, help="The path to the input mesh file."
+)
 parser.add_argument(
     "--make-instanceable",
     action="store_true",
@@ -57,7 +61,14 @@ parser.add_argument(
     "--collision-approximation",
     type=str,
     default="convexDecomposition",
-    choices=["convexDecomposition", "convexHull", "boundingCube", "boundingSphere", "meshSimplification", "none"],
+    choices=[
+        "convexDecomposition",
+        "convexHull",
+        "boundingCube",
+        "boundingSphere",
+        "meshSimplification",
+        "none",
+    ],
     help=(
         'The method used for approximating collision mesh. Set to "none" '
         "to not add a collision mesh to the converted mesh."
@@ -101,7 +112,7 @@ from isaaclab.utils.assets import check_file_path
 from isaaclab.utils.dict import print_dict
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).parent
+ROOT_DIR = Path(__file__).parent.parent
 print(f"ROOT_DIR: {ROOT_DIR}")
 
 
@@ -116,46 +127,56 @@ def load_asset_parameter_map(param_dir: str) -> dict[str, list[str]]:
     return parameter_map
 
 
-def resolve_asset_parameters(mesh_path: str, param_dir: str, parameter_map: dict[str, list[str]]) -> tuple[dict, str | None]:
+def resolve_asset_parameters(
+    mesh_path: str, param_dir: str, parameter_map: dict[str, list[str]]
+) -> tuple[dict, str | None]:
     """Resolve the calibration json for a mesh, falling back to default parameters when missing."""
     asset_id = Path(mesh_path).stem.split("_")[-1]
     matches = parameter_map.get(asset_id, [])
     if not matches:
-        print(f"[WARNING] No parameter json found for {Path(mesh_path).name}. Falling back to default scale=1.0.")
+        print(
+            f"[WARNING] No parameter json found for {Path(mesh_path).name}. Falling back to default scale=1.0."
+        )
         return {}, None
 
     if len(matches) > 1:
-        print(f"[INFO] Multiple parameter json matches found for {Path(mesh_path).name}: {matches}. Using {matches[0]}.")
+        print(
+            f"[INFO] Multiple parameter json matches found for {Path(mesh_path).name}: {matches}. Using {matches[0]}."
+        )
 
     json_name = matches[0]
     with open(os.path.join(param_dir, json_name), "r") as f:
         return json.load(f), json_name
 
+
 def main():
-    root_dir = os.path.join(ROOT_DIR, 'assets', 'objects')
+    root_dir = os.path.join(ROOT_DIR, "assets", "objects")
     valid_files = os.listdir(root_dir)
     valid_files.sort()
     file_names_parent = [f for f in valid_files]
     file_names = file_names_parent
     for asset in file_names:
-        if '-' not in asset and " " not in asset:
+        if "-" not in asset and " " not in asset:
             continue
         else:
-            replaced_name = asset.replace('-', '_').replace(" ", "")
-            if ' ' in asset:
-                os.system(f'mv {root_dir}/\'{asset}\' {root_dir}/{replaced_name}')
+            replaced_name = asset.replace("-", "_").replace(" ", "")
+            if " " in asset:
+                os.system(f"mv {root_dir}/'{asset}' {root_dir}/{replaced_name}")
             else:
-                os.system(f'mv {root_dir}/{asset} {root_dir}/{replaced_name}')   
+                os.system(f"mv {root_dir}/{asset} {root_dir}/{replaced_name}")
 
     valid_files = os.listdir(root_dir)
     valid_files.sort()
     file_names_parent = [os.path.join(root_dir, f) for f in valid_files]
 
-    file_names = [f for f in file_names_parent if '.glb' in f] 
-    file_goes = [f.replace('glb', 'usd').replace('assets/objects', 'assets/usds') for f in file_names]
-    param_dir = os.path.join(ROOT_DIR, 'assets', 'adj_parameter_folder')
+    file_names = [f for f in file_names_parent if ".glb" in f]
+    file_goes = [
+        f.replace("glb", "usd").replace("assets/objects", "assets/usds")
+        for f in file_names
+    ]
+    param_dir = os.path.join(ROOT_DIR, "assets", "adj_parameter_folder")
     parameter_map = load_asset_parameter_map(param_dir)
-    
+
     if args_cli.mass is not None:
         mass_props = schemas_cfg.MassPropertiesCfg(mass=args_cli.mass)
         rigid_props = schemas_cfg.RigidBodyPropertiesCfg()
@@ -163,13 +184,19 @@ def main():
         mass_props = None
         rigid_props = None
     mass_props = schemas_cfg.MassPropertiesCfg(mass=args_cli.mass)
-    rigid_props = schemas_cfg.RigidBodyPropertiesCfg(rigid_body_enabled=True,kinematic_enabled=True)
+    rigid_props = schemas_cfg.RigidBodyPropertiesCfg(
+        rigid_body_enabled=True, kinematic_enabled=True
+    )
     # Collision properties
-    collision_props = schemas_cfg.CollisionPropertiesCfg(collision_enabled=args_cli.collision_approximation != "none")
-    
+    collision_props = schemas_cfg.CollisionPropertiesCfg(
+        collision_enabled=args_cli.collision_approximation != "none"
+    )
+
     mesh_converters_cfgs = []
     for mesh_path, mesh_go in zip(file_names, file_goes):
-        json_data, json_name = resolve_asset_parameters(mesh_path, param_dir, parameter_map)
+        json_data, json_name = resolve_asset_parameters(
+            mesh_path, param_dir, parameter_map
+        )
         # Create Mesh converter config
         mesh_converter_cfg = MeshConverterCfg(
             mass_props=mass_props,
@@ -190,13 +217,13 @@ def main():
     # Print info
     for mesh_converter_cfg in tqdm.tqdm(mesh_converters_cfgs):
         # break
-        print('|' + "-" * 100 + '|')
-        print('|' + "-" * 100 + '|')
+        print("|" + "-" * 100 + "|")
+        print("|" + "-" * 100 + "|")
         print("Mesh importer config:")
         print(type(mesh_converter_cfg))
         print_dict(mesh_converter_cfg.to_dict(), nesting=0)
-        print('|' + "-" * 100 + '|')
-        print('|' + "-" * 100 + '|')
+        print("|" + "-" * 100 + "|")
+        print("|" + "-" * 100 + "|")
 
         # print(mesh_converter_cfg.to_dict()['mesh_path'])
         # break
@@ -216,13 +243,12 @@ def main():
         #     xform.AddScaleOp().Set((scale_val, scale_val, scale_val))
 
         # stage.GetRootLayer().Export(mesh_converter.usd_path)
-                
+
         # print output
         print("Mesh importer output:")
         print(f"Generated USD file: {mesh_converter.usd_path}")
-        print('|' + "-" * 100 + '|')
-        print('|' + "-" * 100 + '|')
-        
+        print("|" + "-" * 100 + "|")
+        print("|" + "-" * 100 + "|")
 
 
 if __name__ == "__main__":
