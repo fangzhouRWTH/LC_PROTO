@@ -5,6 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Attach to Isaac Sim Python",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "justMyCode": false
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
@@ -29,9 +39,13 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/kit/kit",
-            "args": ["${workspaceFolder}/apps/isaacsim.exp.full.kit",
-                "--ext-folder", "${workspaceFolder}/exts",
-                "--ext-folder", "${workspaceFolder}/apps"],
+            "args": [
+                "${workspaceFolder}/apps/isaacsim.exp.full.kit",
+                "--ext-folder",
+                "${workspaceFolder}/exts",
+                "--ext-folder",
+                "${workspaceFolder}/apps"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

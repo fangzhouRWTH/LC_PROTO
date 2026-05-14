@@ -34,6 +34,15 @@ import omni.usd
 from pxr import UsdGeom, Gf, UsdLux, Sdf, UsdPhysics
 
 
+class PlaceholderArea:
+    def __init__(self, vertices):
+        self.anchors = vertices
+
+
+SPAWN_POS = np.array([0.0, 0.0, 0.8], dtype=np.float32)
+PLACEHOLDER_AREA = list[PlaceholderArea]()
+
+
 class ChaseViewportCamera:
     def __init__(
         self,
@@ -530,7 +539,7 @@ NAME_PATTERN = re.compile(
     r"^(?P<mobility>[a-zA-Z]+)_"
     r"(?P<domain>[a-zA-Z]+)_"
     r"(?P<category>[a-zA-Z]+)_"
-    r"(?P<index>\d+)$"
+    r"(?P<index>(?:\d+|[a-zA-Z]+))$"
 )
 
 
@@ -592,6 +601,19 @@ def apply_static_collision(prim, info: PrimNameInfo):
     print(f"[COLLISION] {prim.GetPath()} <- {info.raw_name}")
 
 
+def process_placeholder_area(prim, info: PrimNameInfo):
+    res = extract_mesh_world_vertices(prim.GetChildren()[0])
+    vertices = res["world_vertices"]
+    PLACEHOLDER_AREA.append(PlaceholderArea(vertices=vertices))
+
+
+def set_spawn_point_from_prim(prim, info: PrimNameInfo):
+    pos = extract_prim_position(prim)
+    pos[2] += 0.8
+    SPAWN_POS[:] = pos
+    print(f"[SPAWN] {prim.GetPath()} <- {info.raw_name} | position = {pos}")
+
+
 PROCESSING_RULES = [
     ProcessingRule(
         name="static construction buildings",
@@ -614,24 +636,24 @@ PROCESSING_RULES = [
             # write_custom_metadata,
         ],
     ),
-    # ProcessingRule(
-    #     name="static nature objects",
-    #     mobility="static",
-    #     domain="nature",
-    #     actions=[
-    #         apply_static_collision,
-    #         apply_semantic_label,
-    #         write_custom_metadata,
-    #     ],
-    # ),
-    # ProcessingRule(
-    #     name="debug markers",
-    #     mobility="debug",
-    #     actions=[
-    #         hide_prim,
-    #         write_custom_metadata,
-    #     ],
-    # ),
+    ProcessingRule(
+        name="placeholder spawn point",
+        mobility="placeholder",
+        domain="point",
+        category="spawn",
+        actions=[
+            set_spawn_point_from_prim,
+        ],
+    ),
+    ProcessingRule(
+        name="placeholder plaza area",
+        mobility="placeholder",
+        domain="area",
+        category="plaza",
+        actions=[
+            process_placeholder_area,
+        ],
+    ),
 ]
 
 
@@ -648,7 +670,10 @@ def process_stage_by_naming_rules(stage, rules):
         stats["visited"] += 1
 
         name = prim.GetName()
+        print(name)
         info = parse_prim_name(name)
+
+        print(info)
 
         if info is None:
             stats["invalid_name"] += 1
@@ -690,98 +715,147 @@ def print_stage_processing_stats(stats):
     print("===========================================\n")
 
 
+def transform_point(mat, p):
+    p4 = mat.Transform(Gf.Vec3d(float(p[0]), float(p[1]), float(p[2])))
+    return [float(p4[0]), float(p4[1]), float(p4[2])]
+
+
+def extract_prim_position(prim):
+    if not prim.IsValid():
+        raise RuntimeError("Invalid prim")
+
+    world_mat = omni.usd.get_world_transform_matrix(prim)
+    pos = world_mat.ExtractTranslation()
+
+    return [float(pos[0]), float(pos[1]), float(pos[2])]
+
+
+def extract_mesh_world_vertices(prim):
+    if not prim.IsValid():
+        raise RuntimeError("Invalid prim")
+
+    if not prim.IsA(UsdGeom.Mesh):
+        raise RuntimeError("Prim is not a UsdGeom.Mesh")
+
+    mesh = UsdGeom.Mesh(prim)
+
+    points = mesh.GetPointsAttr().Get()
+    face_counts = mesh.GetFaceVertexCountsAttr().Get()
+    face_indices = mesh.GetFaceVertexIndicesAttr().Get()
+
+    world_mat = omni.usd.get_world_transform_matrix(prim)
+
+    world_vertices = [transform_point(world_mat, p) for p in points]
+
+    return {
+        "world_vertices": world_vertices,
+        "face_vertex_counts": list(face_counts),
+        "face_vertex_indices": list(face_indices),
+        "world_matrix": world_mat,
+    }
+
+
+def extract_mesh_world_vertices_from_path(stage, mesh_prim_path: str):
+    prim = stage.GetPrimAtPath(mesh_prim_path)
+
+    return extract_mesh_world_vertices(prim)
+
+
+def _normalize_vec3(v: Gf.Vec3d) -> Gf.Vec3d:
+    v = Gf.Vec3d(v)
+    length = v.GetLength()
+    if length > 1e-8:
+        v /= length
+    return v
+
+
+def get_prim_world_pose(
+    prim_path: str,
+    local_forward_axis=Gf.Vec3d(1.0, 0.0, 0.0),
+    local_right_axis=Gf.Vec3d(0.0, -1.0, 0.0),
+    local_up_axis=Gf.Vec3d(0.0, 0.0, 1.0),
+):
+    """
+    Get world position and orientation vectors of a USD prim.
+
+    Args:
+        prim_path:
+            USD prim path, e.g. "/World/Robot/Spot".
+        local_forward_axis:
+            Which local axis should be treated as the prim's forward direction.
+            Default assumes local +X is forward.
+        local_right_axis:
+            Which local axis should be treated as the prim's right direction.
+        local_up_axis:
+            Which local axis should be treated as the prim's up direction.
+
+    Returns:
+        dict with:
+            position: [x, y, z]
+            forward: [x, y, z]
+            right: [x, y, z]
+            up: [x, y, z]
+            rotation: Gf.Rotation
+            matrix: Gf.Matrix4d
+    """
+    stage = omni.usd.get_context().get_stage()
+
+    prim = stage.GetPrimAtPath(prim_path)
+
+    if not prim.IsValid():
+        raise RuntimeError(f"Invalid prim path: {prim_path}")
+
+    world_mat = omni.usd.get_world_transform_matrix(prim)
+
+    pos = world_mat.ExtractTranslation()
+    rot = world_mat.ExtractRotation()
+
+    forward = _normalize_vec3(rot.TransformDir(local_forward_axis))
+    right = _normalize_vec3(rot.TransformDir(local_right_axis))
+    up = _normalize_vec3(rot.TransformDir(local_up_axis))
+
+    return {
+        "position": [float(pos[0]), float(pos[1]), float(pos[2])],
+        "forward": [float(forward[0]), float(forward[1]), float(forward[2])],
+        "right": [float(right[0]), float(right[1]), float(right[2])],
+        "up": [float(up[0]), float(up[1]), float(up[2])],
+        "rotation": rot,
+        "matrix": world_mat,
+    }
+
+
+def update_chase_camera(
+    target_prim_path: str,
+    cam_prim_path: str,
+    distance=5.0,
+    height=2.5,
+    target_height=0.8,
+):
+    pose = get_prim_world_pose(target_prim_path)
+
+    pos = pose["position"]
+    forward = pose["forward"]
+
+    target = [
+        pos[0],
+        pos[1],
+        pos[2] + target_height,
+    ]
+
+    eye = [
+        target[0] - forward[0] * distance,
+        target[1] - forward[1] * distance,
+        pos[2] + height,
+    ]
+
+    set_camera_view(
+        eye=eye,
+        target=target,
+        camera_prim_path=cam_prim_path,
+    )
+
+
 def main():
-    def _normalize_vec3(v: Gf.Vec3d) -> Gf.Vec3d:
-        v = Gf.Vec3d(v)
-        length = v.GetLength()
-        if length > 1e-8:
-            v /= length
-        return v
-
-    def get_prim_world_pose(
-        prim_path: str,
-        local_forward_axis=Gf.Vec3d(1.0, 0.0, 0.0),
-        local_right_axis=Gf.Vec3d(0.0, -1.0, 0.0),
-        local_up_axis=Gf.Vec3d(0.0, 0.0, 1.0),
-    ):
-        """
-        Get world position and orientation vectors of a USD prim.
-
-        Args:
-            prim_path:
-                USD prim path, e.g. "/World/Robot/Spot".
-            local_forward_axis:
-                Which local axis should be treated as the prim's forward direction.
-                Default assumes local +X is forward.
-            local_right_axis:
-                Which local axis should be treated as the prim's right direction.
-            local_up_axis:
-                Which local axis should be treated as the prim's up direction.
-
-        Returns:
-            dict with:
-                position: [x, y, z]
-                forward: [x, y, z]
-                right: [x, y, z]
-                up: [x, y, z]
-                rotation: Gf.Rotation
-                matrix: Gf.Matrix4d
-        """
-        stage = omni.usd.get_context().get_stage()
-
-        prim = stage.GetPrimAtPath(prim_path)
-
-        if not prim.IsValid():
-            raise RuntimeError(f"Invalid prim path: {prim_path}")
-
-        world_mat = omni.usd.get_world_transform_matrix(prim)
-
-        pos = world_mat.ExtractTranslation()
-        rot = world_mat.ExtractRotation()
-
-        forward = _normalize_vec3(rot.TransformDir(local_forward_axis))
-        right = _normalize_vec3(rot.TransformDir(local_right_axis))
-        up = _normalize_vec3(rot.TransformDir(local_up_axis))
-
-        return {
-            "position": [float(pos[0]), float(pos[1]), float(pos[2])],
-            "forward": [float(forward[0]), float(forward[1]), float(forward[2])],
-            "right": [float(right[0]), float(right[1]), float(right[2])],
-            "up": [float(up[0]), float(up[1]), float(up[2])],
-            "rotation": rot,
-            "matrix": world_mat,
-        }
-
-    def update_chase_camera(
-        target_prim_path: str,
-        cam_prim_path: str,
-        distance=5.0,
-        height=2.5,
-        target_height=0.8,
-    ):
-        pose = get_prim_world_pose(target_prim_path)
-
-        pos = pose["position"]
-        forward = pose["forward"]
-
-        target = [
-            pos[0],
-            pos[1],
-            pos[2] + target_height,
-        ]
-
-        eye = [
-            target[0] - forward[0] * distance,
-            target[1] - forward[1] * distance,
-            pos[2] + height,
-        ]
-
-        set_camera_view(
-            eye=eye,
-            target=target,
-            camera_prim_path=cam_prim_path,
-        )
-
     # usd_path = "/home/fangzhou/projects/LC_01/assets/blocks/usd_001/block_overall.usd"
     usd_path = (
         "/home/fangzhou/projects/LC_01/assets/blocks/test_field/test_simple_city.usd"
@@ -797,13 +871,10 @@ def main():
 
     process_stage_by_naming_rules(stage, PROCESSING_RULES)
 
-    deactivate_all_lights(stage)
+    for area in PLACEHOLDER_AREA:
+        print(f"[PLACEHOLDER AREA] vertices = {area.anchors}")
 
-    # add_collisions_to_stage(
-    #     stage,
-    #     # root_path=args.collision_root,
-    #     approximation="meshSimplification",
-    # )
+    deactivate_all_lights(stage)
 
     add_natural_light(stage)
 
@@ -813,7 +884,7 @@ def main():
     spot = SpotFlatTerrainPolicy(
         prim_path=spot_prim_path,
         name="Spot",
-        position=np.array([0, 0, 0.8]),
+        position=SPAWN_POS,
     )
 
     keyboard = KeyboardVelocityController()
@@ -861,11 +932,6 @@ def main():
     initialize_spot()
 
     CALLBACK_NAME = "spot_policy_step"
-
-    # try:
-    #     my_world.remove_physics_callback(CALLBACK_NAME)
-    # except Exception:
-    #     pass
 
     my_world.add_physics_callback(CALLBACK_NAME, callback_fn=on_physics_step)
 
