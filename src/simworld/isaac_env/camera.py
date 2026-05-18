@@ -8,14 +8,15 @@ from .isaac_adaptor import isaac_context as iscctx
 class ChaseViewportCamera:
     def __init__(
         self,
-        ctx: iscctx.IsaacContext,
         distance=5.0,
         height=2.5,
         target_height=0.8,
         camera_prim_path="/OmniverseKit_Persp",
         smoothing=0.15,
     ):
-        self.set_camera_view = ctx.isaac_core_utils.viewports.set_camera_view
+        self.set_camera_view = (
+            iscctx.get_isaac_context().isaac_core_utils.viewports.set_camera_view
+        )
         self.distance = distance
         self.height = height
         self.target_height = target_height

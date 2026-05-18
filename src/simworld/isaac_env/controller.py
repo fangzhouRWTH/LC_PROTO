@@ -5,7 +5,7 @@ from carb.input import KeyboardEventType
 
 
 class KeyboardVelocityController:
-    def __init__(self, ctx: iscctx.IsaacContext, vx=0.6, vy=0.4, yaw=0.8):
+    def __init__(self, vx=0.6, vy=0.4, yaw=0.8):
         self.vx_speed = vx
         self.vy_speed = vy
         self.yaw_speed = yaw
@@ -14,7 +14,9 @@ class KeyboardVelocityController:
 
         self._pressed = set()
 
-        self._app_window = omni.appwindow.get_default_app_window()
+        self._app_window = (
+            iscctx.get_isaac_context().omni_appwindow.get_default_app_window()
+        )
         self._keyboard = self._app_window.get_keyboard()
         self._input = carb.input.acquire_input_interface()
 

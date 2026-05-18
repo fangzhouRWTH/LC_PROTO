@@ -1,28 +1,34 @@
-from isaacsim.simulation_app import SimulationApp
-from . import camera
+# from isaacsim.simulation_app import SimulationApp
 from .isaac_adaptor import isaac_context as iscctx
+from . import camera
+from . import controller
+from .isaac_scene import scene
+from .isaac_scene import world
+
+import pathlib
 
 
 def run():
-    simulation_app = SimulationApp(
-        {
-            "headless": False,
-            "width": 1280,
-            "height": 720,
-        }
+    context = iscctx.init_isaac_context()
+    cam = camera.ChaseViewportCamera()
+    ctrl = controller.KeyboardVelocityController()
+
+    usd_path = pathlib.Path(
+        "/home/fangzhou/projects/LC_01/assets/blocks/test_field/test_simple_city.usd"
     )
 
-    context = iscctx.IsaacContext()
-    cam = camera.ChaseViewportCamera(context)
+    simScene = scene.SimScene(usd_path)
+    simWorld = world.SimWorld()
 
     for _ in range(30):
-        simulation_app.update()
+        context.update()
 
-        while simulation_app.is_running():
+    simScene.prepare()
 
-            simulation_app.update()
-            continue
+    while context.is_running():
+        context.update()
+        continue
 
     print("[OK] Closing Isaac Sim.")
 
-    simulation_app.close()
+    context.close()
