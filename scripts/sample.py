@@ -762,7 +762,6 @@ def extract_mesh_world_vertices_from_path(stage, mesh_prim_path: str):
 
 
 def _normalize_vec3(v: Gf.Vec3d) -> Gf.Vec3d:
-    v = Gf.Vec3d(v)
     length = v.GetLength()
     if length > 1e-8:
         v /= length

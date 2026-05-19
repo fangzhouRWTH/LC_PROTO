@@ -42,6 +42,10 @@ class IsaacContext:
 
         self.isaac_core_utils = isaac_core_utils
 
+        import omni.kit as omni_kit
+
+        self.omni_kit = omni_kit
+
         import omni.usd as omni_usd
 
         self.omni_usd = omni_usd
@@ -70,6 +74,10 @@ class IsaacContext:
 
         self.pxr_Sdf = Sdf
 
+        import pxr.UsdPhysics as UsdPhysics
+
+        self.pxr_usd_physics = UsdPhysics
+
         # from pxr import Usd, UsdGeom, UsdPhysics, PhysxSchema, Gf
         # from omni.isaac.core.utils.prims import create_prim
         # from omni.isaac.core.utils.stage import add_reference_to_stage
@@ -87,6 +95,11 @@ class IsaacContext:
     # @property
     # def stage(self):
     #     return self.omni_usd.get_context().get_stage()
+
+    def initialize_expansion(self):
+        from isaacsim.robot.policy.examples import robots as policy_examples
+
+        self.robot_policy_examples = policy_examples
 
     def update(self):
         self.simulation_app.update()

@@ -3,6 +3,7 @@ from isaac_env.isaac_adaptor import isaac_context as iscctx
 import pathlib
 
 import isaac_env.isaac_scene.scene_tools as tools
+import isaac_env.isaac_scene.scene_parser as parser
 
 
 class SimScene:
@@ -16,5 +17,8 @@ class SimScene:
 
     def prepare(self):
         tools.deactivate_all_lights(self.stage)
-
         tools.add_natural_light(self.stage)
+        parser.process_stage_by_naming_rules(self.stage, parser.PROCESSING_RULES)
+
+    def update(self):
+        iscctx.get_isaac_context().simulation_app.update()
