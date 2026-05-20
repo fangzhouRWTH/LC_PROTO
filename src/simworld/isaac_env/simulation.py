@@ -2,7 +2,7 @@ from .isaac_adaptor import isaac_context as iscctx
 from . import controller
 from .isaac_scene import scene
 from .isaac_scene import world
-from .isaac_robots import spot_demo
+from .isaac_robots import factory as robot_factory
 
 from dataclasses import dataclass
 import numpy as np
@@ -13,16 +13,29 @@ PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[3]
 DEFAULT_SCENE_USD = (
     PROJECT_ROOT / "assets" / "blocks" / "test_field" / "test_simple_city.usd"
 )
+DEFAULT_ROBOT_TYPE = "spot"
+DEFAULT_ROBOT_NAME = "spot_demo"
+DEFAULT_CALLBACK_NAME = "simworld_callback"
+DEFAULT_WARMUP_FRAMES = 30
+DEFAULT_CAMERA_PRIM_PATH = "/OmniverseKit_Persp"
+DEFAULT_FALLBACK_SPAWN_POSITION = (0.0, 0.0, 0.8)
 
 
 @dataclass
 class SimulationConfig:
     usd_path: pathlib.Path = DEFAULT_SCENE_USD
-    robot_name: str = "spot_demo"
-    callback_name: str = "simworld_callback"
-    warmup_frames: int = 30
-    camera_prim_path: str = "/OmniverseKit_Persp"
-    fallback_spawn_position: tuple[float, float, float] = (0.0, 0.0, 0.8)
+    robot_type: str = DEFAULT_ROBOT_TYPE
+    robot_name: str = DEFAULT_ROBOT_NAME
+    callback_name: str = DEFAULT_CALLBACK_NAME
+    warmup_frames: int = DEFAULT_WARMUP_FRAMES
+    camera_prim_path: str = DEFAULT_CAMERA_PRIM_PATH
+    fallback_spawn_position: tuple[float, float, float] = (
+        DEFAULT_FALLBACK_SPAWN_POSITION
+    )
+
+
+def available_robot_types() -> tuple[str, ...]:
+    return robot_factory.available_robot_types()
 
 
 def _select_spawn_position(spawn_points, fallback_position):
@@ -66,18 +79,18 @@ def run(config: SimulationConfig | None = None):
 
         sim_world.reset()
 
-        spot = spot_demo.SpotDemo(config.robot_name)
-        spot.spawn(position=spawn_position)
-        spot.set_chase_camera(chase=True, cam_prim_path=config.camera_prim_path)
+        robot = robot_factory.create_robot(config.robot_type, config.robot_name)
+        robot.spawn(position=spawn_position)
+        robot.set_chase_camera(chase=True, cam_prim_path=config.camera_prim_path)
 
         def simworld_callback(stepsize):
-            if not spot.initialized:
+            if not robot.initialized:
                 return
 
             try:
-                spot.forward(stepsize)
+                robot.forward(stepsize)
             except Exception as e:
-                print(f"[ERROR] spot.forward failed. Mark reinit required: {e}")
+                print(f"[ERROR] robot.forward failed. Mark reinit required: {e}")
 
         sim_world.prepare(config.callback_name, simworld_callback)
         sim_world.stop()
@@ -89,18 +102,18 @@ def run(config: SimulationConfig | None = None):
             sim_world.update_state()
 
             if sim_world.is_stopped():
-                spot.mark_reinit_required()
+                robot.mark_reinit_required()
                 continue
 
             world_reinitialized = sim_world.check_reinit()
 
-            if spot.need_reinit:
+            if robot.need_reinit:
                 if not world_reinitialized:
                     sim_world.reset()
-                spot.initialize_spot()
+                robot.initialize()
 
-            if sim_world.is_playing() and spot.initialized:
-                spot.step(state["base_command"])
+            if sim_world.is_playing() and robot.initialized:
+                robot.step(state["base_command"])
                 sim_world.step(render=True)
 
     finally:

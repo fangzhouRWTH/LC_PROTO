@@ -1,5 +1,5 @@
 from . import robot
-from isaac_env.isaac_adaptor import isaac_context as iscctx
+from ..isaac_adaptor import isaac_context as iscctx
 import numpy as np
 
 
@@ -21,6 +21,9 @@ class SpotDemo:
             )
         )
 
+        self.initialize()
+
+    def initialize(self):
         self.initialize_spot()
 
     def initialize_spot(self):
