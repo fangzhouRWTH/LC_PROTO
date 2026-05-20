@@ -6,8 +6,15 @@ from typing import Any, Callable, Optional, Sequence
 
 
 @dataclass
+class PlaceholderArea:
+    vertices: list[list[float]] = field(default_factory=list)
+
+
+@dataclass
 class SceneStats:
     spawn_points: list[list[float]] = field(default_factory=list)
+    placeholder_areas: list[PlaceholderArea] = field(default_factory=list)
+
     visited: int = 0
     matched: int = 0
     invalid_name: int = 0
@@ -145,7 +152,7 @@ NAME_PATTERN = re.compile(
     r"^(?P<mobility>[a-zA-Z]+)_"
     r"(?P<domain>[a-zA-Z]+)_"
     r"(?P<category>[a-zA-Z]+)_"
-    r"(?P<index>(?:\d+|[a-zA-Z]+))$"
+    r"(?P<index>[0-9a-zA-Z]+)$"
 )
 
 
@@ -217,10 +224,10 @@ def apply_static_collision(prim, info: PrimNameInfo, stats: SceneStats):
     print(f"[COLLISION] {prim.GetPath()} <- {info.raw_name}")
 
 
-# def process_placeholder_area(prim, info: PrimNameInfo):
-#     res = extract_mesh_world_vertices(prim.GetChildren()[0])
-#     vertices = res["world_vertices"]
-#     PLACEHOLDER_AREA.append(PlaceholderArea(vertices=vertices))
+def process_placeholder_area(prim, info: PrimNameInfo, stats: SceneStats):
+    res = extract_mesh_world_vertices(prim.GetChildren()[0])
+    vertices = res["world_vertices"]
+    stats.placeholder_areas.append(PlaceholderArea(vertices=vertices))
 
 
 def set_spawn_point_from_prim(prim, info: PrimNameInfo, stats: SceneStats):
@@ -253,23 +260,33 @@ PROCESSING_RULES = [
         ],
     ),
     ProcessingRule(
+        name="static ground",
+        mobility="static",
+        domain="construction",
+        actions=[
+            apply_static_collision,
+            # apply_semantic_label,
+            # write_custom_metadata,
+        ],
+    ),
+    ProcessingRule(
         name="placeholder spawn point",
         mobility="placeholder",
-        domain="point",
+        domain="spot",
         category="spawn",
         actions=[
             set_spawn_point_from_prim,
         ],
     ),
-    # ProcessingRule(
-    #     name="placeholder plaza area",
-    #     mobility="placeholder",
-    #     domain="area",
-    #     category="plaza",
-    #     actions=[
-    #         process_placeholder_area,
-    #     ],
-    # ),
+    ProcessingRule(
+        name="placeholder plaza area",
+        mobility="placeholder",
+        domain="area",
+        category="plaza",
+        actions=[
+            process_placeholder_area,
+        ],
+    ),
 ]
 
 

@@ -4,6 +4,7 @@ import pathlib
 
 from . import scene_tools as tools
 from . import scene_parser as parser
+from . import scene_generator as generator
 
 
 class SimScene:
@@ -26,12 +27,19 @@ class SimScene:
         else:
             tools.add_natural_light(self.stage, sky_texture_path=self.sky_texture_path)
 
-        return parser.process_stage_by_naming_rules(
+        par_res = parser.process_stage_by_naming_rules(
             self.stage,
             stats=self.stats,
             rules=self.rules,
             verbose=verbose,
         )
+
+        for ply in self.stats.placeholder_areas:
+            res = generator.generate_plane_polygon_layout(ply)
+            for i in res.footprints:
+                print(i)
+
+        return par_res
 
     def update(self):
         iscctx.get_isaac_context().simulation_app.update()
