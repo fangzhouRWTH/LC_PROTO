@@ -1,81 +1,111 @@
 from .isaac_adaptor import isaac_context as iscctx
-from . import camera
 from . import controller
 from .isaac_scene import scene
 from .isaac_scene import world
 from .isaac_robots import spot_demo
 
+from dataclasses import dataclass
 import numpy as np
 import pathlib
 
 
-def run():
-    context = iscctx.init_isaac_context()
-    context.initialize_expansion()
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[3]
+DEFAULT_SCENE_USD = (
+    PROJECT_ROOT / "assets" / "blocks" / "test_field" / "test_simple_city.usd"
+)
 
-    state = dict()
-    state["base_command"] = np.zeros(3, dtype=np.float32)
-    cam = camera.ChaseViewportCamera()
-    ctrl = controller.KeyboardVelocityController()
 
-    usd_path = pathlib.Path(
-        "/home/fangzhou/projects/LC_01/assets/blocks/test_field/test_simple_city.usd"
+@dataclass
+class SimulationConfig:
+    usd_path: pathlib.Path = DEFAULT_SCENE_USD
+    robot_name: str = "spot_demo"
+    callback_name: str = "simworld_callback"
+    warmup_frames: int = 30
+    camera_prim_path: str = "/OmniverseKit_Persp"
+    fallback_spawn_position: tuple[float, float, float] = (0.0, 0.0, 0.8)
+
+
+def _select_spawn_position(spawn_points, fallback_position):
+    if spawn_points:
+        return np.asarray(spawn_points[0], dtype=np.float32)
+    return np.asarray(fallback_position, dtype=np.float32)
+
+
+def _map_keyboard_command(command):
+    forward, lateral, yaw = command
+    return np.array(
+        [2.0 * forward + yaw, lateral, 2.0 * yaw],
+        dtype=np.float32,
     )
 
-    simScene = scene.SimScene(usd_path)
-    simWorld = world.SimWorld()
 
-    for _ in range(30):
-        context.update()
+def run(config: SimulationConfig | None = None):
+    if config is None:
+        config = SimulationConfig()
 
-    simScene.prepare()
-    simworld_callback_name = "simworld_callback"
+    context = iscctx.init_isaac_context()
+    ctrl = None
 
-    simWorld.reset()
+    try:
+        context.initialize_expansion()
 
-    spot = spot_demo.SpotDemo("spot_demo")
-    spot.spawn(position=np.array([0.0, 0.0, 1.2]))
-    spot.set_chase_camera(chase=True, cam_prim_path="/OmniverseKit_Persp")
+        state = {"base_command": np.zeros(3, dtype=np.float32)}
+        ctrl = controller.KeyboardVelocityController()
 
-    def simworld_callback(stepsize):
-        if not spot.initialized:
-            return
+        sim_scene = scene.SimScene(config.usd_path)
+        sim_world = world.SimWorld()
 
-        try:
-            spot.forward(stepsize)
-        except Exception as e:
-            print(f"[ERROR] spot.forward failed. Mark reinit required: {e}")
+        for _ in range(config.warmup_frames):
+            sim_scene.update()
 
-    simWorld.prepare(simworld_callback_name, simworld_callback)
-    simWorld.stop()
+        scene_stats = sim_scene.prepare()
+        spawn_position = _select_spawn_position(
+            scene_stats.spawn_points,
+            config.fallback_spawn_position,
+        )
 
-    while context.is_running():
-        cmd = ctrl.get_command()
+        sim_world.reset()
 
-        f = cmd[0]
-        l = cmd[1]
-        y = cmd[2]
+        spot = spot_demo.SpotDemo(config.robot_name)
+        spot.spawn(position=spawn_position)
+        spot.set_chase_camera(chase=True, cam_prim_path=config.camera_prim_path)
 
-        state["base_command"] = np.array([2.0 * f + y, l, 2.0 * y], dtype=np.float32)
+        def simworld_callback(stepsize):
+            if not spot.initialized:
+                return
 
-        simScene.update()
-        simWorld.update_state()
+            try:
+                spot.forward(stepsize)
+            except Exception as e:
+                print(f"[ERROR] spot.forward failed. Mark reinit required: {e}")
 
-        if simWorld.is_stopped():
-            spot.mark_reinit_required()
-            continue
+        sim_world.prepare(config.callback_name, simworld_callback)
+        sim_world.stop()
 
-        world_reinitialized = simWorld.check_reinit()
+        while context.is_running():
+            state["base_command"] = _map_keyboard_command(ctrl.get_command())
 
-        if spot.need_reinit:
-            if not world_reinitialized:
-                simWorld.reset()
-            spot.initialize_spot()
+            sim_scene.update()
+            sim_world.update_state()
 
-        if simWorld.is_playing() and spot.initialized:
-            spot.step(state["base_command"])
-            simWorld.step(render=True)
+            if sim_world.is_stopped():
+                spot.mark_reinit_required()
+                continue
 
-    print("Closing Isaac Sim.")
+            world_reinitialized = sim_world.check_reinit()
 
-    context.close()
+            if spot.need_reinit:
+                if not world_reinitialized:
+                    sim_world.reset()
+                spot.initialize_spot()
+
+            if sim_world.is_playing() and spot.initialized:
+                spot.step(state["base_command"])
+                sim_world.step(render=True)
+
+    finally:
+        if ctrl is not None:
+            ctrl.shutdown()
+
+        print("Closing Isaac Sim.")
+        context.close()

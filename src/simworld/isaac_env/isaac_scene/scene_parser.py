@@ -1,8 +1,22 @@
-from isaac_env.isaac_adaptor import isaac_context as iscctx
+from ..isaac_adaptor import isaac_context as iscctx
 
 from dataclasses import dataclass, field
 import re
-from typing import Callable, List, Optional
+from typing import Any, Callable, Optional, Sequence
+
+
+@dataclass
+class SceneStats:
+    spawn_points: list[list[float]] = field(default_factory=list)
+    visited: int = 0
+    matched: int = 0
+    invalid_name: int = 0
+    unmatched_named: int = 0
+    processed: dict[str, int] = field(default_factory=dict)
+
+    def record_match(self, rule_name: str) -> None:
+        self.matched += 1
+        self.processed[rule_name] = self.processed.get(rule_name, 0) + 1
 
 
 def transform_point(mat, p):
@@ -150,6 +164,9 @@ def parse_prim_name(name: str) -> Optional[PrimNameInfo]:
     )
 
 
+SceneAction = Callable[[Any, PrimNameInfo, SceneStats], None]
+
+
 @dataclass
 class ProcessingRule:
     name: str
@@ -157,7 +174,7 @@ class ProcessingRule:
     domain: str | None = None
     category: str | None = None
     prim_type: str | None = None
-    actions: List[Callable] = field(default_factory=list)
+    actions: list[SceneAction] = field(default_factory=list)
 
 
 def rule_matches(rule: ProcessingRule, info: PrimNameInfo, prim) -> bool:
@@ -176,7 +193,7 @@ def rule_matches(rule: ProcessingRule, info: PrimNameInfo, prim) -> bool:
     return True
 
 
-def apply_static_collision(prim, info: PrimNameInfo):
+def apply_static_collision(prim, info: PrimNameInfo, stats: SceneStats):
     """
     Apply static collision to a prim.
     If the prim is a Mesh, also apply MeshCollisionAPI.
@@ -187,10 +204,14 @@ def apply_static_collision(prim, info: PrimNameInfo):
     if not prim.IsA(UsdGeom.Xformable):
         return
 
-    UsdPhysics.CollisionAPI.Apply(prim)
+    if not prim.HasAPI(UsdPhysics.CollisionAPI):
+        UsdPhysics.CollisionAPI.Apply(prim)
 
     if prim.IsA(UsdGeom.Mesh):
-        mesh_collision = UsdPhysics.MeshCollisionAPI.Apply(prim)
+        if prim.HasAPI(UsdPhysics.MeshCollisionAPI):
+            mesh_collision = UsdPhysics.MeshCollisionAPI(prim)
+        else:
+            mesh_collision = UsdPhysics.MeshCollisionAPI.Apply(prim)
         mesh_collision.CreateApproximationAttr().Set("meshSimplification")
 
     print(f"[COLLISION] {prim.GetPath()} <- {info.raw_name}")
@@ -202,11 +223,11 @@ def apply_static_collision(prim, info: PrimNameInfo):
 #     PLACEHOLDER_AREA.append(PlaceholderArea(vertices=vertices))
 
 
-# def set_spawn_point_from_prim(prim, info: PrimNameInfo):
-#     pos = extract_prim_position(prim)
-#     pos[2] += 0.8
-#     SPAWN_POS[:] = pos
-#     print(f"[SPAWN] {prim.GetPath()} <- {info.raw_name} | position = {pos}")
+def set_spawn_point_from_prim(prim, info: PrimNameInfo, stats: SceneStats):
+    pos = extract_prim_position(prim)
+    pos[2] += 0.8
+    stats.spawn_points.append(pos)
+    # print(f"[SPAWN] {prim.GetPath()} <- {info.raw_name} | position = {pos}")
 
 
 PROCESSING_RULES = [
@@ -231,15 +252,15 @@ PROCESSING_RULES = [
             # write_custom_metadata,
         ],
     ),
-    # ProcessingRule(
-    #     name="placeholder spawn point",
-    #     mobility="placeholder",
-    #     domain="point",
-    #     category="spawn",
-    #     actions=[
-    #         set_spawn_point_from_prim,
-    #     ],
-    # ),
+    ProcessingRule(
+        name="placeholder spawn point",
+        mobility="placeholder",
+        domain="point",
+        category="spawn",
+        actions=[
+            set_spawn_point_from_prim,
+        ],
+    ),
     # ProcessingRule(
     #     name="placeholder plaza area",
     #     mobility="placeholder",
@@ -252,26 +273,29 @@ PROCESSING_RULES = [
 ]
 
 
-def process_stage_by_naming_rules(stage, rules):
-    stats = {
-        "visited": 0,
-        "matched": 0,
-        "unmatched_named": 0,
-        "invalid_name": 0,
-        "processed": {},
-    }
+def process_stage_by_naming_rules(
+    stage,
+    stats: SceneStats | None = None,
+    rules: Sequence[ProcessingRule] | None = None,
+    verbose: bool = False,
+    print_summary: bool = True,
+):
+    if stats is None:
+        stats = SceneStats()
+    if rules is None:
+        rules = PROCESSING_RULES
 
     for prim in stage.Traverse():
-        stats["visited"] += 1
+        stats.visited += 1
 
         name = prim.GetName()
-        print(name)
         info = parse_prim_name(name)
 
-        print(info)
+        if verbose:
+            print(f"[SCENE] {prim.GetPath()} | name={name} | info={info}")
 
         if info is None:
-            stats["invalid_name"] += 1
+            stats.invalid_name += 1
             continue
 
         matched_any = False
@@ -281,30 +305,31 @@ def process_stage_by_naming_rules(stage, rules):
                 continue
 
             matched_any = True
-            stats["matched"] += 1
-            stats["processed"].setdefault(rule.name, 0)
-            stats["processed"][rule.name] += 1
+            stats.record_match(rule.name)
 
             for action in rule.actions:
-                action(prim, info)
+                action(prim, info, stats)
 
         if not matched_any:
-            stats["unmatched_named"] += 1
+            stats.unmatched_named += 1
             print(f"[WARN] Named prim matched pattern but no rule: {prim.GetPath()}")
 
-    print_stage_processing_stats(stats)
+    if print_summary:
+        print_stage_processing_stats(stats)
+
     return stats
 
 
-def print_stage_processing_stats(stats):
+def print_stage_processing_stats(stats: SceneStats):
     print("\n========== Stage Processing Stats ==========")
-    print(f"Visited prims:        {stats['visited']}")
-    print(f"Matched rules:        {stats['matched']}")
-    print(f"Invalid name format:  {stats['invalid_name']}")
-    print(f"Unmatched named prim: {stats['unmatched_named']}")
+    print(f"Visited prims:        {stats.visited}")
+    print(f"Matched rules:        {stats.matched}")
+    print(f"Invalid name format:  {stats.invalid_name}")
+    print(f"Unmatched named prim: {stats.unmatched_named}")
+    print(f"Spawn points:         {len(stats.spawn_points)}")
 
     print("\nProcessed by rule:")
-    for rule_name, count in stats["processed"].items():
+    for rule_name, count in stats.processed.items():
         print(f"  {rule_name}: {count}")
 
     print("===========================================\n")

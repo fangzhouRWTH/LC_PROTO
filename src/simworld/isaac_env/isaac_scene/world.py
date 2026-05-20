@@ -1,4 +1,4 @@
-import isaac_env.isaac_adaptor.isaac_context as iscctx
+from ..isaac_adaptor import isaac_context as iscctx
 
 
 class SimWorld:
