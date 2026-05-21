@@ -8,7 +8,6 @@ from dataclasses import dataclass
 import numpy as np
 import pathlib
 
-
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[3]
 DEFAULT_SCENE_USD = (
     PROJECT_ROOT / "assets" / "blocks" / "test_field" / "test_simple_city.usd"

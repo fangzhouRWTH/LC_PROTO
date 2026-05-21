@@ -221,7 +221,7 @@ def apply_static_collision(prim, info: PrimNameInfo, stats: SceneStats):
             mesh_collision = UsdPhysics.MeshCollisionAPI.Apply(prim)
         mesh_collision.CreateApproximationAttr().Set("meshSimplification")
 
-    print(f"[COLLISION] {prim.GetPath()} <- {info.raw_name}")
+    # print(f"[COLLISION] {prim.GetPath()} <- {info.raw_name}")
 
 
 def process_placeholder_area(prim, info: PrimNameInfo, stats: SceneStats):

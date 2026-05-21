@@ -42,6 +42,17 @@ class IsaacContext:
 
         self.isaac_core_utils = isaac_core_utils
 
+        try:
+            from isaacsim.core.utils.stage import add_reference_to_stage
+            from isaacsim.core.utils.prims import create_prim, get_prim_at_path
+        except ImportError:
+            from omni.isaac.core.utils.stage import add_reference_to_stage
+            from omni.isaac.core.utils.prims import create_prim, get_prim_at_path
+
+        self.add_reference_to_stage = add_reference_to_stage
+        self.create_prim = create_prim
+        self.get_prim_at_path = get_prim_at_path
+
         import omni.kit as omni_kit
 
         self.omni_kit = omni_kit

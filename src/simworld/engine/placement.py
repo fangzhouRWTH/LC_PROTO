@@ -3,7 +3,7 @@ import math
 import random
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Dict, Sequence
 
 Vec2 = Tuple[float, float]
 Vec3 = Tuple[float, float, float]
@@ -882,6 +882,11 @@ def print_footprints_3d(result: GenerationResult3D):
         )
 
 
+# ============================================================
+# Analyzer
+# ============================================================
+
+
 class FootprintAnalyzer:
     @staticmethod
     def analyze(fp: Footprint3D) -> FootprintFrame:
@@ -951,6 +956,182 @@ class FootprintAnalyzer:
             raise ValueError("Cannot normalize zero vector.")
         return v / l
 
+
+# Asset Matcher
+class AssetMatcher:
+    def __init__(self, library):
+        self.library = library
+
+    def choose_asset(
+        self,
+        fp: Footprint3D,
+        frame: FootprintFrame,
+        test_asset: Optional[AssetSpec] = None,
+    ) -> AssetSpec:
+
+        # 快速测试模式：强制使用单一资产
+        if test_asset is not None:
+            return test_asset
+
+        # 根据 footprint.kind 匹配资产类别
+        candidates = self.library.get_by_category(fp.kind)
+
+        # 如果没有匹配类别，则退回到全部资产
+        if not candidates:
+            candidates = self.library.get_all_assets()
+
+        if not candidates:
+            raise RuntimeError("No asset available in AssetLibrary.")
+
+        return random.choice(candidates)
+
+
+class AssetLibrary:
+    def __init__(self):
+        self.assets: List[AssetSpec] = []
+        self.assets_by_category: Dict[str, List[AssetSpec]] = {}
+
+    def add_asset(self, asset: AssetSpec) -> None:
+        self.assets.append(asset)
+
+        if asset.category not in self.assets_by_category:
+            self.assets_by_category[asset.category] = []
+
+        self.assets_by_category[asset.category].append(asset)
+
+    def get_all_assets(self) -> List[AssetSpec]:
+        return self.assets
+
+    def get_by_category(self, category: str) -> List[AssetSpec]:
+        return self.assets_by_category.get(category, [])
+
+    def scan_folder(
+        self,
+        root_dir: Path,
+        recursive: bool = True,
+    ) -> None:
+        """
+        假设资产目录结构为：
+
+        root_dir/
+        ├── bench/
+        │   ├── bench_01.usd
+        │   └── bench_02.usd
+        ├── tree/
+        │   └── tree_01.usd
+        └── kiosk/
+            └── kiosk_01.usd
+
+        子文件夹名会被当作 category。
+        """
+
+        pattern = "**/*" if recursive else "*"
+
+        for path in root_dir.glob(pattern):
+            if not path.is_file():
+                continue
+
+            if path.suffix.lower() not in [".usd", ".usda", ".usdc"]:
+                continue
+
+            # 用父目录名作为类别
+            category = path.parent.name
+
+            asset = AssetSpec(
+                name=path.stem,
+                usd_path=path,
+                category=category,
+                nominal_size_xy=(1.0, 1.0),
+            )
+
+            self.add_asset(asset)
+
+    def print_summary(self) -> None:
+        print("AssetLibrary summary:")
+
+        for category, assets in self.assets_by_category.items():
+            print(f"  {category}: {len(assets)} assets")
+            for asset in assets:
+                print(f"    - {asset.name}: {asset.usd_path}")
+
+
+# Placement Planner
+@dataclass
+class AssetImportPlan:
+    asset: AssetSpec
+    prim_path: str
+
+    center: np.ndarray
+    tangent_x: np.ndarray
+    tangent_y: np.ndarray
+    normal: np.ndarray
+
+    scale_xyz: Tuple[float, float, float]
+
+
+class AssetPlacementPlanner:
+    def __init__(self, matcher: AssetMatcher):
+        self.matcher = matcher
+
+    def build_plan_for_footprints(
+        self,
+        footprints: Sequence[Footprint3D],
+        root_prim: str = "/World/GeneratedAssets",
+        test_asset: Optional[AssetSpec] = None,
+    ) -> List[AssetImportPlan]:
+
+        plans: List[AssetImportPlan] = []
+
+        for i, fp in enumerate(footprints):
+            frame = FootprintAnalyzer.analyze(fp)
+
+            asset = self.matcher.choose_asset(
+                fp=fp,
+                frame=frame,
+                test_asset=test_asset,
+            )
+
+            scale_xyz = self._compute_fit_scale(asset, frame)
+
+            prim_path = f"{root_prim}/{fp.kind}_{i:04d}_{asset.name}"
+
+            plan = AssetImportPlan(
+                asset=asset,
+                prim_path=prim_path,
+                center=frame.center,
+                tangent_x=frame.tangent_x,
+                tangent_y=frame.tangent_y,
+                normal=frame.normal,
+                scale_xyz=scale_xyz,
+            )
+
+            plans.append(plan)
+
+        return plans
+
+    def _compute_fit_scale(
+        self,
+        asset: AssetSpec,
+        frame: FootprintFrame,
+        margin: float = 0.85,
+    ) -> Tuple[float, float, float]:
+
+        fp_w, fp_h = frame.size_xy
+        # asset_w, asset_h = asset.nominal_size_xy
+        asset_w = 1.0
+        asset_h = 1.0
+
+        if asset_w <= 1e-6 or asset_h <= 1e-6:
+            return (1.0, 1.0, 1.0)
+
+        sx = fp_w / asset_w * margin
+        sy = fp_h / asset_h * margin
+
+        # 推荐 uniform scale，避免公共空间资产被拉伸变形
+        s = min(sx, sy)
+        s = max(asset.min_scale, min(asset.max_scale, s))
+
+        return (s, s, s)
 
 # ============================================================
 # Example

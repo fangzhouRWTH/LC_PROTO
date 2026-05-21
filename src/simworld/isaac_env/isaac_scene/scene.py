@@ -5,19 +5,45 @@ import pathlib
 from . import scene_tools as tools
 from . import scene_parser as parser
 from . import scene_generator as generator
+from . import scene_asset_allocator as asset_allocator
+
+from engine import placement
+
+
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[4]
+DEFAULT_ASSET_LIBRARY_PATH = PROJECT_ROOT / "assets" / "library"
 
 
 class SimScene:
-    def __init__(self, path: pathlib.Path, rules=None, sky_texture_path=None):
+    def __init__(
+        self,
+        path: pathlib.Path,
+        rules=None,
+        sky_texture_path=None,
+        asset_library_path: pathlib.Path | None = None,
+        generated_asset_root: str = asset_allocator.DEFAULT_GENERATED_ASSET_ROOT,
+    ):
         self.path = pathlib.Path(path).expanduser()
         self.rules = rules
         self.sky_texture_path = sky_texture_path
         self.context = iscctx.get_isaac_context().omni_usd.get_context()
         self.stats = parser.SceneStats()
+        self.asset_import_plans: list[placement.AssetImportPlan] = []
+        self.generated_asset_prim_paths: list[str] = []
+
+        asset_root = pathlib.Path(asset_library_path or DEFAULT_ASSET_LIBRARY_PATH)
+
+        self.library = placement.AssetLibrary()
+        self.library.scan_folder(asset_root)
+        self.library.print_summary()
 
         if not self.context.open_stage(str(self.path)):
             raise RuntimeError(f"Failed to open USD stage: {self.path}")
         self.stage = self.context.get_stage()
+        self.asset_allocator = asset_allocator.SceneAssetAllocator(
+            stage=self.stage,
+            root_prim=generated_asset_root,
+        )
 
     def prepare(self, verbose: bool = False):
         self.stats = parser.SceneStats()
@@ -34,10 +60,25 @@ class SimScene:
             verbose=verbose,
         )
 
+        footprints: list[placement.Footprint3D] = []
         for ply in self.stats.placeholder_areas:
             res = generator.generate_plane_polygon_layout(ply)
-            for i in res.footprints:
-                print(i)
+            footprints.extend(res.footprints)
+
+        asset_matcher = placement.AssetMatcher(library=self.library)
+        planner = placement.AssetPlacementPlanner(matcher=asset_matcher)
+
+        self.asset_import_plans = planner.build_plan_for_footprints(
+            footprints=footprints,
+            root_prim=self.asset_allocator.root_prim,
+        )
+
+        if verbose:
+            for plan in self.asset_import_plans:
+                print(plan)
+
+        allocation_result = self.asset_allocator.import_plans(self.asset_import_plans)
+        self.generated_asset_prim_paths = allocation_result.prim_paths
 
         return par_res
 
