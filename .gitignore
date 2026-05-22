@@ -8,3 +8,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .env
+
+# Algorithm lab local artifacts.
+algorithm_lab/outputs/*
+!algorithm_lab/outputs/.gitkeep
+algorithm_lab/**/.ipynb_checkpoints/
+algorithm_lab/**/outputs/*
+!algorithm_lab/**/outputs/.gitkeep

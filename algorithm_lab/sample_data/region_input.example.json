@@ -1,0 +1,21 @@
+{
+  "schema_version": "algorithm_lab.region_input.v1",
+  "seed": 42,
+  "region": {
+    "id": "plaza_example_001",
+    "type": "plaza",
+    "units": "meters",
+    "coordinate_frame": "world_xyz",
+    "vertices": [
+      [0.0, 0.0, 0.0],
+      [12.0, 0.0, 0.0],
+      [12.0, 8.0, 0.0],
+      [0.0, 8.0, 0.0]
+    ]
+  },
+  "constraints": {
+    "density": 0.25,
+    "boundary_margin": 0.8,
+    "min_gap": 0.6
+  }
+}

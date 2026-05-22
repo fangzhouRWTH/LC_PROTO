@@ -4,7 +4,7 @@ LC_01 SimWorld is an NVIDIA Isaac Sim based simulation project for urban and cam
 
 ## Documentation
 
-- [Architecture](Doc/Architecture.md): describes the current framework boundaries and the integration plan for asset import, regional layout, dynamic assets, and visual/environment algorithms.
+- [Architecture](doc/Architecture.md): describes the current framework boundaries and the integration plan for asset import, regional layout, dynamic assets, and visual/environment algorithms.
 
 ## Current Framework
 
@@ -30,7 +30,14 @@ Main modules:
 - `src/simworld/isaac_env/isaac_scene/`: scene opening, naming-rule parsing, lighting setup, placeholder handling, and asset import.
 - `src/simworld/engine/placement.py`: current geometry, regional layout, asset matching, and asset import planning logic.
 - `src/simworld/isaac_env/isaac_robots/`: robot adapters and lightweight robot factory. The default adapter is the Spot demo.
+- `algorithm_lab/`: isolated workspace for lightweight experimental algorithms that should not depend on Isaac Sim.
 - `scripts/`: helper scripts for asset pulling/conversion, simulation runs, and debug runs.
+
+## Algorithm Lab
+
+`algorithm_lab/` is reserved for independent algorithm experiments that may later feed the main Isaac Sim runtime. It is intended for regional layout, dynamic asset, and environment algorithm prototypes that need a lightweight development loop.
+
+Code in this folder should keep dependencies minimal, avoid Isaac Sim imports, and exchange data through explicit JSON-compatible interfaces. See [algorithm_lab/guideline.rd](algorithm_lab/guideline.rd) before adding new experiments.
 
 ## Install And Run
 
@@ -183,4 +190,4 @@ The next phase should be split into four development tracks. All of them should 
 - Dynamic asset algorithms: generate spawn points, routes, speed profiles, behavior states, and lifecycle plans for pedestrians and vehicles.
 - Visual and environment algorithms: represent weather, time of day, sky, lighting, fog, and material wetness as configurable `EnvironmentPlan` outputs.
 
-See [Doc/Architecture.md](Doc/Architecture.md) for module boundaries, data contracts, integration plans, and optimization suggestions.
+See [doc/Architecture.md](doc/Architecture.md) for module boundaries, data contracts, integration plans, and optimization suggestions.
