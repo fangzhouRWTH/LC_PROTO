@@ -1,4 +1,5 @@
 assets/
+doc/weekly_reports/
 __pycache__/
 
 *.py[cod]

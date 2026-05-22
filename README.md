@@ -1,31 +1,47 @@
 # LC_01 SimWorld
 
-## 1. Project Introduction
+LC_01 SimWorld is an NVIDIA Isaac Sim based simulation project for urban and campus-scale environments. The codebase has moved from early validation scripts into a modular framework under `src/simworld`. The current pipeline can open USD scenes, parse scene semantics from naming rules, extract spawn points and placeholder areas, generate static asset layouts inside regions, import referenced USD assets, configure lighting, spawn a controllable robot, and run the Isaac Sim loop.
 
-LC_01 SimWorld is an early-stage simulation platform for building an automated pipeline that connects scene generation, training, and simulation workflows with NVIDIA Isaac Sim.
+## Documentation
 
-The current codebase is evolving from a fast prototyping script into a modular Python package under `src/simworld`. The immediate focus is to provide a reliable Isaac Sim runtime entry point, load generated USD scenes, parse scene semantics from naming conventions, prepare simulation assets, spawn controllable robots, and keep the runtime loop reusable for future training and evaluation tasks.
+- [Weekly Report](Doc/WeeklyReports/WeeklyReport_2026-05-15_2026-05-21.md): summarizes the main code updates, current outcome, and risks from 2026-05-15 to 2026-05-21.
+- [Architecture](Doc/Architecture.md): describes the current framework boundaries and the integration plan for asset import, regional layout, dynamic assets, and visual/environment algorithms.
 
-Current high-level modules:
+## Current Framework
 
-- `src/simworld/main.py`: command-line entry point.
-- `src/simworld/isaac_env/simulation.py`: simulation orchestration and runtime loop.
-- `src/simworld/isaac_env/isaac_adaptor/`: Isaac Sim context and lazy integration boundary.
-- `src/simworld/isaac_env/isaac_scene/`: USD scene loading, light setup, naming-rule parsing, spawn-point extraction, and simulation world wrapper.
-- `src/simworld/isaac_env/isaac_robots/`: robot adapters and lightweight robot factory.
-- `scripts/`: local run scripts for normal and debug execution.
+The main runtime path is:
 
-The default robot implementation is currently a Spot demo adapter. The robot creation path is intentionally kept open through a lightweight registry so that other robot wrappers can be added later without rewriting the simulation loop.
+```text
+scripts/run_sim.sh
+  -> src/simworld/main.py
+  -> isaac_env/simulation.py
+  -> SimScene.prepare()
+       -> scene_parser: parse USD prims by naming rules
+       -> scene_generator + engine/placement.py: generate region asset footprints
+       -> AssetPlacementPlanner: match assets and build import plans
+       -> SceneAssetAllocator: reference assets into the USD stage and apply collision
+  -> SimWorld + RobotFactory: reset the world, spawn the robot, and run the control loop
+```
 
-## 2. Install & Run
+Main modules:
+
+- `src/simworld/main.py`: command-line entry point that builds `SimulationConfig`.
+- `src/simworld/isaac_env/simulation.py`: runtime orchestration across Isaac context, scene, world, and robot.
+- `src/simworld/isaac_env/isaac_adaptor/`: centralized boundary for Isaac Sim, Omniverse, and USD/PXR APIs.
+- `src/simworld/isaac_env/isaac_scene/`: scene opening, naming-rule parsing, lighting setup, placeholder handling, and asset import.
+- `src/simworld/engine/placement.py`: current geometry, regional layout, asset matching, and asset import planning logic.
+- `src/simworld/isaac_env/isaac_robots/`: robot adapters and lightweight robot factory. The default adapter is the Spot demo.
+- `scripts/`: helper scripts for asset pulling/conversion, simulation runs, and debug runs.
+
+## Install And Run
 
 ### Prerequisites
 
-- Linux environment with NVIDIA Isaac Sim available.
-- Isaac Sim Python launcher, usually `python.sh`.
-- Project assets available under the repository `assets/` directory.
+- Linux environment.
+- NVIDIA Isaac Sim with access to the Isaac Sim `python.sh` launcher.
+- Project assets available under the repository `assets/` directory. See `scripts/collect_asset.py` if assets need to be pulled.
 
-The run scripts try to locate Isaac Sim in this order:
+The run scripts search for Isaac Sim Python in this order:
 
 1. `ISAAC_PYTHON=/path/to/isaacsim/python.sh`
 2. `ISAACSIM_ROOT=/path/to/isaacsim`
@@ -38,7 +54,7 @@ If auto-detection fails, set `ISAAC_PYTHON` explicitly:
 ISAAC_PYTHON=/path/to/isaacsim/python.sh scripts/run_sim.sh
 ```
 
-### Run Simulation
+### Normal Run
 
 Run with Python defaults:
 
@@ -66,15 +82,13 @@ Start Isaac Sim through `debugpy`:
 scripts/run_sim_dbg.sh
 ```
 
-By default, the debug script listens on `0.0.0.0:5678` and waits for a debugger client.
-
-Debug options:
+By default, the debug script listens on `0.0.0.0:5678` and waits for a debugger client. Options can be overridden as follows:
 
 ```bash
 DEBUG_PORT=5679 WAIT_FOR_CLIENT=0 scripts/run_sim_dbg.sh
 ```
 
-### Runtime Parameters
+## Runtime Parameters
 
 Python defaults are defined in `src/simworld/isaac_env/simulation.py`:
 
@@ -88,29 +102,52 @@ Python defaults are defined in `src/simworld/isaac_env/simulation.py`:
 CLI arguments accepted by `src/simworld/main.py`:
 
 - `--scene-usd`, `--scene_usd`: USD scene file to open.
-- `--robot-type`: robot adapter type. Currently available: `spot`.
+- `--robot-type`: robot adapter type. Currently supported: `spot`.
 - `--robot-name`: runtime robot name.
 - `--warmup-frames`: number of Isaac Sim update frames before scene preparation.
 - `--camera-prim-path`: viewport camera prim path for chase camera behavior.
 
 Environment variables supported by `scripts/sim_defaults.sh`:
 
-- `PROJECT_ROOT`: project root override. Normally inferred from the script location.
-- `ISAAC_PYTHON`: explicit Isaac Sim Python launcher path.
-- `ISAACSIM_ROOT`: Isaac Sim root directory. Used to find `${ISAACSIM_ROOT}/python.sh`.
-- `SCENE_USD`: optional scene override.
-- `ROBOT_TYPE`: optional robot type override.
-- `ROBOT_NAME`: optional robot name override.
-- `WARMUP_FRAMES`: optional warmup frame override.
-- `CAMERA_PRIM_PATH`: optional camera prim path override.
-- `KIT_LOG_LEVEL`: default `error`.
-- `KIT_FILE_LOG_LEVEL`: default `error`.
-- `KIT_OUTPUT_STREAM_LEVEL`: default `error`.
-- `DEBUG_HOST`: debug listener host, default `0.0.0.0`.
-- `DEBUG_PORT`: debug listener port, default `5678`.
-- `WAIT_FOR_CLIENT`: set to `1` or `true` to wait for debugger attachment, default `1`.
+- `PROJECT_ROOT`
+- `ISAAC_PYTHON`
+- `ISAACSIM_ROOT`
+- `SCENE_USD`
+- `ROBOT_TYPE`
+- `ROBOT_NAME`
+- `WARMUP_FRAMES`
+- `CAMERA_PRIM_PATH`
+- `KIT_LOG_LEVEL`
+- `KIT_FILE_LOG_LEVEL`
+- `KIT_OUTPUT_STREAM_LEVEL`
+- `DEBUG_HOST`
+- `DEBUG_PORT`
+- `WAIT_FOR_CLIENT`
 
-### Adding Another Robot Adapter
+## Scene And Asset Conventions
+
+Scene parsing currently relies on USD prim naming:
+
+```text
+<mobility>_<domain>_<category>_<index>
+```
+
+Current examples:
+
+- `static_construction_building_001`: static building, with collision applied automatically.
+- `static_ground_road_001`: static ground or road, with collision applied automatically.
+- `placeholder_spot_spawn_001`: Spot spawn point.
+- `placeholder_area_plaza_001`: public-space placeholder area for generated static asset layout.
+
+The current asset library convention is:
+
+```text
+assets/library/<category>/<asset>.usd
+```
+
+`AssetLibrary.scan_folder()` uses the parent directory as the asset category. `AssetMatcher` then matches generated footprints to assets by category. The next recommended step is to add sidecar metadata for each asset, including size, orientation, anchor point, tags, collision policy, and recommended usage context.
+
+## Adding Another Robot Adapter
 
 Robot adapters should implement the small runtime surface used by the simulation loop:
 
@@ -138,39 +175,13 @@ Then run:
 ROBOT_TYPE=my_robot ROBOT_NAME=my_robot_01 scripts/run_sim.sh
 ```
 
-## 3. Development Progression & Plan
+## Next Development Direction
 
-### Current Progression
+The next phase should be split into four development tracks. All of them should follow the same integration rule: the pure algorithm layer generates a structured plan, and the Isaac scene layer applies that plan to the USD stage or runtime.
 
-The project started from `scripts/sample.py`, a fast validation script used to test Isaac Sim scene loading, keyboard control, Spot policy execution, light setup, collision setup, and placeholder-based spawn extraction.
+- Asset import: stabilize `AssetSpec`, asset metadata, conversion scripts, category catalogs, size calibration, and anchor calibration.
+- Regional layout algorithms: generate reproducible `Footprint3D` and `AssetImportPlan` outputs from plaza, sidewalk, road, and other placeholder regions.
+- Dynamic asset algorithms: generate spawn points, routes, speed profiles, behavior states, and lifecycle plans for pedestrians and vehicles.
+- Visual and environment algorithms: represent weather, time of day, sky, lighting, fog, and material wetness as configurable `EnvironmentPlan` outputs.
 
-The current implementation moves those responsibilities into a more maintainable structure:
-
-- Simulation runtime is centralized in `simulation.py`.
-- Command-line parsing is isolated in `main.py`.
-- Shell scripts are reduced to environment setup and execution wrappers.
-- Scene preparation is handled through `SimScene` and naming-rule processing.
-- `SimWorld` wraps Isaac Sim world state, reset, play/stop checks, and step execution.
-- Robot creation now goes through a lightweight factory, with Spot as the first registered adapter.
-
-### Near-Term Plan
-
-- Stabilize USD naming conventions for generated scenes.
-- Expand scene parsing beyond spawn points and static collision rules.
-- Improve collision application for nested USD hierarchies and referenced assets.
-- Add structured configuration files for repeatable scene and robot runs.
-- Add basic runtime validation checks and focused tests for pure-Python parsing/config logic.
-- Improve logging so simulation output can be filtered or redirected cleanly.
-
-### Longer-Term Direction
-
-The platform is expected to grow into an automated scene-generation, training, and simulation pipeline:
-
-- Generate or import USD scenes from procedural tools or external asset sources.
-- Annotate scenes with semantic placeholders, navigation regions, spawn points, and task metadata.
-- Prepare Isaac Sim scenes automatically for physics, lighting, sensors, and robot placement.
-- Run policy training or evaluation loops over generated scene batches.
-- Collect simulation traces, observations, metrics, and failure cases.
-- Support multiple robot adapters through the robot factory interface.
-
-Some interfaces are intentionally open at this stage. The exact training backend, scene-generation interface, dataset format, and multi-robot abstractions will be refined as the project requirements become clearer.
+See [Doc/Architecture.md](Doc/Architecture.md) for module boundaries, data contracts, integration plans, and optimization suggestions.
