@@ -74,6 +74,8 @@ def deactivate_all_lights(stage, root_path="/"):
     Deactivate all light prims under root_path.
     This is safer for referenced USD assets.
     """
+    UsdLux = iscctx.get_isaac_context().pxr_usd_lux
+    Sdf = iscctx.get_isaac_context().pxr_Sdf
     lights = find_all_lights(stage, root_path=root_path)
 
     if not lights:
@@ -85,6 +87,11 @@ def deactivate_all_lights(stage, root_path="/"):
     for light in lights:
         path = light.GetPath()
         print(f"[INFO] Deactivating light: {path}")
+        if light.IsA(UsdLux.DomeLight):
+            dome_light = UsdLux.DomeLight(light)
+            texture_attr = dome_light.GetTextureFileAttr()
+            if texture_attr and texture_attr.IsValid():
+                texture_attr.Set(Sdf.AssetPath(""))
         light.SetActive(False)
         deactivated.append(str(path))
 

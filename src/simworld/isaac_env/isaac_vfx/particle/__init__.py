@@ -9,7 +9,9 @@ from .config import (
     CameraView,
     ParticleAppearance,
     ParticleEffectConfig,
+    ParticlePartition,
     ParticleVolume,
+    ParticleWindVariation,
 )
 from .effects import (
     FogParticleEffect,
@@ -27,7 +29,9 @@ __all__ = [
     "ParticleEffect",
     "ParticleEffectConfig",
     "ParticleEffectManager",
+    "ParticlePartition",
     "ParticleVolume",
+    "ParticleWindVariation",
     "RainParticleEffect",
     "SnowParticleEffect",
     "with_overrides",

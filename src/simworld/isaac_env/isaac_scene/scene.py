@@ -40,6 +40,9 @@ class SimScene:
         if not self.context.open_stage(str(self.path)):
             raise RuntimeError(f"Failed to open USD stage: {self.path}")
         self.stage = self.context.get_stage()
+        # Imported USDs may contain DomeLights with fragile relative texture paths.
+        # Silence stage-authored lights before the first render/update pass.
+        tools.deactivate_all_lights(self.stage)
         self.asset_allocator = asset_allocator.SceneAssetAllocator(
             stage=self.stage,
             root_prim=generated_asset_root,
@@ -48,10 +51,6 @@ class SimScene:
     def prepare(self, verbose: bool = False):
         self.stats = parser.SceneStats()
         tools.deactivate_all_lights(self.stage)
-        if self.sky_texture_path is None:
-            tools.add_natural_light(self.stage)
-        else:
-            tools.add_natural_light(self.stage, sky_texture_path=self.sky_texture_path)
 
         par_res = parser.process_stage_by_naming_rules(
             self.stage,
@@ -79,6 +78,14 @@ class SimScene:
 
         allocation_result = self.asset_allocator.import_plans(self.asset_import_plans)
         self.generated_asset_prim_paths = allocation_result.prim_paths
+
+        # Generated/referenced assets can bring their own lights after the first
+        # cleanup pass. Keep lighting controlled by the scene preset.
+        tools.deactivate_all_lights(self.stage)
+        if self.sky_texture_path is None:
+            tools.add_natural_light(self.stage)
+        else:
+            tools.add_natural_light(self.stage, sky_texture_path=self.sky_texture_path)
 
         return par_res
 

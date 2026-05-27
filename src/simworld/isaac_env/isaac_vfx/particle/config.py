@@ -11,7 +11,7 @@ RendererKind = Literal["points", "streaks"]
 
 @dataclass(frozen=True)
 class CameraView:
-    """Camera pose inputs used to keep particles local to the viewport."""
+    """Camera pose inputs used to define the viewport recycling volume."""
 
     position: Vector3
     forward: Vector3
@@ -57,6 +57,52 @@ class ParticleVolume:
 
 
 @dataclass(frozen=True)
+class ParticlePartition:
+    """Repeat one simulated particle tile across the viewport box."""
+
+    width_segments: int = 1
+    height_segments: int = 1
+
+    @property
+    def tile_count(self) -> int:
+        return self.width_segments * self.height_segments
+
+    def base_particle_count(self, particle_count: int) -> int:
+        return max(1, (particle_count + self.tile_count - 1) // self.tile_count)
+
+    def validate(self) -> None:
+        if self.width_segments <= 0:
+            raise ValueError("ParticlePartition.width_segments must be positive.")
+        if self.height_segments <= 0:
+            raise ValueError("ParticlePartition.height_segments must be positive.")
+
+
+@dataclass(frozen=True)
+class ParticleWindVariation:
+    """Visual wind-direction modulation around the configured main wind."""
+
+    angle_degrees: float = 0.0
+    period_seconds: float = 8.0
+    randomness: float = 0.25
+
+    @property
+    def enabled(self) -> bool:
+        return self.angle_degrees > 0.0
+
+    def validate(self) -> None:
+        if self.angle_degrees < 0.0:
+            raise ValueError("ParticleWindVariation.angle_degrees cannot be negative.")
+        if self.angle_degrees > 180.0:
+            raise ValueError("ParticleWindVariation.angle_degrees cannot exceed 180.")
+        if self.period_seconds <= 0.0:
+            raise ValueError("ParticleWindVariation.period_seconds must be positive.")
+        if self.randomness < 0.0:
+            raise ValueError("ParticleWindVariation.randomness cannot be negative.")
+        if self.randomness > 1.0:
+            raise ValueError("ParticleWindVariation.randomness cannot exceed 1.")
+
+
+@dataclass(frozen=True)
 class ParticleAppearance:
     """Simple USD display attributes for visual particles."""
 
@@ -86,6 +132,7 @@ class ParticleEffectConfig:
     name: str
     particle_count: int
     volume: ParticleVolume = field(default_factory=ParticleVolume)
+    partition: ParticlePartition = field(default_factory=ParticlePartition)
     appearance: ParticleAppearance = field(default_factory=ParticleAppearance)
     renderer: RendererKind = "points"
     effect_type: str = "particle"
@@ -94,6 +141,9 @@ class ParticleEffectConfig:
     speed_jitter: float = 0.0
     direction_world: Vector3 = (0.0, 0.0, -1.0)
     wind_world: Vector3 = (0.0, 0.0, 0.0)
+    wind_variation: ParticleWindVariation = field(
+        default_factory=ParticleWindVariation
+    )
     turbulence: float = 0.0
     max_dt: float = 1.0 / 15.0
     seed: int | None = None
@@ -117,4 +167,6 @@ class ParticleEffectConfig:
             raise ValueError("ParticleEffectConfig.max_dt must be positive.")
 
         self.volume.validate()
+        self.partition.validate()
+        self.wind_variation.validate()
         self.appearance.validate()

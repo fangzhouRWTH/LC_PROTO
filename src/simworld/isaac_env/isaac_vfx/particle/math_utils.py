@@ -47,6 +47,6 @@ def local_to_world(local_positions, camera_position, basis):
     return origin[None, :] + local_positions @ basis
 
 
-def world_vectors_to_local(world_vectors, basis):
-    return world_vectors @ basis.T
-
+def world_to_local(world_positions, camera_position, basis):
+    origin = as_vec3(camera_position, "camera_position")
+    return (world_positions - origin[None, :]) @ basis.T
