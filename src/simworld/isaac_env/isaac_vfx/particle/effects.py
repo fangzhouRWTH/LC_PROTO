@@ -376,9 +376,9 @@ class RainParticleEffect(ParticleEffect):
             appearance=ParticleAppearance(
                 color=(0.62, 0.76, 1.0),
                 opacity=0.01,
-                point_width=0.025,
+                point_width=0.006,
                 streak_length=0.45,
-                streak_width=0.010,
+                streak_width=0.006,
             ),
             renderer="streaks",
             speed=8.1,
@@ -478,6 +478,9 @@ class FogParticleEffect(ParticleEffect):
         renderer: str | None = None,
         billboard_texture_path: str | None = None,
         billboard_shader_path: str | None = None,
+        billboard_use_mdl_shader: bool = False,
+        billboard_opacity_gain: float | None = None,
+        billboard_debug: bool = False,
     ):
         self.mode = self._normalize_mode(mode)
         self.density = float(density)
@@ -497,12 +500,15 @@ class FogParticleEffect(ParticleEffect):
             wind_variation_randomness = preset["wind_variation_randomness"]
         if renderer is None:
             renderer = preset["renderer"]
+        if billboard_opacity_gain is None:
+            billboard_opacity_gain = preset["billboard_opacity_gain"]
 
         self._fog_near_fade_distance = preset["near_fade_distance"]
         self._fog_far_fade_distance = preset["far_fade_distance"]
         self._fog_depth_size_gain = preset["depth_size_gain"]
         self._fog_height_softness = preset["height_softness"]
         self._fog_max_opacity = preset["max_opacity"]
+        self._fog_swirl_speed_range = preset["swirl_speed_range"]
 
         config = ParticleEffectConfig(
             name=name,
@@ -518,6 +524,9 @@ class FogParticleEffect(ParticleEffect):
                 opacity=min(1.0, preset["appearance"].opacity * self.density),
                 billboard_texture_path=billboard_texture_path,
                 billboard_shader_path=billboard_shader_path,
+                billboard_use_mdl_shader=billboard_use_mdl_shader,
+                billboard_opacity_gain=billboard_opacity_gain,
+                billboard_debug=billboard_debug,
             ),
             renderer=renderer,
             speed=preset["speed"],
@@ -562,15 +571,18 @@ class FogParticleEffect(ParticleEffect):
                 "appearance": ParticleAppearance(
                     color=(0.76, 0.80, 0.82),
                     opacity=0.055,
-                    point_width=1.9,
+                    point_width=2.8,
                     streak_length=0.4,
                     streak_width=0.15,
+                    billboard_opacity_gain=8.0,
                 ),
                 "speed": 0.035,
                 "speed_jitter": 0.55,
-                "turbulence": 0.035,
+                "turbulence": 0.018,
                 "wind_variation_period_seconds": 38.0,
                 "wind_variation_randomness": 0.35,
+                "billboard_opacity_gain": 8.0,
+                "swirl_speed_range": (0.06, 0.22),
                 "near_fade_distance": 12.0,
                 "far_fade_distance": 18.0,
                 "depth_size_gain": 0.85,
@@ -592,15 +604,18 @@ class FogParticleEffect(ParticleEffect):
             "appearance": ParticleAppearance(
                 color=(0.80, 0.83, 0.84),
                 opacity=0.075,
-                point_width=0.42,
+                point_width=0.82,
                 streak_length=0.25,
                 streak_width=0.08,
+                billboard_opacity_gain=10.0,
             ),
-            "speed": 0.065,
-            "speed_jitter": 0.85,
-            "turbulence": 0.16,
-            "wind_variation_period_seconds": 18.0,
-            "wind_variation_randomness": 0.5,
+            "speed": 0.040,
+            "speed_jitter": 0.45,
+            "turbulence": 0.070,
+            "wind_variation_period_seconds": 28.0,
+            "wind_variation_randomness": 0.32,
+            "billboard_opacity_gain": 10.0,
+            "swirl_speed_range": (0.10, 0.38),
             "near_fade_distance": 2.8,
             "far_fade_distance": 7.5,
             "depth_size_gain": 0.35,
@@ -621,9 +636,12 @@ class FogParticleEffect(ParticleEffect):
             2.0 * np.pi,
             (count, 3),
         ).astype(np.float32)
-        self._fog_swirl_speed = self._rng.uniform(0.45, 1.25, (count, 1)).astype(
-            np.float32
-        )
+        swirl_min, swirl_max = self._fog_swirl_speed_range
+        self._fog_swirl_speed = self._rng.uniform(
+            swirl_min,
+            swirl_max,
+            (count, 1),
+        ).astype(np.float32)
 
     def _random_fog_size_scale(self, count: int) -> np.ndarray:
         if self.mode == "distant":
@@ -657,11 +675,7 @@ class FogParticleEffect(ParticleEffect):
         return positions.astype(np.float32, copy=False)
 
     def _apply_turbulence(self, dt: float) -> None:
-        if (
-            self._positions_world is None
-            or self.config.turbulence <= 0.0
-            or dt <= 0.0
-        ):
+        if self._positions_world is None or self.config.turbulence <= 0.0 or dt <= 0.0:
             return
 
         if len(self._fog_swirl_phase) != self._base_particle_count:
@@ -687,9 +701,10 @@ class FogParticleEffect(ParticleEffect):
             2.0 * np.pi,
             (count, 3),
         ).astype(np.float32)
+        swirl_min, swirl_max = self._fog_swirl_speed_range
         self._fog_swirl_speed[outside] = self._rng.uniform(
-            0.45,
-            1.25,
+            swirl_min,
+            swirl_max,
             (count, 1),
         ).astype(np.float32)
 

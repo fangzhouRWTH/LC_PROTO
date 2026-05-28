@@ -1,11 +1,5 @@
 from ..isaac_adaptor import isaac_context as iscctx
 
-from pathlib import Path
-
-
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
-DEFAULT_SKY_TEXTURE_PATH = PROJECT_ROOT / "assets" / "textures" / "sky" / "sky_01.png"
-
 
 def find_all_lights(stage, root_path="/"):
     """
@@ -99,83 +93,17 @@ def deactivate_all_lights(stage, root_path="/"):
     return deactivated
 
 
-def add_natural_light(stage, sky_texture_path: str | Path = DEFAULT_SKY_TEXTURE_PATH):
-    """
-    Natural daylight preset:
-    - Sun: strong direct light
-    - Sky: stronger ambient / indirect-like dome light
-    - Optional fill light: softens very dark shadow side
-    """
+def add_natural_light(stage, sky_texture_path=None):
+    """Compatibility wrapper for the VFX weather lighting module."""
 
-    UsdGeom = iscctx.get_isaac_context().pxr_usd_geom
-    UsdLux = iscctx.get_isaac_context().pxr_usd_lux
-    Gf = iscctx.get_isaac_context().pxr_gf
-    Sdf = iscctx.get_isaac_context().pxr_Sdf
+    from ..isaac_vfx.weather import WeatherLightingManager
 
-    light_root = UsdGeom.Xform.Define(stage, "/World/Light")
-    light_root.GetPrim().SetActive(True)
-
-    # ------------------------------------------------------------
-    # 1. Sun light: direct sunlight
-    # ------------------------------------------------------------
-    sun_path = "/World/Light/Sun"
-    sun = UsdLux.DistantLight.Define(stage, sun_path)
-    sun.GetPrim().SetActive(True)
-
-    sun.CreateIntensityAttr(1200.0)
-    sun.CreateAngleAttr(0.8)
-    sun.CreateColorAttr(Gf.Vec3f(1.0, 0.96, 0.88))
-
-    sun_xform = UsdGeom.Xformable(sun.GetPrim())
-    sun_xform.ClearXformOpOrder()
-    sun_xform.AddRotateXYZOp().Set(Gf.Vec3f(-45.0, 0.0, 35.0))
-
-    # ------------------------------------------------------------
-    # 2. Sky light: ambient/environment light
-    # ------------------------------------------------------------
-    sky_path = "/World/Light/Sky"
-    sky = UsdLux.DomeLight.Define(stage, sky_path)
-    sky.GetPrim().SetActive(True)
-
-    # Increase this first if shadow side is too dark.
-    sky.CreateIntensityAttr(300.0)
-
-    # Exposure is exponential: +1 roughly doubles brightness.
-    sky.CreateExposureAttr(1.0)
-
-    # Cool sky color.
-    sky.CreateColorAttr(Gf.Vec3f(0.78, 0.86, 1.0))
-
-    # Optional skybox / HDRI background
-    sky_texture_path = Path(sky_texture_path).expanduser().resolve()
-
-    if not sky_texture_path.exists():
-        raise FileNotFoundError(f"Sky texture not found: {sky_texture_path}")
-
-    # Use lat-long / equirectangular environment map.
-    sky.CreateTextureFileAttr(Sdf.AssetPath(str(sky_texture_path)))
-    sky.CreateTextureFormatAttr("latlong")
-
-    print(f"[OK] Added skybox texture: {sky_texture_path}")
-
-    # ------------------------------------------------------------
-    # 3. Optional soft fill light
-    # ------------------------------------------------------------
-    fill_path = "/World/Light/Fill"
-    fill = UsdLux.DistantLight.Define(stage, fill_path)
-    fill.GetPrim().SetActive(True)
-
-    # Much weaker than sun.
-    fill.CreateIntensityAttr(120.0)
-    fill.CreateAngleAttr(5.0)
-    fill.CreateColorAttr(Gf.Vec3f(0.75, 0.82, 1.0))
-
-    # Opposite-ish direction from sun to brighten shadow side.
-    fill_xform = UsdGeom.Xformable(fill.GetPrim())
-    fill_xform.ClearXformOpOrder()
-    fill_xform.AddRotateXYZOp().Set(Gf.Vec3f(-25.0, 0.0, -145.0))
-
-    print("[OK] Added natural light preset with stronger sky / indirect fill.")
+    manager = WeatherLightingManager.from_weather(
+        "sunny",
+        sky_texture_path=sky_texture_path,
+    )
+    manager.apply(stage)
+    return manager
 
 
 def extract_prim_position(prim):

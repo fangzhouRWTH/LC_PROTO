@@ -11,6 +11,9 @@ from .config import ParticleAppearance
 from .math_utils import normalize
 
 
+_BILLBOARD_MATERIAL_VERSION = 8
+
+
 class ParticleRenderer(ABC):
     """USD-backed renderer for visual particle geometry."""
 
@@ -50,12 +53,16 @@ def _gf_vec2f_list(values: np.ndarray):
 
 
 def _display_color(appearance: ParticleAppearance):
+    return _display_color_from(appearance.color)
+
+
+def _display_color_from(color):
     Gf = iscctx.get_isaac_context().pxr_gf
     return [
         Gf.Vec3f(
-            float(appearance.color[0]),
-            float(appearance.color[1]),
-            float(appearance.color[2]),
+            float(color[0]),
+            float(color[1]),
+            float(color[2]),
         )
     ]
 
@@ -103,6 +110,15 @@ def _resolve_asset_path(path: str | None, default_path: Path) -> str:
     return str(expanded)
 
 
+def _define_geometry(stage, prim_path: str, schema, type_name: str):
+    prim = stage.GetPrimAtPath(prim_path)
+    reset = not prim or not prim.IsValid()
+    if prim and prim.IsValid() and prim.GetTypeName() != type_name:
+        stage.RemovePrim(prim_path)
+        reset = True
+    return schema.Define(stage, prim_path), reset
+
+
 class PointsParticleRenderer(ParticleRenderer):
     """Render particles as USD points."""
 
@@ -120,7 +136,7 @@ class PointsParticleRenderer(ParticleRenderer):
         del velocity_hint_world, camera_basis
         UsdGeom = iscctx.get_isaac_context().pxr_usd_geom
 
-        points = UsdGeom.Points.Define(stage, prim_path)
+        points, _ = _define_geometry(stage, prim_path, UsdGeom.Points, "Points")
         points.GetPrim().SetActive(True)
         points.CreatePointsAttr().Set(_gf_vec3f_list(positions_world))
         points.CreateWidthsAttr().Set(
@@ -160,7 +176,12 @@ class StreakParticleRenderer(ParticleRenderer):
         curve_points[0::2] = positions_world
         curve_points[1::2] = tails
 
-        curves = UsdGeom.BasisCurves.Define(stage, prim_path)
+        curves, _ = _define_geometry(
+            stage,
+            prim_path,
+            UsdGeom.BasisCurves,
+            "BasisCurves",
+        )
         curves.GetPrim().SetActive(True)
         curves.CreateTypeAttr("linear")
         curves.CreateWrapAttr("nonperiodic")
@@ -192,6 +213,9 @@ class StreakParticleRenderer(ParticleRenderer):
 class BillboardParticleRenderer(ParticleRenderer):
     """Render soft particles as camera-facing textured quads."""
 
+    def __init__(self):
+        self._topology_counts: dict[str, int] = {}
+
     def render(
         self,
         stage,
@@ -215,36 +239,53 @@ class BillboardParticleRenderer(ParticleRenderer):
             positions_world,
             appearance,
             widths,
+            None if appearance.billboard_debug else opacities,
             camera_basis,
         )
 
-        mesh = UsdGeom.Mesh.Define(stage, prim_path)
+        mesh, geometry_reset = _define_geometry(stage, prim_path, UsdGeom.Mesh, "Mesh")
+        particle_count = len(positions_world)
         mesh.GetPrim().SetActive(True)
+        self._disable_shadow_participation(mesh.GetPrim(), Sdf)
         mesh.CreatePointsAttr().Set(_gf_vec3f_list(quad_points))
-        mesh.CreateFaceVertexCountsAttr().Set([4] * len(positions_world))
-        mesh.CreateFaceVertexIndicesAttr().Set(face_indices)
-        mesh.CreateDoubleSidedAttr().Set(True)
-        mesh.CreateDisplayColorAttr().Set(_display_color(appearance))
+
+        topology_key = f"{id(stage)}:{prim_path}"
+        topology_count = self._topology_counts.get(topology_key)
+        if geometry_reset or topology_count != particle_count:
+            mesh.CreateFaceVertexCountsAttr().Set([4] * particle_count)
+            mesh.CreateFaceVertexIndicesAttr().Set(face_indices)
+            mesh.CreateDoubleSidedAttr().Set(True)
+            st = UsdGeom.PrimvarsAPI(mesh).CreatePrimvar(
+                "st",
+                Sdf.ValueTypeNames.TexCoord2fArray,
+                UsdGeom.Tokens.faceVarying,
+            )
+            st.Set(_gf_vec2f_list(quad_uvs))
+            self._topology_counts[topology_key] = particle_count
 
         display_opacity = mesh.CreateDisplayOpacityAttr()
-        display_opacity.Set(
-            self._quad_opacities(appearance, len(positions_world), opacities)
-        )
-        if opacities is not None:
-            UsdGeom.Primvar(display_opacity).SetInterpolation(
-                UsdGeom.Tokens.faceVarying
+        if appearance.billboard_debug:
+            self._unbind_material(mesh.GetPrim())
+            mesh.CreateDisplayColorAttr().Set(
+                _display_color_from(appearance.billboard_debug_color)
             )
-
-        st = UsdGeom.PrimvarsAPI(mesh).CreatePrimvar(
-            "st",
-            Sdf.ValueTypeNames.TexCoord2fArray,
-            UsdGeom.Tokens.faceVarying,
-        )
-        st.Set(_gf_vec2f_list(quad_uvs))
-
-        material_path = f"{prim_path.rsplit('/', 1)[0]}/BillboardMaterial"
-        material = self._ensure_material(stage, material_path, appearance)
-        self._bind_material(mesh.GetPrim(), material)
+            display_opacity.Set([float(appearance.billboard_debug_opacity)])
+            UsdGeom.Primvar(display_opacity).SetInterpolation(UsdGeom.Tokens.constant)
+        else:
+            mesh.CreateDisplayColorAttr().Set(_display_color(appearance))
+            display_opacity.Set([1.0])
+            UsdGeom.Primvar(display_opacity).SetInterpolation(
+                UsdGeom.Tokens.constant
+            )
+            material_path = f"{prim_path.rsplit('/', 1)[0]}/BillboardMaterial"
+            material_opacity = self._material_opacity(appearance, opacities)
+            material = self._ensure_material(
+                stage,
+                material_path,
+                appearance,
+                material_opacity,
+            )
+            self._bind_material_if_needed(mesh.GetPrim(), material)
         return mesh.GetPrim()
 
     def _quad_mesh_data(
@@ -252,12 +293,14 @@ class BillboardParticleRenderer(ParticleRenderer):
         positions_world: np.ndarray,
         appearance: ParticleAppearance,
         widths: np.ndarray | None,
+        opacities: np.ndarray | None,
         camera_basis: np.ndarray,
     ) -> tuple[np.ndarray, np.ndarray, list[int]]:
         sizes = np.asarray(
             _particle_widths(appearance, len(positions_world), widths),
             dtype=np.float32,
         )
+        sizes *= self._quad_size_fade(appearance, len(positions_world), opacities)
         basis = np.asarray(camera_basis, dtype=np.float32)
         right = basis[0]
         up = basis[1]
@@ -284,22 +327,28 @@ class BillboardParticleRenderer(ParticleRenderer):
         face_indices = list(range(len(positions_world) * 4))
         return quad_points, quad_uvs, face_indices
 
-    def _quad_opacities(
+    def _quad_size_fade(
         self,
         appearance: ParticleAppearance,
         particle_count: int,
         opacities: np.ndarray | None,
-    ):
-        values = _particle_opacities(appearance, particle_count, opacities)
+    ) -> np.ndarray:
         if opacities is None:
-            return values
-        return [float(v) for v in np.repeat(np.asarray(values, dtype=np.float32), 4)]
+            return np.ones(particle_count, dtype=np.float32)
+
+        values = np.asarray(
+            _particle_opacities(appearance, particle_count, opacities),
+            dtype=np.float32,
+        )
+        base_opacity = max(float(appearance.opacity), 1e-6)
+        return np.sqrt(np.clip(values / base_opacity, 0.0, 1.0)).astype(np.float32)
 
     def _ensure_material(
         self,
         stage,
         material_path: str,
         appearance: ParticleAppearance,
+        material_opacity: float,
     ):
         from pxr import UsdShade
 
@@ -315,6 +364,12 @@ class BillboardParticleRenderer(ParticleRenderer):
             DEFAULT_FOG_BILLBOARD_SHADER,
         )
 
+        material_prim = stage.GetPrimAtPath(material_path)
+        if self._material_ready(material_prim, appearance, material_opacity):
+            return UsdShade.Material(material_prim)
+        if material_prim and material_prim.IsValid():
+            stage.RemovePrim(material_path)
+
         material = UsdShade.Material.Define(stage, material_path)
         material_prim = material.GetPrim()
         material_prim.CreateAttribute(
@@ -325,6 +380,18 @@ class BillboardParticleRenderer(ParticleRenderer):
             "simworld:billboardShader",
             Sdf.ValueTypeNames.Asset,
         ).Set(Sdf.AssetPath(shader_path))
+        material_prim.CreateAttribute(
+            "simworld:billboardUseMdlShader",
+            Sdf.ValueTypeNames.Bool,
+        ).Set(bool(appearance.billboard_use_mdl_shader))
+        material_prim.CreateAttribute(
+            "simworld:billboardOpacity",
+            Sdf.ValueTypeNames.Float,
+        ).Set(float(material_opacity))
+        material_prim.CreateAttribute(
+            "simworld:billboardOpacityGain",
+            Sdf.ValueTypeNames.Float,
+        ).Set(float(appearance.billboard_opacity_gain))
 
         st_reader = UsdShade.Shader.Define(stage, f"{material_path}/PrimvarReader_st")
         st_reader.CreateIdAttr("UsdPrimvarReader_float2")
@@ -342,7 +409,7 @@ class BillboardParticleRenderer(ParticleRenderer):
             "result",
         )
         texture.CreateInput("scale", Sdf.ValueTypeNames.Float4).Set(
-            Gf.Vec4f(1.0, 1.0, 1.0, float(appearance.opacity))
+            Gf.Vec4f(1.0, 1.0, 1.0, float(material_opacity))
         )
         texture.CreateOutput("rgb", Sdf.ValueTypeNames.Float3)
         texture.CreateOutput("a", Sdf.ValueTypeNames.Float)
@@ -350,6 +417,9 @@ class BillboardParticleRenderer(ParticleRenderer):
         preview = UsdShade.Shader.Define(stage, f"{material_path}/PreviewSurface")
         preview.CreateIdAttr("UsdPreviewSurface")
         preview.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).Set(
+            Gf.Vec3f(0.0, 0.0, 0.0)
+        )
+        preview.CreateInput("emissiveColor", Sdf.ValueTypeNames.Color3f).Set(
             Gf.Vec3f(
                 float(appearance.color[0]),
                 float(appearance.color[1]),
@@ -357,39 +427,96 @@ class BillboardParticleRenderer(ParticleRenderer):
             )
         )
         preview.CreateInput("roughness", Sdf.ValueTypeNames.Float).Set(1.0)
+        preview.CreateInput("metallic", Sdf.ValueTypeNames.Float).Set(0.0)
+        preview.CreateInput("clearcoat", Sdf.ValueTypeNames.Float).Set(0.0)
+        preview.CreateInput("ior", Sdf.ValueTypeNames.Float).Set(1.0)
+        preview.CreateInput("useSpecularWorkflow", Sdf.ValueTypeNames.Int).Set(1)
+        preview.CreateInput("specularColor", Sdf.ValueTypeNames.Color3f).Set(
+            Gf.Vec3f(0.0, 0.0, 0.0)
+        )
         preview.CreateInput("opacity", Sdf.ValueTypeNames.Float).ConnectToSource(
             texture.ConnectableAPI(),
             "a",
         )
-        preview.CreateInput("opacityThreshold", Sdf.ValueTypeNames.Float).Set(0.0)
         preview.CreateOutput("surface", Sdf.ValueTypeNames.Token)
         material.CreateSurfaceOutput().ConnectToSource(
             preview.ConnectableAPI(),
             "surface",
         )
 
-        self._try_add_mdl_output(
-            material,
-            material_path,
-            appearance,
-            texture_path,
-            shader_path,
-        )
+        if appearance.billboard_use_mdl_shader:
+            self._try_add_mdl_output(
+                material,
+                material_path,
+                appearance,
+                material_opacity,
+                shader_path,
+            )
+        material_prim.CreateAttribute(
+            "simworld:materialReady",
+            Sdf.ValueTypeNames.Bool,
+        ).Set(True)
+        material_prim.CreateAttribute(
+            "simworld:materialVersion",
+            Sdf.ValueTypeNames.Int,
+        ).Set(_BILLBOARD_MATERIAL_VERSION)
         return material
+
+    def _material_ready(
+        self,
+        material_prim,
+        appearance: ParticleAppearance,
+        material_opacity: float,
+    ) -> bool:
+        if not material_prim or not material_prim.IsValid():
+            return False
+        ready = material_prim.GetAttribute("simworld:materialReady")
+        if not ready:
+            return False
+        version = material_prim.GetAttribute("simworld:materialVersion")
+        if not version:
+            return False
+        use_mdl = material_prim.GetAttribute("simworld:billboardUseMdlShader")
+        if not use_mdl:
+            return False
+        opacity = material_prim.GetAttribute("simworld:billboardOpacity")
+        if not opacity:
+            return False
+        opacity_gain = material_prim.GetAttribute("simworld:billboardOpacityGain")
+        if not opacity_gain:
+            return False
+        return (
+            bool(ready.Get())
+            and version.Get() == _BILLBOARD_MATERIAL_VERSION
+            and bool(use_mdl.Get()) == bool(appearance.billboard_use_mdl_shader)
+            and abs(float(opacity.Get()) - float(material_opacity)) < 1e-6
+            and abs(
+                float(opacity_gain.Get()) - float(appearance.billboard_opacity_gain)
+            )
+            < 1e-6
+        )
+
+    def _material_opacity(
+        self,
+        appearance: ParticleAppearance,
+        opacities: np.ndarray | None,
+    ) -> float:
+        del opacities
+        opacity = float(appearance.opacity) * float(appearance.billboard_opacity_gain)
+        return float(np.clip(opacity, 0.0, 1.0))
 
     def _try_add_mdl_output(
         self,
         material,
         material_path: str,
         appearance: ParticleAppearance,
-        texture_path: str,
+        material_opacity: float,
         shader_path: str,
     ) -> None:
         try:
             from pxr import UsdShade
 
             context = iscctx.get_isaac_context()
-            Gf = context.pxr_gf
             Sdf = context.pxr_Sdf
             shader = UsdShade.Shader.Define(
                 material.GetPrim().GetStage(),
@@ -398,18 +525,11 @@ class BillboardParticleRenderer(ParticleRenderer):
             shader.CreateImplementationSourceAttr(UsdShade.Tokens.sourceAsset)
             shader.SetSourceAsset(Sdf.AssetPath(shader_path), "mdl")
             shader.SetSourceAssetSubIdentifier("fog_billboard", "mdl")
-            shader.CreateInput("texture_path", Sdf.ValueTypeNames.Asset).Set(
-                Sdf.AssetPath(texture_path)
-            )
             shader.CreateInput("tint", Sdf.ValueTypeNames.Color3f).Set(
-                Gf.Vec3f(
-                    float(appearance.color[0]),
-                    float(appearance.color[1]),
-                    float(appearance.color[2]),
-                )
+                self._gf_color(appearance)
             )
             shader.CreateInput("opacity", Sdf.ValueTypeNames.Float).Set(
-                float(appearance.opacity)
+                float(material_opacity)
             )
             shader.CreateOutput("out", Sdf.ValueTypeNames.Token)
             material.CreateSurfaceOutput("mdl").ConnectToSource(
@@ -419,7 +539,49 @@ class BillboardParticleRenderer(ParticleRenderer):
         except Exception:
             return
 
-    def _bind_material(self, prim, material) -> None:
+    def _disable_shadow_participation(self, prim, Sdf) -> None:
+        self._set_attr_if_needed(
+            prim.CreateAttribute(
+                "primvars:doNotCastShadows",
+                Sdf.ValueTypeNames.Bool,
+            ),
+            True,
+        )
+        self._set_attr_if_needed(
+            prim.CreateAttribute(
+                "rtx:visibility:shadow",
+                Sdf.ValueTypeNames.Bool,
+            ),
+            False,
+        )
+
+    def _set_attr_if_needed(self, attr, value) -> None:
+        if attr.Get() != value:
+            attr.Set(value)
+
+    def _gf_color(self, appearance: ParticleAppearance):
+        Gf = iscctx.get_isaac_context().pxr_gf
+        return Gf.Vec3f(
+            float(appearance.color[0]),
+            float(appearance.color[1]),
+            float(appearance.color[2]),
+        )
+
+    def _bind_material_if_needed(self, prim, material) -> None:
         from pxr import UsdShade
 
+        material_path = material.GetPrim().GetPath()
+        binding = prim.GetRelationship("material:binding")
+        if binding and material_path in binding.GetTargets():
+            return
+
         UsdShade.MaterialBindingAPI(prim).Bind(material)
+
+    def _unbind_material(self, prim) -> None:
+        try:
+            for relationship in prim.GetRelationships():
+                name = relationship.GetName()
+                if name.startswith("material:binding"):
+                    prim.RemoveProperty(name)
+        except Exception:
+            return

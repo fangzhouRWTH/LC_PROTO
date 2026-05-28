@@ -28,6 +28,57 @@ def parse_args():
         "--camera-prim-path",
         default=simulation.DEFAULT_CAMERA_PRIM_PATH,
     )
+    parser.add_argument(
+        "--weather",
+        default=simulation.DEFAULT_WEATHER,
+        choices=simulation.available_weather_names(),
+        help="Weather lighting preset. Omit to choose a random preset.",
+    )
+    parser.add_argument(
+        "--daytime",
+        default=simulation.DEFAULT_DAYTIME,
+        help=(
+            "Preferred default sky time, such as "
+            f"{', '.join(simulation.available_daytime_names())}; "
+            "falls back to a random sky when unavailable for the weather."
+        ),
+    )
+    parser.add_argument(
+        "--sky-texture",
+        type=pathlib.Path,
+        default=None,
+        help="Optional lat-long sky texture/HDRI for the weather dome light.",
+    )
+    parser.add_argument(
+        "--sun-intensity",
+        type=float,
+        default=None,
+        help="Override the weather preset sun intensity.",
+    )
+    parser.add_argument(
+        "--sky-intensity",
+        type=float,
+        default=None,
+        help="Override the weather preset dome light intensity.",
+    )
+    parser.add_argument(
+        "--sky-exposure",
+        type=float,
+        default=None,
+        help="Override the weather preset dome light exposure.",
+    )
+    parser.add_argument(
+        "--weather-time-scale",
+        type=float,
+        default=simulation.DEFAULT_WEATHER_TIME_SCALE,
+        help="Multiplier for time-varying weather lighting.",
+    )
+    parser.add_argument(
+        "--weather-start-time",
+        type=float,
+        default=0.0,
+        help="Initial weather-lighting time in seconds.",
+    )
     args, _ = parser.parse_known_args()
     return args
 
@@ -41,5 +92,13 @@ if __name__ == "__main__":
             robot_name=args.robot_name,
             warmup_frames=args.warmup_frames,
             camera_prim_path=args.camera_prim_path,
+            weather=args.weather,
+            daytime=args.daytime,
+            sky_texture_path=args.sky_texture,
+            sun_intensity=args.sun_intensity,
+            sky_intensity=args.sky_intensity,
+            sky_exposure=args.sky_exposure,
+            weather_time_scale=args.weather_time_scale,
+            weather_start_time=args.weather_start_time,
         )
     )

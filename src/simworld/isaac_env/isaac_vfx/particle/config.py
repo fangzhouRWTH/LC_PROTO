@@ -113,6 +113,11 @@ class ParticleAppearance:
     streak_width: float = 0.018
     billboard_texture_path: str | None = None
     billboard_shader_path: str | None = None
+    billboard_use_mdl_shader: bool = False
+    billboard_opacity_gain: float = 10.0
+    billboard_debug: bool = False
+    billboard_debug_color: Color3 = (1.0, 0.45, 0.05)
+    billboard_debug_opacity: float = 0.5
 
     def validate(self) -> None:
         if not 0.0 <= self.opacity <= 1.0:
@@ -138,6 +143,18 @@ class ParticleAppearance:
         ):
             raise ValueError(
                 "ParticleAppearance.billboard_shader_path cannot be empty."
+            )
+        if self.billboard_opacity_gain < 0.0:
+            raise ValueError(
+                "ParticleAppearance.billboard_opacity_gain cannot be negative."
+            )
+        if len(self.billboard_debug_color) != 3:
+            raise ValueError(
+                "ParticleAppearance.billboard_debug_color must contain 3 values."
+            )
+        if not 0.0 <= self.billboard_debug_opacity <= 1.0:
+            raise ValueError(
+                "ParticleAppearance.billboard_debug_opacity must be between 0 and 1."
             )
 
 
