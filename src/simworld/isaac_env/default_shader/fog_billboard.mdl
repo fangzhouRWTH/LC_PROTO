@@ -1,0 +1,28 @@
+mdl 1.5;
+
+import ::df::*;
+import ::math::*;
+import ::state::*;
+import ::tex::*;
+
+
+export material fog_billboard(
+    uniform texture_2d texture_path = texture_2d(),
+    color tint = color(0.80, 0.83, 0.84),
+    float opacity = 0.075
+) = material(
+    surface: material_surface(
+        scattering: df::diffuse_reflection_bsdf(tint: tint)
+    ),
+    geometry: material_geometry(
+        opacity: math::saturate(
+            opacity
+            * tex::lookup_float4(
+                texture_path,
+                state::texture_coordinate(0).xy,
+                tex::wrap_clamp,
+                tex::wrap_clamp
+            ).a
+        )
+    )
+);

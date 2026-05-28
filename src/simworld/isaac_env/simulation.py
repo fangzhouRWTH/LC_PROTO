@@ -9,6 +9,7 @@ from .isaac_vfx.particle import (
     ParticleEffectManager,
     RainParticleEffect,
     SnowParticleEffect,
+    FogParticleEffect,
 )
 
 from .isaac_graph_vfx import GraphVFXManager, RainGraphParticleEffect
@@ -135,17 +136,19 @@ def run(config: SimulationConfig | None = None):
 
         vfx = ParticleEffectManager(
             [
-                RainParticleEffect(
-                    seed=1,
-                    wind_world=(0.2, 0.2, 0.0),
-                    particle_count=256,
-                    partition_width_segments=2,
-                    partition_height_segments=2,
-                    wind_variation_angle_degrees=10.0,
-                    wind_variation_period_seconds=32.0,
-                    wind_variation_randomness=0.35,
-                ),
+                # RainParticleEffect(
+                #     seed=1,
+                #     wind_world=(0.2, 0.2, 0.0),
+                #     particle_count=512,
+                #     partition_width_segments=2,
+                #     partition_height_segments=2,
+                #     wind_variation_angle_degrees=10.0,
+                #     wind_variation_period_seconds=32.0,
+                #     wind_variation_randomness=0.35,
+                # ),
                 # SnowParticleEffect(name="LightSnow", particle_count=300, seed=2),
+                FogParticleEffect(mode="distant", seed=3),
+                FogParticleEffect(mode="near", density=0.8, seed=4),
             ]
         )
 

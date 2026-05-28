@@ -6,7 +6,7 @@ from typing import Literal, Sequence
 
 Vector3 = tuple[float, float, float]
 Color3 = tuple[float, float, float]
-RendererKind = Literal["points", "streaks"]
+RendererKind = Literal["points", "streaks", "billboard"]
 
 
 @dataclass(frozen=True)
@@ -111,6 +111,8 @@ class ParticleAppearance:
     point_width: float = 0.035
     streak_length: float = 0.55
     streak_width: float = 0.018
+    billboard_texture_path: str | None = None
+    billboard_shader_path: str | None = None
 
     def validate(self) -> None:
         if not 0.0 <= self.opacity <= 1.0:
@@ -123,6 +125,20 @@ class ParticleAppearance:
             raise ValueError("ParticleAppearance.streak_width must be positive.")
         if len(self.color) != 3:
             raise ValueError("ParticleAppearance.color must contain 3 values.")
+        if (
+            self.billboard_texture_path is not None
+            and not self.billboard_texture_path
+        ):
+            raise ValueError(
+                "ParticleAppearance.billboard_texture_path cannot be empty."
+            )
+        if (
+            self.billboard_shader_path is not None
+            and not self.billboard_shader_path
+        ):
+            raise ValueError(
+                "ParticleAppearance.billboard_shader_path cannot be empty."
+            )
 
 
 @dataclass(frozen=True)
@@ -153,7 +169,7 @@ class ParticleEffectConfig:
             raise ValueError("ParticleEffectConfig.name cannot be empty.")
         if self.particle_count <= 0:
             raise ValueError("ParticleEffectConfig.particle_count must be positive.")
-        if self.renderer not in ("points", "streaks"):
+        if self.renderer not in ("points", "streaks", "billboard"):
             raise ValueError(f"Unsupported particle renderer: {self.renderer}")
         if self.effect_type != "particle":
             raise ValueError("ParticleEffectConfig.effect_type must be 'particle'.")

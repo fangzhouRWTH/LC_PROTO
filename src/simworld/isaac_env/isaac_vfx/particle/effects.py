@@ -99,6 +99,11 @@ class ParticleEffect:
         self._apply_turbulence(dt)
         self._wrap_outside_particles(camera_position, basis)
         positions_world = self._render_positions_world(basis)
+        widths, opacities = self._render_attributes(
+            camera_position,
+            basis,
+            positions_world,
+        )
 
         return self._renderer.render(
             stage,
@@ -106,6 +111,9 @@ class ParticleEffect:
             positions_world,
             self.config.appearance,
             self._mean_velocity_world(),
+            widths=widths,
+            opacities=opacities,
+            camera_basis=basis,
         )
 
     def update_from_camera_view(self, dt: float, camera_view: CameraView, stage=None):
@@ -293,6 +301,10 @@ class ParticleEffect:
             basis,
         )
         self._speed_scale[outside] = self._random_speed_scale(count)
+        self._on_particles_recycled(outside, count)
+
+    def _on_particles_recycled(self, outside: np.ndarray, count: int) -> None:
+        del outside, count
 
     def _tile_offsets_world(self, basis) -> np.ndarray:
         partition = self.config.partition
@@ -326,6 +338,15 @@ class ParticleEffect:
         ).reshape(-1, 3)
         return positions[: self.config.particle_count].astype(np.float32, copy=False)
 
+    def _render_attributes(
+        self,
+        camera_position,
+        basis,
+        positions_world: np.ndarray,
+    ) -> tuple[np.ndarray | None, np.ndarray | None]:
+        del camera_position, basis, positions_world
+        return None, None
+
 
 class RainParticleEffect(ParticleEffect):
     def __init__(
@@ -354,13 +375,13 @@ class RainParticleEffect(ParticleEffect):
             ),
             appearance=ParticleAppearance(
                 color=(0.62, 0.76, 1.0),
-                opacity=0.55,
+                opacity=0.01,
                 point_width=0.025,
-                streak_length=0.85,
-                streak_width=0.012,
+                streak_length=0.45,
+                streak_width=0.010,
             ),
             renderer="streaks",
-            speed=5.0,
+            speed=8.1,
             speed_jitter=0.35,
             direction_world=(0.0, 0.0, -1.0),
             wind_world=wind_world,
@@ -424,19 +445,65 @@ class SnowParticleEffect(ParticleEffect):
 
 
 class FogParticleEffect(ParticleEffect):
+    """Camera-local fog built from soft USD point particles.
+
+    ``mode="distant"`` uses large, sparse particles tiled across the camera
+    volume for low-cost background haze. ``mode="near"`` uses more unique,
+    smaller particles with stronger per-particle variation for close inspection.
+    """
+
+    _MODE_ALIASES = {
+        "distant": "distant",
+        "far": "distant",
+        "low": "distant",
+        "near": "near",
+        "fine": "near",
+        "detailed": "near",
+    }
+
     def __init__(
         self,
         name: str = "Fog",
-        particle_count: int = 520,
+        particle_count: int | None = None,
         root_path: str = "/World/VFX",
         wind_world=(0.08, 0.03, 0.0),
         seed: int | None = None,
-        partition_width_segments: int = 1,
-        partition_height_segments: int = 1,
+        partition_width_segments: int | None = None,
+        partition_height_segments: int | None = None,
         wind_variation_angle_degrees: float = 0.0,
-        wind_variation_period_seconds: float = 14.0,
-        wind_variation_randomness: float = 0.4,
+        wind_variation_period_seconds: float | None = None,
+        wind_variation_randomness: float | None = None,
+        mode: str = "distant",
+        density: float = 1.0,
+        renderer: str | None = None,
+        billboard_texture_path: str | None = None,
+        billboard_shader_path: str | None = None,
     ):
+        self.mode = self._normalize_mode(mode)
+        self.density = float(density)
+        if self.density <= 0.0:
+            raise ValueError("FogParticleEffect.density must be positive.")
+
+        preset = self._mode_preset(self.mode)
+        if particle_count is None:
+            particle_count = preset["particle_count"]
+        if partition_width_segments is None:
+            partition_width_segments = preset["partition_width_segments"]
+        if partition_height_segments is None:
+            partition_height_segments = preset["partition_height_segments"]
+        if wind_variation_period_seconds is None:
+            wind_variation_period_seconds = preset["wind_variation_period_seconds"]
+        if wind_variation_randomness is None:
+            wind_variation_randomness = preset["wind_variation_randomness"]
+        if renderer is None:
+            renderer = preset["renderer"]
+
+        self._fog_near_fade_distance = preset["near_fade_distance"]
+        self._fog_far_fade_distance = preset["far_fade_distance"]
+        self._fog_depth_size_gain = preset["depth_size_gain"]
+        self._fog_height_softness = preset["height_softness"]
+        self._fog_max_opacity = preset["max_opacity"]
+
         config = ParticleEffectConfig(
             name=name,
             particle_count=particle_count,
@@ -445,19 +512,16 @@ class FogParticleEffect(ParticleEffect):
                 width_segments=partition_width_segments,
                 height_segments=partition_height_segments,
             ),
-            volume=ParticleVolume(
-                width=24.0, height=11.0, depth=22.0, near_distance=1.2
+            volume=preset["volume"],
+            appearance=replace(
+                preset["appearance"],
+                opacity=min(1.0, preset["appearance"].opacity * self.density),
+                billboard_texture_path=billboard_texture_path,
+                billboard_shader_path=billboard_shader_path,
             ),
-            appearance=ParticleAppearance(
-                color=(0.78, 0.82, 0.84),
-                opacity=0.18,
-                point_width=0.7,
-                streak_length=0.4,
-                streak_width=0.15,
-            ),
-            renderer="points",
-            speed=0.08,
-            speed_jitter=0.8,
+            renderer=renderer,
+            speed=preset["speed"],
+            speed_jitter=preset["speed_jitter"],
             direction_world=(0.0, 0.0, 0.0),
             wind_world=wind_world,
             wind_variation=ParticleWindVariation(
@@ -465,10 +529,227 @@ class FogParticleEffect(ParticleEffect):
                 period_seconds=wind_variation_period_seconds,
                 randomness=wind_variation_randomness,
             ),
-            turbulence=0.12,
+            turbulence=preset["turbulence"],
             seed=seed,
         )
         super().__init__(config)
+        self._reset_fog_particle_state()
+
+    @classmethod
+    def _normalize_mode(cls, mode: str) -> str:
+        normalized = cls._MODE_ALIASES.get(mode.lower())
+        if normalized is None:
+            valid = ", ".join(sorted(cls._MODE_ALIASES))
+            raise ValueError(
+                f"Unsupported fog mode {mode!r}. Expected one of: {valid}."
+            )
+        return normalized
+
+    @staticmethod
+    def _mode_preset(mode: str) -> dict[str, object]:
+        if mode == "distant":
+            return {
+                "particle_count": 720,
+                "partition_width_segments": 4,
+                "partition_height_segments": 2,
+                "renderer": "points",
+                "volume": ParticleVolume(
+                    width=34.0,
+                    height=12.0,
+                    depth=58.0,
+                    near_distance=7.5,
+                ),
+                "appearance": ParticleAppearance(
+                    color=(0.76, 0.80, 0.82),
+                    opacity=0.055,
+                    point_width=1.9,
+                    streak_length=0.4,
+                    streak_width=0.15,
+                ),
+                "speed": 0.035,
+                "speed_jitter": 0.55,
+                "turbulence": 0.035,
+                "wind_variation_period_seconds": 38.0,
+                "wind_variation_randomness": 0.35,
+                "near_fade_distance": 12.0,
+                "far_fade_distance": 18.0,
+                "depth_size_gain": 0.85,
+                "height_softness": 0.42,
+                "max_opacity": 0.12,
+            }
+
+        return {
+            "particle_count": 1500,
+            "partition_width_segments": 1,
+            "partition_height_segments": 1,
+            "renderer": "billboard",
+            "volume": ParticleVolume(
+                width=20.0,
+                height=9.0,
+                depth=24.0,
+                near_distance=0.7,
+            ),
+            "appearance": ParticleAppearance(
+                color=(0.80, 0.83, 0.84),
+                opacity=0.075,
+                point_width=0.42,
+                streak_length=0.25,
+                streak_width=0.08,
+            ),
+            "speed": 0.065,
+            "speed_jitter": 0.85,
+            "turbulence": 0.16,
+            "wind_variation_period_seconds": 18.0,
+            "wind_variation_randomness": 0.5,
+            "near_fade_distance": 2.8,
+            "far_fade_distance": 7.5,
+            "depth_size_gain": 0.35,
+            "height_softness": 0.52,
+            "max_opacity": 0.16,
+        }
+
+    def reset(self, seed: int | None = None) -> None:
+        super().reset(seed=seed)
+        self._reset_fog_particle_state()
+
+    def _reset_fog_particle_state(self) -> None:
+        count = self._base_particle_count
+        self._fog_size_scale = self._random_fog_size_scale(count)
+        self._fog_opacity_scale = self._random_fog_opacity_scale(count)
+        self._fog_swirl_phase = self._rng.uniform(
+            0.0,
+            2.0 * np.pi,
+            (count, 3),
+        ).astype(np.float32)
+        self._fog_swirl_speed = self._rng.uniform(0.45, 1.25, (count, 1)).astype(
+            np.float32
+        )
+
+    def _random_fog_size_scale(self, count: int) -> np.ndarray:
+        if self.mode == "distant":
+            return self._rng.uniform(0.72, 1.85, count).astype(np.float32)
+        return self._rng.uniform(0.55, 1.35, count).astype(np.float32)
+
+    def _random_fog_opacity_scale(self, count: int) -> np.ndarray:
+        if self.mode == "distant":
+            return self._rng.uniform(0.45, 1.15, count).astype(np.float32)
+        return self._rng.uniform(0.35, 1.3, count).astype(np.float32)
+
+    def _random_local_positions(self, count: int) -> np.ndarray:
+        positions = super()._random_local_positions(count)
+        mins, spans = self._local_bounds()
+        height = self.config.volume.height
+
+        if self.mode == "distant":
+            y = self._rng.normal(-height * 0.04, height * 0.26, count)
+            z01 = self._rng.power(1.85, count)
+        else:
+            y = self._rng.normal(-height * 0.12, height * 0.34, count)
+            near_wisps = self._rng.random(count) < 0.38
+            z01 = np.where(
+                near_wisps,
+                self._rng.power(0.75, count),
+                self._rng.power(1.25, count),
+            )
+
+        positions[:, 1] = np.clip(y, mins[1], mins[1] + spans[1])
+        positions[:, 2] = mins[2] + spans[2] * z01
+        return positions.astype(np.float32, copy=False)
+
+    def _apply_turbulence(self, dt: float) -> None:
+        if (
+            self._positions_world is None
+            or self.config.turbulence <= 0.0
+            or dt <= 0.0
+        ):
+            return
+
+        if len(self._fog_swirl_phase) != self._base_particle_count:
+            self._reset_fog_particle_state()
+
+        phase = self._fog_swirl_phase
+        t = self._time * self._fog_swirl_speed[:, 0]
+        swirl = np.stack(
+            (
+                np.sin(t + phase[:, 0]),
+                0.65 * np.cos(t * 0.73 + phase[:, 1]),
+                0.22 * np.sin(t * 0.41 + phase[:, 2]),
+            ),
+            axis=1,
+        ).astype(np.float32)
+        self._positions_world += swirl * float(self.config.turbulence) * dt
+
+    def _on_particles_recycled(self, outside: np.ndarray, count: int) -> None:
+        self._fog_size_scale[outside] = self._random_fog_size_scale(count)
+        self._fog_opacity_scale[outside] = self._random_fog_opacity_scale(count)
+        self._fog_swirl_phase[outside] = self._rng.uniform(
+            0.0,
+            2.0 * np.pi,
+            (count, 3),
+        ).astype(np.float32)
+        self._fog_swirl_speed[outside] = self._rng.uniform(
+            0.45,
+            1.25,
+            (count, 1),
+        ).astype(np.float32)
+
+    def _expanded_fog_values(self, values: np.ndarray) -> np.ndarray:
+        if self.config.partition.tile_count == 1:
+            return values[: self.config.particle_count]
+
+        expanded = np.repeat(values, self.config.partition.tile_count, axis=0)
+        return expanded[: self.config.particle_count]
+
+    def _render_attributes(
+        self,
+        camera_position,
+        basis,
+        positions_world: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        positions_local = world_to_local(positions_world, camera_position, basis)
+        volume = self.config.volume
+        near = float(volume.near_distance)
+        far = near + float(volume.depth)
+        z = np.clip(positions_local[:, 2], near, far)
+        depth01 = (z - near) / max(float(volume.depth), 1e-6)
+
+        near_fade = np.clip(
+            (z - near) / max(float(self._fog_near_fade_distance), 1e-6),
+            0.0,
+            1.0,
+        )
+        far_fade = np.clip(
+            (far - z) / max(float(self._fog_far_fade_distance), 1e-6),
+            0.0,
+            1.0,
+        )
+        vertical01 = np.abs(positions_local[:, 1]) / max(
+            float(volume.height) * 0.5,
+            1e-6,
+        )
+        height_fade = np.clip(
+            1.08 - float(self._fog_height_softness) * np.power(vertical01, 1.35),
+            0.18,
+            1.08,
+        )
+
+        size_scale = self._expanded_fog_values(self._fog_size_scale)
+        opacity_scale = self._expanded_fog_values(self._fog_opacity_scale)
+
+        widths = (
+            float(self.config.appearance.point_width)
+            * size_scale
+            * (1.0 + float(self._fog_depth_size_gain) * depth01)
+        )
+        opacities = (
+            float(self.config.appearance.opacity)
+            * opacity_scale
+            * near_fade
+            * far_fade
+            * height_fade
+        )
+        opacities = np.clip(opacities, 0.0, float(self._fog_max_opacity))
+        return widths.astype(np.float32), opacities.astype(np.float32)
 
 
 def with_overrides(config: ParticleEffectConfig, **kwargs) -> ParticleEffect:
