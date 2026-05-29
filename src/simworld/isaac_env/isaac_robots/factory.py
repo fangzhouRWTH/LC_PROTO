@@ -6,6 +6,7 @@ from . import spot_demo
 class SimRobot(Protocol):
     initialized: bool
     need_reinit: bool
+    root_prim_path: str
 
     def spawn(self, position): ...
 

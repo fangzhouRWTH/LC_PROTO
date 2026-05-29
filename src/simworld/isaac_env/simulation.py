@@ -4,6 +4,10 @@ from .isaac_scene import scene
 from .isaac_scene import world
 from .isaac_robots import factory as robot_factory
 from .isaac_agents import factory as agent_factory
+from .isaac_sensor_sim import (
+    available_sensor_profiles as _available_sensor_profiles,
+    create_sensor_rig,
+)
 from engine import dynamic
 
 from .isaac_vfx.particle import (
@@ -56,6 +60,7 @@ DEFAULT_FOG_BILLBOARD_OPACITY_GAIN = 10.0
 DEFAULT_WEATHER = None
 DEFAULT_DAYTIME = None
 DEFAULT_WEATHER_TIME_SCALE = 1.0
+DEFAULT_SENSOR_PROFILE = "none"
 
 
 @dataclass
@@ -87,6 +92,7 @@ class SimulationConfig:
     sky_exposure: float | None = None
     weather_start_time: float = 0.0
     weather_time_scale: float = DEFAULT_WEATHER_TIME_SCALE
+    sensor_profile: str | None = DEFAULT_SENSOR_PROFILE
 
 
 def available_robot_types() -> tuple[str, ...]:
@@ -103,6 +109,10 @@ def available_weather_names() -> tuple[str, ...]:
 
 def available_daytime_names() -> tuple[str, ...]:
     return _available_daytime_names()
+
+
+def available_sensor_profiles() -> tuple[str, ...]:
+    return _available_sensor_profiles()
 
 
 def _make_dynamic_plan_config(config: SimulationConfig) -> dynamic.DynamicPlanConfig:
@@ -183,7 +193,10 @@ def run(config: SimulationConfig | None = None):
     try:
         context.initialize_expansion()
 
-        state = {"base_command": np.zeros(3, dtype=np.float32)}
+        state = {
+            "base_command": np.zeros(3, dtype=np.float32),
+            "sim_time": 0.0,
+        }
         ctrl = controller.KeyboardVelocityController()
 
         sim_scene = scene.SimScene(config.usd_path)
@@ -229,10 +242,24 @@ def run(config: SimulationConfig | None = None):
 
         robot = robot_factory.create_robot(config.robot_type, config.robot_name)
         robot.spawn(position=spawn_position)
-        robot.set_chase_camera(
-            chase=config.chase_camera,
-            cam_prim_path=config.camera_prim_path,
+
+        sensor_rig = create_sensor_rig(
+            config.sensor_profile,
+            robot_type=config.robot_type,
+            robot_root_prim_path=robot.root_prim_path,
         )
+        active_camera_prim_path = config.camera_prim_path
+        if sensor_rig is None:
+            robot.set_chase_camera(
+                chase=config.chase_camera,
+                cam_prim_path=config.camera_prim_path,
+            )
+        else:
+            sensor_rig.initialize()
+            sensor_camera_path = sensor_rig.active_viewport_camera_prim_path
+            if sensor_camera_path is not None:
+                active_camera_prim_path = sensor_camera_path
+            robot.set_chase_camera(chase=False, cam_prim_path=config.camera_prim_path)
 
         particle_effects = []
         if _is_rain_weather(weather_lighting.config.name):
@@ -302,7 +329,7 @@ def run(config: SimulationConfig | None = None):
             sim_scene.update()
             sim_world.update_state()
 
-            eye, target, camera_up = _get_camera_look_at(config.camera_prim_path)
+            eye, target, camera_up = _get_camera_look_at(active_camera_prim_path)
             camera = CameraView.from_look_at(
                 position=eye,
                 target=target,
@@ -330,6 +357,9 @@ def run(config: SimulationConfig | None = None):
 
             if sim_world.is_playing() and robot.initialized:
                 robot.step(state["base_command"])
+                if sensor_rig is not None:
+                    sensor_rig.update(state["sim_time"], DEFAULT_VFX_DT)
+                    state["sim_time"] += DEFAULT_VFX_DT
                 sim_world.step(render=True)
 
     finally:

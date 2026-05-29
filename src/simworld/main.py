@@ -138,6 +138,12 @@ def parse_args():
         default=0.0,
         help="Initial weather-lighting time in seconds.",
     )
+    parser.add_argument(
+        "--sensor-profile",
+        default=simulation.DEFAULT_SENSOR_PROFILE,
+        choices=simulation.available_sensor_profiles(),
+        help="Optional pseudo sensor profile to attach to the robot.",
+    )
     args, _ = parser.parse_known_args()
     return args
 
@@ -167,5 +173,6 @@ if __name__ == "__main__":
             sky_exposure=args.sky_exposure,
             weather_time_scale=args.weather_time_scale,
             weather_start_time=args.weather_start_time,
+            sensor_profile=args.sensor_profile,
         )
     )
