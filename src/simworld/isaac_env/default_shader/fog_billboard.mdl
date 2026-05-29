@@ -1,0 +1,19 @@
+mdl 1.5;
+
+import ::df::*;
+import ::math::*;
+
+
+export material fog_billboard(
+    color tint = color(0.80, 0.83, 0.84),
+    float opacity = 0.075
+) = material(
+    thin_walled: true,
+    surface: material_surface(
+        scattering: df::diffuse_reflection_bsdf(tint: tint)
+    ),
+    geometry: material_geometry(
+        displacement: float3(0.0),
+        cutout_opacity: math::saturate(opacity)
+    )
+);

@@ -116,12 +116,8 @@ class SimScene:
         self.generated_asset_prim_paths = allocation_result.prim_paths
 
         # Generated/referenced assets can bring their own lights after the first
-        # cleanup pass. Keep lighting controlled by the scene preset.
+        # cleanup pass. Keep lighting controlled by isaac_vfx.weather.
         tools.deactivate_all_lights(self.stage)
-        if self.sky_texture_path is None:
-            tools.add_natural_light(self.stage)
-        else:
-            tools.add_natural_light(self.stage, sky_texture_path=self.sky_texture_path)
 
         return par_res
 

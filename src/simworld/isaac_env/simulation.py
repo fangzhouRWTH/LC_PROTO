@@ -11,9 +11,15 @@ from .isaac_vfx.particle import (
     ParticleEffectManager,
     RainParticleEffect,
     SnowParticleEffect,
+    FogParticleEffect,
 )
 
 from .isaac_graph_vfx import GraphVFXManager, RainGraphParticleEffect
+from .isaac_vfx import (
+    WeatherLightingManager,
+    available_daytime_names as _available_daytime_names,
+    available_weather_names as _available_weather_names,
+)
 
 from dataclasses import dataclass
 import numpy as np
@@ -45,6 +51,11 @@ DEFAULT_DYNAMIC_PEDESTRIAN_SPEED_MPS = (
 )
 DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS = _DEFAULT_DYNAMIC_PLAN_CONFIG.vehicle_speed_mps
 DEFAULT_DYNAMIC_SPAWN_TIME_S = _DEFAULT_DYNAMIC_PLAN_CONFIG.default_spawn_time_s
+DEFAULT_FOG_BILLBOARD_DEBUG = False
+DEFAULT_FOG_BILLBOARD_OPACITY_GAIN = 10.0
+DEFAULT_WEATHER = None
+DEFAULT_DAYTIME = None
+DEFAULT_WEATHER_TIME_SCALE = 1.0
 
 
 @dataclass
@@ -66,6 +77,16 @@ class SimulationConfig:
     fallback_spawn_position: tuple[float, float, float] = (
         DEFAULT_FALLBACK_SPAWN_POSITION
     )
+    fog_billboard_debug: bool = DEFAULT_FOG_BILLBOARD_DEBUG
+    fog_billboard_opacity_gain: float = DEFAULT_FOG_BILLBOARD_OPACITY_GAIN
+    weather: str | None = DEFAULT_WEATHER
+    daytime: str | None = DEFAULT_DAYTIME
+    sky_texture_path: pathlib.Path | None = None
+    sun_intensity: float | None = None
+    sky_intensity: float | None = None
+    sky_exposure: float | None = None
+    weather_start_time: float = 0.0
+    weather_time_scale: float = DEFAULT_WEATHER_TIME_SCALE
 
 
 def available_robot_types() -> tuple[str, ...]:
@@ -76,6 +97,14 @@ def available_dynamic_agent_backends() -> tuple[str, ...]:
     return agent_factory.available_dynamic_agent_backends()
 
 
+def available_weather_names() -> tuple[str, ...]:
+    return _available_weather_names()
+
+
+def available_daytime_names() -> tuple[str, ...]:
+    return _available_daytime_names()
+
+
 def _make_dynamic_plan_config(config: SimulationConfig) -> dynamic.DynamicPlanConfig:
     return dynamic.DynamicPlanConfig(
         max_pedestrian_actors=max(0, int(config.dynamic_max_pedestrian_actors)),
@@ -84,6 +113,10 @@ def _make_dynamic_plan_config(config: SimulationConfig) -> dynamic.DynamicPlanCo
         vehicle_speed_mps=max(0.0, float(config.dynamic_vehicle_speed_mps)),
         default_spawn_time_s=max(0.0, float(config.dynamic_spawn_time_s)),
     )
+
+
+def _is_rain_weather(weather_name: str) -> bool:
+    return weather_name.lower() in {"rain", "storm"}
 
 
 def _select_spawn_position(spawn_points, fallback_position):
@@ -162,6 +195,18 @@ def run(config: SimulationConfig | None = None):
             build_dynamic_plan=config.enable_dynamic_agents,
         )
 
+        weather_lighting = WeatherLightingManager.from_weather(
+            config.weather,
+            daytime=config.daytime,
+            sky_texture_path=config.sky_texture_path,
+            sun_intensity=config.sun_intensity,
+            sky_intensity=config.sky_intensity,
+            sky_exposure=config.sky_exposure,
+            time_scale=config.weather_time_scale,
+            start_time_seconds=config.weather_start_time,
+        )
+        weather_lighting.apply(sim_scene.stage)
+
         agent_manager = agent_factory.create_dynamic_agent_manager(
             config.dynamic_agent_backend
         )
@@ -172,6 +217,7 @@ def run(config: SimulationConfig | None = None):
             print("[INFO] Dynamic agents disabled.")
 
         for _ in range(config.warmup_frames):
+            weather_lighting.update(DEFAULT_VFX_DT)
             sim_scene.update()
 
         spawn_position = _select_spawn_position(
@@ -188,21 +234,55 @@ def run(config: SimulationConfig | None = None):
             cam_prim_path=config.camera_prim_path,
         )
 
-        vfx = ParticleEffectManager(
-            [
+        particle_effects = []
+        if _is_rain_weather(weather_lighting.config.name):
+            particle_effects.append(
                 RainParticleEffect(
                     seed=1,
                     wind_world=(0.2, 0.2, 0.0),
-                    particle_count=256,
+                    particle_count=512,
                     partition_width_segments=2,
                     partition_height_segments=2,
                     wind_variation_angle_degrees=10.0,
                     wind_variation_period_seconds=32.0,
                     wind_variation_randomness=0.35,
-                ),
+                )
+            )
+        particle_effects.extend(
+            [
                 # SnowParticleEffect(name="LightSnow", particle_count=300, seed=2),
+                # FogParticleEffect(
+                #     name="DistantFogBillboard",
+                #     mode="distant",
+                #     density=0.65,
+                #     renderer="billboard",
+                #     particle_count=360,
+                #     # billboard_debug=config.fog_billboard_debug,
+                #     billboard_debug=True,
+                #     seed=3,
+                #     wind_world=(0.06, 0.02, 0.0),
+                #     wind_variation_angle_degrees=8.0,
+                #     wind_variation_period_seconds=36.0,
+                #     wind_variation_randomness=0.30,
+                # ),
+                # FogParticleEffect(
+                #     name="NearFogBillboard",
+                #     mode="near",
+                #     density=0.55,
+                #     particle_count=200,
+                #     # billboard_debug=config.fog_billboard_debug,
+                #     billboard_debug=False,
+                #     # billboard_use_mdl_shader=True,
+                #     billboard_opacity_gain=config.fog_billboard_opacity_gain,
+                #     seed=4,
+                #     wind_world=(0.04, 0.02, 0.0),
+                #     wind_variation_angle_degrees=12.0,
+                #     wind_variation_period_seconds=22.0,
+                #     wind_variation_randomness=0.45,
+                # ),
             ]
         )
+        vfx = ParticleEffectManager(particle_effects)
 
         def simworld_callback(stepsize):
             if not robot.initialized:
@@ -231,6 +311,7 @@ def run(config: SimulationConfig | None = None):
 
             vfx.update_from_camera_view(DEFAULT_VFX_DT, camera)
             # graph_vfx.update_from_camera_view(DEFAULT_VFX_DT, camera)
+            weather_lighting.update(DEFAULT_VFX_DT)
 
             if sim_world.is_stopped():
                 robot.mark_reinit_required()
