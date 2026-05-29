@@ -1,9 +1,53 @@
 # Isaac Sensor Sim
 
-`isaac_sensor_sim` is a pseudo-sensor runtime. It is intentionally separate
-from robot policy code and from real Isaac RTX sensor simulation. A sensor reads
-host prim poses and optional scene labels, then emits structured frames that
-algorithm code can consume.
+`isaac_sensor_sim` is the pseudo-sensor runtime for SimWorld. It provides
+robot-decoupled sensor modules that can be mounted on a robot, attached to a
+scene prim, or used as viewport inputs without embedding sensor logic inside a
+robot adapter.
+
+The package is intentionally separate from real Isaac RTX sensor simulation. A
+pseudo sensor may read prim poses, renderer state, or optional external labels,
+then emit structured `SensorFrame` objects for downstream algorithm code. Some
+sensors also control the active viewport so switching sensors has an immediate
+visual effect during interactive simulation.
+
+## Responsibilities
+
+The module owns:
+
+- Sensor lifecycle: `initialize()`, `activate()`, `deactivate()`, and `update()`.
+- Sensor frame contracts: stable `SensorFrame` outputs with pose, timestamp,
+  data payload, and metadata.
+- Sensor mounting: reusable `SensorMountSpec` definitions that keep sensors
+  independent from robot implementation details.
+- Sensor rig management: grouped sensors, active sensor selection, and viewport
+  camera switching.
+- Viewport and renderer control: active USD camera selection, SyntheticData
+  render-var display activation, and restoration when sensors are deactivated.
+- External label contracts for pseudo sensors that cannot infer useful data from
+  geometry alone.
+
+The module should not own robot policy code, route planning, scene generation,
+or asset placement. Those systems should provide poses, labels, or scene state
+through explicit interfaces.
+
+## Current Package Layout
+
+```text
+isaac_sensor_sim/
+  base.py                 # PseudoSensor base class
+  frame.py                # Pose3D and SensorFrame contracts
+  mount.py                # SensorMountSpec and prim path helpers
+  manager.py              # SensorRig lifecycle and active sensor switching
+  camera_utils.py         # Viewport camera and SyntheticData display helpers
+  labels.py               # External object/raster label contracts
+  pose_provider.py        # World pose lookup for USD prims
+  presets.py              # Built-in sensor profile factory
+  sensors/
+    chase_camera.py       # Follow-view viewport camera sensor
+    viewport_camera.py    # Mounted viewport camera sensor
+    depth_camera.py       # Mounted pseudo depth camera sensor
+```
 
 ## Runtime Contract
 
@@ -20,48 +64,114 @@ data
 meta
 ```
 
-Viewport cameras are also sensors. The default Spot rig contains:
+`data` contains sensor-specific output. `meta` describes how the output was
+produced and whether the sensor requires renderer control or external labels.
+
+Recommended common metadata fields:
 
 ```text
-follow_view
-  A chase camera sensor that owns its own USD camera prim under
-  /World/SimWorldSensors. It follows the robot body and is the default active
-  viewport input.
-
-spot_front_view
-  A mounted preview camera under the Spot body. It approximates a forward-facing
-  body camera and can be activated through the same rig switching path.
-
-spot_depth_view
-  A mounted pseudo depth camera under the Spot body. It owns a USD camera for
-  viewport framing and emits a `float32` depth image in meters in
-  `SensorFrame.data["depth_m"]`. When activated, it switches the active viewport
-  display to `DistanceToCameraSDDisplay`.
+visual_output
+visualization_mode
+requires_renderer_control
+requires_external_labels
 ```
 
-The framework intentionally avoids using `/OmniverseKit_Persp` for the default
-follow view. That scene camera remains only as a fallback when sensor profiles
-are disabled.
+## Sensor Rigs And Viewport Switching
 
-Use `SensorRig.activate(sensor_id)` or `SensorRig.activate_next_viewport_camera()`
-to switch the viewport source. Activation and deactivation are responsible for
-applying and restoring viewport, renderer, material, or render-product state.
+`SensorRig` groups sensors and owns active sensor switching:
 
-Depth camera frame output is currently pseudo data, not RTX/Replicator depth.
-The active viewport visualization uses Isaac SyntheticData's depth display
-render var plus its post-combine path so sensor switching has an immediate
-visual effect. The frame data contract is:
+```text
+initialize()
+activate(sensor_id)
+activate_next_viewport_camera()
+update(timestamp, dt)
+active_sensor
+active_viewport_camera_prim_path
+```
+
+Activation is the boundary where a sensor may apply viewport state, material
+overrides, render products, SyntheticData render vars, or other renderer
+settings. Deactivation must restore any state changed by activation.
+
+The default Spot profile no longer uses `/OmniverseKit_Persp` as the follow
+view. It creates sensor-owned camera prims instead. `/OmniverseKit_Persp`
+remains only as a fallback if sensor profiles are disabled.
+
+## Current Built-In Sensors
+
+### `follow_view`
+
+Type: `ChaseViewportCameraSensor`
+
+This sensor creates a USD camera under `/World/SimWorldSensors`, follows the
+robot body, and acts as the default active viewport input for the Spot demo.
+The follow camera is part of the sensor rig rather than the robot adapter, so
+robots remain responsible only for movement and policy execution.
+
+### `spot_front_view`
+
+Type: `MountedViewportCameraSensor`
+
+This sensor creates a forward-facing USD camera under the Spot body. It is a
+simple visual preview camera and does not require renderer control or external
+labels.
+
+### `spot_depth_view`
+
+Type: `MountedPseudoDepthCameraSensor`
+
+This sensor creates a forward-facing depth-camera prim under the Spot body. It
+emits a pseudo `float32` depth image in meters through
+`SensorFrame.data["depth_m"]`.
+
+When activated, it also switches the active viewport display to Isaac
+SyntheticData's `DistanceToCameraSDDisplay` render var. This makes the viewport
+visibly switch away from RGB when the depth sensor is selected.
+
+Depth frame contract:
 
 ```text
 depth_m: float32 array shaped [height, width], meters
 depth_resolution: [width, height]
 depth_encoding: float32_meters
 near_m / far_m: valid clipping range in meters
+invalid_value: 0.0
 statistics: min_m / max_m / mean_m
 ```
 
-Use `--sensor-profile spot_depth_camera` for a depth-only rig, or keep the
-default rig and start from it with `--active-sensor spot_depth_view`.
+The current depth values are pseudo data generated by a deterministic planar
+gradient model. The viewport visualization uses SyntheticData render-var
+display, but the emitted `depth_m` array is not yet real RTX/Replicator depth.
+
+## Built-In Sensor Profiles
+
+Profiles are created through `create_sensor_rig()` in `presets.py`.
+
+```text
+default / spot_camera_suite
+  Sensors: follow_view, spot_front_view, spot_depth_view
+  Active sensor: follow_view
+
+follow_camera / chase_camera
+  Sensors: follow_view
+
+spot_front_camera
+  Sensors: spot_front_view
+
+spot_depth_camera / depth
+  Sensors: spot_depth_view
+
+none / off
+  No sensor rig. The simulation falls back to the configured camera prim path.
+```
+
+Example runs:
+
+```bash
+scripts/run_sim.sh --sensor-profile default
+scripts/run_sim.sh --sensor-profile default --active-sensor spot_depth_view
+scripts/run_sim.sh --sensor-profile spot_depth_camera --active-sensor spot_depth_view
+```
 
 ## External Label Inputs
 
@@ -116,6 +226,10 @@ requires_external_labels: true | false
 visualization_mode: data_only | viewport_camera | material_override | render_product
 ```
 
+Renderer-controlled sensors must restore their state in `deactivate()`.
+Examples include viewport camera selection, SyntheticData display render vars,
+temporary material overrides, render mode changes, or render product creation.
+
 For semantic segmentation there are three viable modes:
 
 ```text
@@ -132,6 +246,163 @@ render_product
   to real rendering, but it couples the sensor to renderer configuration.
 ```
 
-Sensor switching should call `activate()` and `deactivate()` so any viewport
-camera, material override, render mode, or render product state is applied and
-restored in one place.
+## Recommended Visual Sensor Roadmap
+
+The next foundational sensors should prioritize immediate visual feedback and
+shared implementation patterns.
+
+### 1. Render-Var Viewport Sensor Base
+
+Create a reusable `RenderVarViewportSensor` for sensors that differ mainly by
+SyntheticData render var and display mode. Depth, normal, semantic, instance,
+and motion sensors can share this base.
+
+Responsibilities:
+
+- Create or reference a camera prim.
+- Activate a SyntheticData display template.
+- Set `viewport.display_render_var`.
+- Restore previous display state on deactivation.
+- Emit a frame that names the render var, display render var, resolution, and
+  renderer-control requirements.
+
+### 2. Semantic Segmentation Sensor
+
+Viewport output: class-color segmentation map.
+
+Frame output:
+
+```text
+class_map
+palette
+class_id_to_name
+camera_frame_id
+```
+
+Input requirements:
+
+- Either semantic labels on USD prims, or an external `ObjectLabelBundle`.
+- Optional material override mode if immediate viewport colorization is needed
+  without Replicator annotators.
+
+This is the best next module for validating label-driven sensors and
+activation-time renderer state changes.
+
+### 3. Instance Segmentation Sensor
+
+Viewport output: one color per instance.
+
+Frame output:
+
+```text
+instance_map
+instance_id_to_prim_path
+class_id
+class_name
+```
+
+Input requirements:
+
+- Instance identifiers from prim paths, scene labels, or a generated object
+  registry.
+
+Most of the semantic segmentation infrastructure should be reusable.
+
+### 4. Normal Camera Sensor
+
+Viewport output: RGB normal visualization.
+
+Frame output:
+
+```text
+normal_map
+coordinate_frame
+camera_frame_id
+```
+
+Input requirements:
+
+- No external labels.
+- Renderer render-var support.
+
+This is a good low-friction sensor after `RenderVarViewportSensor` exists.
+
+### 5. Detection Box Sensor
+
+Viewport output: 2D and 3D boxes with optional labels.
+
+Frame output:
+
+```text
+bbox2d
+bbox3d
+class_id
+class_name
+confidence
+track_id
+```
+
+Input requirements:
+
+- `ObjectLabelBundle`, USD semantic labels, or a scene object registry.
+
+This sensor is useful for debugging perception and tracking pipelines without
+requiring pixel-level masks.
+
+### 6. Pseudo LiDAR / Point Cloud Sensor
+
+Viewport output: point cloud or debug rays.
+
+Frame output:
+
+```text
+points_xyz
+ranges
+intensity
+ring_id
+timestamp
+```
+
+Input requirements:
+
+- Initially can use procedural pseudo points or scene labels.
+- Later can be replaced with PhysX raycasts or RTX LiDAR.
+
+### 7. BEV / Occupancy Grid Sensor
+
+Viewport output: top-down occupancy, cost, or traversability map.
+
+Frame output:
+
+```text
+occupancy_map
+cost_map
+ego_pose
+resolution_m_per_cell
+origin_world
+```
+
+Input requirements:
+
+- Static scene geometry, dynamic agent state, or label bundles.
+
+This sensor is especially useful for navigation and planning modules.
+
+### 8. Optical Flow / Motion Sensor
+
+Viewport output: color-coded motion vectors or arrows.
+
+Frame output:
+
+```text
+flow_uv
+motion_vectors
+valid_mask
+```
+
+Input requirements:
+
+- Renderer motion vectors or dynamic actor state history.
+
+This should come after dynamic agents and viewport render-var support are more
+stable.
