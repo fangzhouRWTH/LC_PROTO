@@ -7,6 +7,7 @@ class SpotDemo:
     def __init__(self, name):
         self.name = name
         self.spot_prim_path = "/World/Spot_" + name
+        self.root_prim_path = self.spot_prim_path
         self.chase_camera = False
         self.initialized = False
         self.need_reinit = True
