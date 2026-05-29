@@ -60,7 +60,8 @@ DEFAULT_FOG_BILLBOARD_OPACITY_GAIN = 10.0
 DEFAULT_WEATHER = None
 DEFAULT_DAYTIME = None
 DEFAULT_WEATHER_TIME_SCALE = 1.0
-DEFAULT_SENSOR_PROFILE = "none"
+DEFAULT_SENSOR_PROFILE = "default"
+DEFAULT_ACTIVE_SENSOR_ID = None
 
 
 @dataclass
@@ -93,6 +94,7 @@ class SimulationConfig:
     weather_start_time: float = 0.0
     weather_time_scale: float = DEFAULT_WEATHER_TIME_SCALE
     sensor_profile: str | None = DEFAULT_SENSOR_PROFILE
+    active_sensor_id: str | None = DEFAULT_ACTIVE_SENSOR_ID
 
 
 def available_robot_types() -> tuple[str, ...]:
@@ -247,19 +249,19 @@ def run(config: SimulationConfig | None = None):
             config.sensor_profile,
             robot_type=config.robot_type,
             robot_root_prim_path=robot.root_prim_path,
+            active_sensor_id=config.active_sensor_id,
         )
         active_camera_prim_path = config.camera_prim_path
-        if sensor_rig is None:
-            robot.set_chase_camera(
-                chase=config.chase_camera,
-                cam_prim_path=config.camera_prim_path,
-            )
-        else:
+        if sensor_rig is not None:
             sensor_rig.initialize()
             sensor_camera_path = sensor_rig.active_viewport_camera_prim_path
             if sensor_camera_path is not None:
                 active_camera_prim_path = sensor_camera_path
-            robot.set_chase_camera(chase=False, cam_prim_path=config.camera_prim_path)
+            print(
+                "[INFO] Sensor rig initialized: "
+                f"{sensor_rig.rig_id} sensors={sensor_rig.sensor_ids()} "
+                f"active={sensor_rig.active_sensor_id}"
+            )
 
         particle_effects = []
         if _is_rain_weather(weather_lighting.config.name):
@@ -329,6 +331,12 @@ def run(config: SimulationConfig | None = None):
             sim_scene.update()
             sim_world.update_state()
 
+            if sensor_rig is not None:
+                sensor_rig.update(state["sim_time"], DEFAULT_VFX_DT)
+                sensor_camera_path = sensor_rig.active_viewport_camera_prim_path
+                if sensor_camera_path is not None:
+                    active_camera_prim_path = sensor_camera_path
+
             eye, target, camera_up = _get_camera_look_at(active_camera_prim_path)
             camera = CameraView.from_look_at(
                 position=eye,
@@ -357,9 +365,7 @@ def run(config: SimulationConfig | None = None):
 
             if sim_world.is_playing() and robot.initialized:
                 robot.step(state["base_command"])
-                if sensor_rig is not None:
-                    sensor_rig.update(state["sim_time"], DEFAULT_VFX_DT)
-                    state["sim_time"] += DEFAULT_VFX_DT
+                state["sim_time"] += DEFAULT_VFX_DT
                 sim_world.step(render=True)
 
     finally:

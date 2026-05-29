@@ -49,6 +49,7 @@ def parse_args():
         const=True,
         type=parse_bool,
         default=simulation.DEFAULT_CHASE_CAMERA,
+        help="Legacy option. Follow view is now managed by --sensor-profile.",
     )
     parser.add_argument(
         "--enable-dynamic-agents",
@@ -144,6 +145,14 @@ def parse_args():
         choices=simulation.available_sensor_profiles(),
         help="Optional pseudo sensor profile to attach to the robot.",
     )
+    parser.add_argument(
+        "--active-sensor",
+        default=simulation.DEFAULT_ACTIVE_SENSOR_ID,
+        help=(
+            "Initial active sensor id inside the selected rig, "
+            "for example follow_view or spot_front_view."
+        ),
+    )
     args, _ = parser.parse_known_args()
     return args
 
@@ -174,5 +183,6 @@ if __name__ == "__main__":
             weather_time_scale=args.weather_time_scale,
             weather_start_time=args.weather_start_time,
             sensor_profile=args.sensor_profile,
+            active_sensor_id=args.active_sensor,
         )
     )

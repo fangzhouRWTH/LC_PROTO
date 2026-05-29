@@ -27,7 +27,7 @@ class KeyboardVelocityController:
 
         print("[OK] Keyboard controller initialized.")
         print(
-            "W/S: forward/backward, A/D: left/right, Q/E: turn left/right, Space: stop"
+            "Arrow Up/Down: forward/backward, Arrow Left/Right: turn left/right, Space: stop"
         )
 
     def _on_keyboard_event(self, event):
@@ -46,21 +46,15 @@ class KeyboardVelocityController:
         self.command[:] = 0.0
 
         # forward / backward
-        if carb.input.KeyboardInput.W in self._pressed:
+        if carb.input.KeyboardInput.UP in self._pressed:
             self.command[0] += self.vx_speed
-        if carb.input.KeyboardInput.S in self._pressed:
+        if carb.input.KeyboardInput.DOWN in self._pressed:
             self.command[0] -= self.vx_speed
 
-        # lateral movement
-        if carb.input.KeyboardInput.A in self._pressed:
-            self.command[1] += self.vy_speed
-        if carb.input.KeyboardInput.D in self._pressed:
-            self.command[1] -= self.vy_speed
-
         # yaw rotation
-        if carb.input.KeyboardInput.Q in self._pressed:
+        if carb.input.KeyboardInput.LEFT in self._pressed:
             self.command[2] += self.yaw_speed
-        if carb.input.KeyboardInput.E in self._pressed:
+        if carb.input.KeyboardInput.RIGHT in self._pressed:
             self.command[2] -= self.yaw_speed
 
         # emergency stop

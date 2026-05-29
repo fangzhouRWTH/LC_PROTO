@@ -20,9 +20,48 @@ data
 meta
 ```
 
-`MountedViewportCameraSensor` is the first concrete sensor. It creates a USD
-camera under a robot body prim and switches the active viewport to that camera.
-It does not require external labels or renderer overrides.
+Viewport cameras are also sensors. The default Spot rig contains:
+
+```text
+follow_view
+  A chase camera sensor that owns its own USD camera prim under
+  /World/SimWorldSensors. It follows the robot body and is the default active
+  viewport input.
+
+spot_front_view
+  A mounted preview camera under the Spot body. It approximates a forward-facing
+  body camera and can be activated through the same rig switching path.
+
+spot_depth_view
+  A mounted pseudo depth camera under the Spot body. It owns a USD camera for
+  viewport framing and emits a `float32` depth image in meters in
+  `SensorFrame.data["depth_m"]`. When activated, it switches the active viewport
+  display to `DistanceToCameraSDDisplay`.
+```
+
+The framework intentionally avoids using `/OmniverseKit_Persp` for the default
+follow view. That scene camera remains only as a fallback when sensor profiles
+are disabled.
+
+Use `SensorRig.activate(sensor_id)` or `SensorRig.activate_next_viewport_camera()`
+to switch the viewport source. Activation and deactivation are responsible for
+applying and restoring viewport, renderer, material, or render-product state.
+
+Depth camera frame output is currently pseudo data, not RTX/Replicator depth.
+The active viewport visualization uses Isaac SyntheticData's depth display
+render var plus its post-combine path so sensor switching has an immediate
+visual effect. The frame data contract is:
+
+```text
+depth_m: float32 array shaped [height, width], meters
+depth_resolution: [width, height]
+depth_encoding: float32_meters
+near_m / far_m: valid clipping range in meters
+statistics: min_m / max_m / mean_m
+```
+
+Use `--sensor-profile spot_depth_camera` for a depth-only rig, or keep the
+default rig and start from it with `--active-sensor spot_depth_view`.
 
 ## External Label Inputs
 

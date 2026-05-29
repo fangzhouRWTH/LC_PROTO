@@ -3,38 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from ..base import PseudoSensor
+from ..camera_utils import (
+    ensure_xform_path,
+    get_active_viewport,
+    set_active_viewport_camera,
+)
 from ..frame import SensorFrame
 from ..mount import SensorMountSpec
 from ..pose_provider import get_world_pose
-
-
-def _get_active_viewport():
-    try:
-        from omni.kit.viewport.utility import get_active_viewport
-
-        return get_active_viewport()
-    except Exception:
-        return None
-
-
-def _set_active_viewport_camera(camera_prim_path: str) -> bool:
-    try:
-        from isaacsim.core.utils.viewports import set_active_viewport_camera
-
-        set_active_viewport_camera(camera_prim_path)
-        return True
-    except Exception:
-        pass
-
-    viewport = _get_active_viewport()
-    if viewport is None:
-        return False
-
-    try:
-        viewport.camera_path = camera_prim_path
-        return True
-    except Exception:
-        return False
 
 
 @dataclass
@@ -78,6 +54,7 @@ class MountedViewportCameraSensor(PseudoSensor):
         UsdGeom = context.pxr_usd_geom
         Gf = context.pxr_gf
 
+        ensure_xform_path(stage, self.mount.parent_prim_path, UsdGeom)
         camera = UsdGeom.Camera.Define(stage, self.camera_prim_path)
         camera.CreateFocalLengthAttr().Set(float(self.focal_length))
         camera.CreateHorizontalApertureAttr().Set(float(self.horizontal_aperture))
@@ -96,11 +73,11 @@ class MountedViewportCameraSensor(PseudoSensor):
             self.activate()
 
     def activate(self) -> None:
-        viewport = _get_active_viewport()
+        viewport = get_active_viewport()
         if viewport is not None and self._previous_viewport_camera is None:
             self._previous_viewport_camera = getattr(viewport, "camera_path", None)
 
-        if _set_active_viewport_camera(self.camera_prim_path):
+        if set_active_viewport_camera(self.camera_prim_path):
             self._is_active = True
             print(f"[INFO] Activated viewport sensor camera: {self.camera_prim_path}")
         else:
@@ -113,7 +90,7 @@ class MountedViewportCameraSensor(PseudoSensor):
         if not self._is_active:
             return
         if self._previous_viewport_camera:
-            _set_active_viewport_camera(self._previous_viewport_camera)
+            set_active_viewport_camera(self._previous_viewport_camera)
         self._is_active = False
 
     def update(self, timestamp: float, dt: float) -> SensorFrame | None:
