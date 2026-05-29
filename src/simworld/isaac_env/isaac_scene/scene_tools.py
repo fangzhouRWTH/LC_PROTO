@@ -149,14 +149,13 @@ def add_natural_light(stage, sky_texture_path: str | Path = DEFAULT_SKY_TEXTURE_
     # Optional skybox / HDRI background
     sky_texture_path = Path(sky_texture_path).expanduser().resolve()
 
-    if not sky_texture_path.exists():
-        raise FileNotFoundError(f"Sky texture not found: {sky_texture_path}")
-
-    # Use lat-long / equirectangular environment map.
-    sky.CreateTextureFileAttr(Sdf.AssetPath(str(sky_texture_path)))
-    sky.CreateTextureFormatAttr("latlong")
-
-    print(f"[OK] Added skybox texture: {sky_texture_path}")
+    if sky_texture_path.exists():
+        # Use lat-long / equirectangular environment map.
+        sky.CreateTextureFileAttr(Sdf.AssetPath(str(sky_texture_path)))
+        sky.CreateTextureFormatAttr("latlong")
+        print(f"[OK] Added skybox texture: {sky_texture_path}")
+    else:
+        print(f"[WARN] Sky texture not found, using color-only sky: {sky_texture_path}")
 
     # ------------------------------------------------------------
     # 3. Optional soft fill light

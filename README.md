@@ -5,6 +5,7 @@ LC_01 SimWorld is an NVIDIA Isaac Sim based simulation project for urban and cam
 ## Documentation
 
 - [Architecture](doc/Architecture.md): describes the current framework boundaries and the integration plan for asset import, regional layout, dynamic assets, and visual/environment algorithms.
+- [Dynamic Agents](doc/DynamicAgents.md): describes dynamic pedestrian and vehicle placeholders, planning, runtime backends, and run-time configuration.
 
 ## Current Framework
 

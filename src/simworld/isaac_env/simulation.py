@@ -3,6 +3,8 @@ from . import controller
 from .isaac_scene import scene
 from .isaac_scene import world
 from .isaac_robots import factory as robot_factory
+from .isaac_agents import factory as agent_factory
+from engine import dynamic
 
 from .isaac_vfx.particle import (
     CameraView,
@@ -26,8 +28,23 @@ DEFAULT_ROBOT_NAME = "spot_demo"
 DEFAULT_CALLBACK_NAME = "simworld_callback"
 DEFAULT_WARMUP_FRAMES = 30
 DEFAULT_CAMERA_PRIM_PATH = "/OmniverseKit_Persp"
+DEFAULT_CHASE_CAMERA = False
 DEFAULT_FALLBACK_SPAWN_POSITION = (0.0, 0.0, 0.8)
 DEFAULT_VFX_DT = 1.0 / 50.0
+_DEFAULT_DYNAMIC_PLAN_CONFIG = dynamic.DynamicPlanConfig()
+DEFAULT_ENABLE_DYNAMIC_AGENTS = True
+DEFAULT_DYNAMIC_AGENT_BACKEND = agent_factory.DEFAULT_DYNAMIC_AGENT_BACKEND
+DEFAULT_DYNAMIC_MAX_PEDESTRIAN_ACTORS = (
+    _DEFAULT_DYNAMIC_PLAN_CONFIG.max_pedestrian_actors
+)
+DEFAULT_DYNAMIC_MAX_VEHICLE_ACTORS = (
+    _DEFAULT_DYNAMIC_PLAN_CONFIG.max_vehicle_actors
+)
+DEFAULT_DYNAMIC_PEDESTRIAN_SPEED_MPS = (
+    _DEFAULT_DYNAMIC_PLAN_CONFIG.pedestrian_speed_mps
+)
+DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS = _DEFAULT_DYNAMIC_PLAN_CONFIG.vehicle_speed_mps
+DEFAULT_DYNAMIC_SPAWN_TIME_S = _DEFAULT_DYNAMIC_PLAN_CONFIG.default_spawn_time_s
 
 
 @dataclass
@@ -38,6 +55,14 @@ class SimulationConfig:
     callback_name: str = DEFAULT_CALLBACK_NAME
     warmup_frames: int = DEFAULT_WARMUP_FRAMES
     camera_prim_path: str = DEFAULT_CAMERA_PRIM_PATH
+    chase_camera: bool = DEFAULT_CHASE_CAMERA
+    enable_dynamic_agents: bool = DEFAULT_ENABLE_DYNAMIC_AGENTS
+    dynamic_agent_backend: str = DEFAULT_DYNAMIC_AGENT_BACKEND
+    dynamic_max_pedestrian_actors: int = DEFAULT_DYNAMIC_MAX_PEDESTRIAN_ACTORS
+    dynamic_max_vehicle_actors: int = DEFAULT_DYNAMIC_MAX_VEHICLE_ACTORS
+    dynamic_pedestrian_speed_mps: float = DEFAULT_DYNAMIC_PEDESTRIAN_SPEED_MPS
+    dynamic_vehicle_speed_mps: float = DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS
+    dynamic_spawn_time_s: float = DEFAULT_DYNAMIC_SPAWN_TIME_S
     fallback_spawn_position: tuple[float, float, float] = (
         DEFAULT_FALLBACK_SPAWN_POSITION
     )
@@ -45,6 +70,20 @@ class SimulationConfig:
 
 def available_robot_types() -> tuple[str, ...]:
     return robot_factory.available_robot_types()
+
+
+def available_dynamic_agent_backends() -> tuple[str, ...]:
+    return agent_factory.available_dynamic_agent_backends()
+
+
+def _make_dynamic_plan_config(config: SimulationConfig) -> dynamic.DynamicPlanConfig:
+    return dynamic.DynamicPlanConfig(
+        max_pedestrian_actors=max(0, int(config.dynamic_max_pedestrian_actors)),
+        max_vehicle_actors=max(0, int(config.dynamic_max_vehicle_actors)),
+        pedestrian_speed_mps=max(0.0, float(config.dynamic_pedestrian_speed_mps)),
+        vehicle_speed_mps=max(0.0, float(config.dynamic_vehicle_speed_mps)),
+        default_spawn_time_s=max(0.0, float(config.dynamic_spawn_time_s)),
+    )
 
 
 def _select_spawn_position(spawn_points, fallback_position):
@@ -117,7 +156,20 @@ def run(config: SimulationConfig | None = None):
         sim_scene = scene.SimScene(config.usd_path)
         sim_world = world.SimWorld()
 
-        scene_stats = sim_scene.prepare()
+        dynamic_plan_config = _make_dynamic_plan_config(config)
+        scene_stats = sim_scene.prepare(
+            dynamic_plan_config=dynamic_plan_config,
+            build_dynamic_plan=config.enable_dynamic_agents,
+        )
+
+        agent_manager = agent_factory.create_dynamic_agent_manager(
+            config.dynamic_agent_backend
+        )
+        if config.enable_dynamic_agents:
+            agent_manager.build_from_plan(sim_scene.dynamic_plan)
+            agent_manager.spawn(sim_scene.stage)
+        else:
+            print("[INFO] Dynamic agents disabled.")
 
         for _ in range(config.warmup_frames):
             sim_scene.update()
@@ -131,7 +183,10 @@ def run(config: SimulationConfig | None = None):
 
         robot = robot_factory.create_robot(config.robot_type, config.robot_name)
         robot.spawn(position=spawn_position)
-        robot.set_chase_camera(chase=True, cam_prim_path=config.camera_prim_path)
+        robot.set_chase_camera(
+            chase=config.chase_camera,
+            cam_prim_path=config.camera_prim_path,
+        )
 
         vfx = ParticleEffectManager(
             [
@@ -179,6 +234,7 @@ def run(config: SimulationConfig | None = None):
 
             if sim_world.is_stopped():
                 robot.mark_reinit_required()
+                agent_manager.reset()
                 continue
 
             world_reinitialized = sim_world.check_reinit()
@@ -187,6 +243,9 @@ def run(config: SimulationConfig | None = None):
                 if not world_reinitialized:
                     sim_world.reset()
                 robot.initialize()
+
+            if sim_world.is_playing():
+                agent_manager.step(DEFAULT_VFX_DT)
 
             if sim_world.is_playing() and robot.initialized:
                 robot.step(state["base_command"])
