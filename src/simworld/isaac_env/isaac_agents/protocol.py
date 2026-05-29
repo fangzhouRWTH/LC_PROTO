@@ -1,0 +1,16 @@
+from typing import Protocol, Any
+
+from engine.dynamic import DynamicScenePlan
+
+
+class DynamicAgentBackend(Protocol):
+    @property
+    def actor_count(self) -> int: ...
+
+    def build_from_plan(self, plan: DynamicScenePlan | None): ...
+
+    def spawn(self, stage: Any = None): ...
+
+    def reset(self): ...
+
+    def step(self, dt: float): ...

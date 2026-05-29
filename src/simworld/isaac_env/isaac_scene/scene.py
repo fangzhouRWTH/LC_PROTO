@@ -8,10 +8,31 @@ from . import scene_generator as generator
 from . import scene_asset_allocator as asset_allocator
 
 from engine import placement
+from engine import dynamic
 
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[4]
 DEFAULT_ASSET_LIBRARY_PATH = PROJECT_ROOT / "assets" / "library"
+
+
+def print_dynamic_plan_summary(plan: dynamic.DynamicScenePlan):
+    if not plan.actors and not plan.warnings:
+        return
+
+    print("\n========== Dynamic Actor Plan ==========")
+    print(f"Actors:   {len(plan.actors)}")
+    if plan.actors:
+        counts: dict[str, int] = {}
+        for actor in plan.actors:
+            counts[actor.actor_type] = counts.get(actor.actor_type, 0) + 1
+        for actor_type, count in counts.items():
+            print(f"  {actor_type}: {count}")
+
+    if plan.warnings:
+        print(f"Warnings: {len(plan.warnings)}")
+        for warning in plan.warnings:
+            print(f"  [WARN] {warning}")
+    print("========================================\n")
 
 
 class SimScene:
@@ -28,6 +49,7 @@ class SimScene:
         self.sky_texture_path = sky_texture_path
         self.context = iscctx.get_isaac_context().omni_usd.get_context()
         self.stats = parser.SceneStats()
+        self.dynamic_plan = dynamic.DynamicScenePlan()
         self.asset_import_plans: list[placement.AssetImportPlan] = []
         self.generated_asset_prim_paths: list[str] = []
 
@@ -48,7 +70,12 @@ class SimScene:
             root_prim=generated_asset_root,
         )
 
-    def prepare(self, verbose: bool = False):
+    def prepare(
+        self,
+        verbose: bool = False,
+        dynamic_plan_config: dynamic.DynamicPlanConfig | None = None,
+        build_dynamic_plan: bool = True,
+    ):
         self.stats = parser.SceneStats()
         tools.deactivate_all_lights(self.stage)
 
@@ -58,6 +85,15 @@ class SimScene:
             rules=self.rules,
             verbose=verbose,
         )
+
+        if build_dynamic_plan:
+            self.dynamic_plan = dynamic.build_dynamic_actor_plan(
+                self.stats,
+                config=dynamic_plan_config,
+            )
+            print_dynamic_plan_summary(self.dynamic_plan)
+        else:
+            self.dynamic_plan = dynamic.DynamicScenePlan()
 
         footprints: list[placement.Footprint3D] = []
         for ply in self.stats.placeholder_areas:

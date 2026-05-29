@@ -6,14 +6,49 @@ from typing import Any, Callable, Optional, Sequence
 
 
 @dataclass
+class PlaceholderPoint:
+    position: list[float] = field(default_factory=list)
+    prim_path: str = ""
+    raw_name: str = ""
+    index: str = ""
+
+
+@dataclass
 class PlaceholderArea:
     vertices: list[list[float]] = field(default_factory=list)
+    prim_path: str = ""
+    raw_name: str = ""
+    category: str = ""
+    index: str = ""
+
+
+@dataclass
+class PlaceholderPath:
+    vertices: list[list[float]] = field(default_factory=list)
+    prim_path: str = ""
+    raw_name: str = ""
+    category: str = ""
+    index: str = ""
 
 
 @dataclass
 class SceneStats:
     spawn_points: list[list[float]] = field(default_factory=list)
     placeholder_areas: list[PlaceholderArea] = field(default_factory=list)
+
+    pedestrian_spawn_points: list[PlaceholderPoint] = field(default_factory=list)
+    pedestrian_goal_points: list[PlaceholderPoint] = field(default_factory=list)
+    pedestrian_routes: list[PlaceholderPath] = field(default_factory=list)
+    pedestrian_zones: list[PlaceholderArea] = field(default_factory=list)
+
+    vehicle_spawn_points: list[PlaceholderPoint] = field(default_factory=list)
+    vehicle_goal_points: list[PlaceholderPoint] = field(default_factory=list)
+    vehicle_routes: list[PlaceholderPath] = field(default_factory=list)
+    vehicle_lanes: list[PlaceholderArea] = field(default_factory=list)
+
+    sidewalk_areas: list[PlaceholderArea] = field(default_factory=list)
+    crosswalk_areas: list[PlaceholderArea] = field(default_factory=list)
+    skipped_dynamic_placeholders: list[str] = field(default_factory=list)
 
     visited: int = 0
     matched: int = 0
@@ -74,6 +109,111 @@ def extract_mesh_world_vertices_from_path(stage, mesh_prim_path: str):
     prim = stage.GetPrimAtPath(mesh_prim_path)
 
     return extract_mesh_world_vertices(prim)
+
+
+def find_first_mesh_prim(prim):
+    UsdGeom = iscctx.get_isaac_context().pxr_usd_geom
+
+    if prim.IsA(UsdGeom.Mesh):
+        return prim
+
+    for child in prim.GetChildren():
+        mesh_prim = find_first_mesh_prim(child)
+        if mesh_prim is not None:
+            return mesh_prim
+
+    return None
+
+
+def extract_mesh_world_vertices_from_prim_or_child(prim):
+    mesh_prim = find_first_mesh_prim(prim)
+    if mesh_prim is None:
+        raise RuntimeError(f"Placeholder prim has no mesh descendant: {prim.GetPath()}")
+
+    return extract_mesh_world_vertices(mesh_prim)
+
+
+def make_placeholder_point(prim, info: "PrimNameInfo", z_offset: float = 0.0):
+    pos = extract_prim_position(prim)
+    pos[2] += z_offset
+    return PlaceholderPoint(
+        position=pos,
+        prim_path=str(prim.GetPath()),
+        raw_name=info.raw_name,
+        index=info.index,
+    )
+
+
+def make_placeholder_area(prim, info: "PrimNameInfo"):
+    res = extract_mesh_world_vertices_from_prim_or_child(prim)
+    return PlaceholderArea(
+        vertices=res["world_vertices"],
+        prim_path=str(prim.GetPath()),
+        raw_name=info.raw_name,
+        category=info.category,
+        index=info.index,
+    )
+
+
+def make_placeholder_path(prim, info: "PrimNameInfo"):
+    res = extract_mesh_world_vertices_from_prim_or_child(prim)
+    return PlaceholderPath(
+        vertices=res["world_vertices"],
+        prim_path=str(prim.GetPath()),
+        raw_name=info.raw_name,
+        category=info.category,
+        index=info.index,
+    )
+
+
+def record_dynamic_placeholder_skip(
+    stats: "SceneStats",
+    prim,
+    info: "PrimNameInfo",
+    reason: str,
+):
+    message = f"{prim.GetPath()} ({info.raw_name}): {reason}"
+    stats.skipped_dynamic_placeholders.append(message)
+    print(f"[WARN] Skipping dynamic placeholder {message}")
+
+
+def try_make_placeholder_point(
+    prim,
+    info: "PrimNameInfo",
+    stats: "SceneStats",
+    z_offset: float = 0.0,
+):
+    try:
+        return make_placeholder_point(prim, info, z_offset=z_offset)
+    except Exception as exc:
+        record_dynamic_placeholder_skip(stats, prim, info, str(exc))
+        return None
+
+
+def try_make_placeholder_area(prim, info: "PrimNameInfo", stats: "SceneStats"):
+    try:
+        area = make_placeholder_area(prim, info)
+        if len(area.vertices) < 3:
+            raise RuntimeError(
+                f"Area placeholder needs at least 3 vertices, got {len(area.vertices)}"
+            )
+        return area
+    except Exception as exc:
+        record_dynamic_placeholder_skip(stats, prim, info, str(exc))
+        return None
+
+
+def try_make_placeholder_path(prim, info: "PrimNameInfo", stats: "SceneStats"):
+    try:
+        path = make_placeholder_path(prim, info)
+        if len(path.vertices) < 2:
+            raise RuntimeError(
+                f"Path placeholder needs at least 2 vertices, got {len(path.vertices)}"
+            )
+        return path
+    except Exception as exc:
+        record_dynamic_placeholder_skip(stats, prim, info, str(exc))
+        return None
 
 
 # def _normalize_vec3(v: Gf.Vec3d) -> Gf.Vec3d:
@@ -225,16 +365,73 @@ def apply_static_collision(prim, info: PrimNameInfo, stats: SceneStats):
 
 
 def process_placeholder_area(prim, info: PrimNameInfo, stats: SceneStats):
-    res = extract_mesh_world_vertices(prim.GetChildren()[0])
-    vertices = res["world_vertices"]
-    stats.placeholder_areas.append(PlaceholderArea(vertices=vertices))
+    stats.placeholder_areas.append(make_placeholder_area(prim, info))
 
 
 def set_spawn_point_from_prim(prim, info: PrimNameInfo, stats: SceneStats):
-    pos = extract_prim_position(prim)
-    pos[2] += 0.8
-    stats.spawn_points.append(pos)
-    # print(f"[SPAWN] {prim.GetPath()} <- {info.raw_name} | position = {pos}")
+    point = make_placeholder_point(prim, info, z_offset=0.8)
+    stats.spawn_points.append(point.position)
+    # print(f"[SPAWN] {prim.GetPath()} <- {info.raw_name} | position = {point.position}")
+
+
+def record_pedestrian_spawn(prim, info: PrimNameInfo, stats: SceneStats):
+    point = try_make_placeholder_point(prim, info, stats)
+    if point is not None:
+        stats.pedestrian_spawn_points.append(point)
+
+
+def record_pedestrian_goal(prim, info: PrimNameInfo, stats: SceneStats):
+    point = try_make_placeholder_point(prim, info, stats)
+    if point is not None:
+        stats.pedestrian_goal_points.append(point)
+
+
+def record_pedestrian_route(prim, info: PrimNameInfo, stats: SceneStats):
+    path = try_make_placeholder_path(prim, info, stats)
+    if path is not None:
+        stats.pedestrian_routes.append(path)
+
+
+def record_pedestrian_zone(prim, info: PrimNameInfo, stats: SceneStats):
+    area = try_make_placeholder_area(prim, info, stats)
+    if area is not None:
+        stats.pedestrian_zones.append(area)
+
+
+def record_vehicle_spawn(prim, info: PrimNameInfo, stats: SceneStats):
+    point = try_make_placeholder_point(prim, info, stats)
+    if point is not None:
+        stats.vehicle_spawn_points.append(point)
+
+
+def record_vehicle_goal(prim, info: PrimNameInfo, stats: SceneStats):
+    point = try_make_placeholder_point(prim, info, stats)
+    if point is not None:
+        stats.vehicle_goal_points.append(point)
+
+
+def record_vehicle_route(prim, info: PrimNameInfo, stats: SceneStats):
+    path = try_make_placeholder_path(prim, info, stats)
+    if path is not None:
+        stats.vehicle_routes.append(path)
+
+
+def record_vehicle_lane(prim, info: PrimNameInfo, stats: SceneStats):
+    area = try_make_placeholder_area(prim, info, stats)
+    if area is not None:
+        stats.vehicle_lanes.append(area)
+
+
+def record_sidewalk_area(prim, info: PrimNameInfo, stats: SceneStats):
+    area = try_make_placeholder_area(prim, info, stats)
+    if area is not None:
+        stats.sidewalk_areas.append(area)
+
+
+def record_crosswalk_area(prim, info: PrimNameInfo, stats: SceneStats):
+    area = try_make_placeholder_area(prim, info, stats)
+    if area is not None:
+        stats.crosswalk_areas.append(area)
 
 
 PROCESSING_RULES = [
@@ -286,6 +483,76 @@ PROCESSING_RULES = [
         actions=[
             process_placeholder_area,
         ],
+    ),
+    ProcessingRule(
+        name="placeholder pedestrian spawn",
+        mobility="placeholder",
+        domain="pedestrian",
+        category="spawn",
+        actions=[record_pedestrian_spawn],
+    ),
+    ProcessingRule(
+        name="placeholder pedestrian goal",
+        mobility="placeholder",
+        domain="pedestrian",
+        category="goal",
+        actions=[record_pedestrian_goal],
+    ),
+    ProcessingRule(
+        name="placeholder pedestrian route",
+        mobility="placeholder",
+        domain="pedestrian",
+        category="route",
+        actions=[record_pedestrian_route],
+    ),
+    ProcessingRule(
+        name="placeholder pedestrian zone",
+        mobility="placeholder",
+        domain="pedestrian",
+        category="zone",
+        actions=[record_pedestrian_zone],
+    ),
+    ProcessingRule(
+        name="placeholder vehicle spawn",
+        mobility="placeholder",
+        domain="vehicle",
+        category="spawn",
+        actions=[record_vehicle_spawn],
+    ),
+    ProcessingRule(
+        name="placeholder vehicle goal",
+        mobility="placeholder",
+        domain="vehicle",
+        category="goal",
+        actions=[record_vehicle_goal],
+    ),
+    ProcessingRule(
+        name="placeholder vehicle route",
+        mobility="placeholder",
+        domain="vehicle",
+        category="route",
+        actions=[record_vehicle_route],
+    ),
+    ProcessingRule(
+        name="placeholder vehicle lane",
+        mobility="placeholder",
+        domain="vehicle",
+        category="lane",
+        actions=[record_vehicle_lane],
+    ),
+    ProcessingRule(
+        name="placeholder sidewalk area",
+        mobility="placeholder",
+        domain="area",
+        category="sidewalk",
+        actions=[record_sidewalk_area],
+    ),
+    ProcessingRule(
+        name="placeholder crosswalk area",
+        mobility="placeholder",
+        domain="area",
+        category="crosswalk",
+        actions=[record_crosswalk_area],
     ),
 ]
 
@@ -344,6 +611,26 @@ def print_stage_processing_stats(stats: SceneStats):
     print(f"Invalid name format:  {stats.invalid_name}")
     print(f"Unmatched named prim: {stats.unmatched_named}")
     print(f"Spawn points:         {len(stats.spawn_points)}")
+
+    dynamic_counts = {
+        "Pedestrian spawns": len(stats.pedestrian_spawn_points),
+        "Pedestrian goals": len(stats.pedestrian_goal_points),
+        "Pedestrian routes": len(stats.pedestrian_routes),
+        "Pedestrian zones": len(stats.pedestrian_zones),
+        "Vehicle spawns": len(stats.vehicle_spawn_points),
+        "Vehicle goals": len(stats.vehicle_goal_points),
+        "Vehicle routes": len(stats.vehicle_routes),
+        "Vehicle lanes": len(stats.vehicle_lanes),
+        "Sidewalk areas": len(stats.sidewalk_areas),
+        "Crosswalk areas": len(stats.crosswalk_areas),
+    }
+    if any(dynamic_counts.values()) or stats.skipped_dynamic_placeholders:
+        print("\nDynamic placeholders:")
+        for label, count in dynamic_counts.items():
+            if count:
+                print(f"  {label}: {count}")
+        if stats.skipped_dynamic_placeholders:
+            print(f"  Skipped dynamic placeholders: {len(stats.skipped_dynamic_placeholders)}")
 
     print("\nProcessed by rule:")
     for rule_name, count in stats.processed.items():
