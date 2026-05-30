@@ -4,10 +4,12 @@ import unittest
 from engine.dynamic import DynamicActorPlan, DynamicPlanConfig, DynamicPose, DynamicRoutePlan, DynamicScenePlan, DynamicSpeedProfile, DynamicActorShape, build_dynamic_actor_plan
 from engine.orca_pedestrian import (
     ObstacleContext,
+    PedestrianAgentState,
     build_pedestrian_states_from_plan,
     step_pedestrian_agents,
     validate_pedestrian_actor,
 )
+import math
 
 
 def _pedestrian_actor(**overrides):
@@ -69,6 +71,69 @@ class OrcaPedestrianPlannerTest(unittest.TestCase):
         )
         states = build_pedestrian_states_from_plan(plan)
         self.assertEqual(len(states), 1)
+
+    def test_route_attraction_pulls_agent_back_toward_polyline(self):
+        state = PedestrianAgentState(
+            actor_id="pedestrian_off_route",
+            radius_m=0.35,
+            position=(1.0, 2.5, 0.0),
+            waypoints=[(0.0, 0.0, 0.0), (4.0, 0.0, 0.0)],
+            target_speed_mps=1.2,
+            max_speed_mps=1.2,
+        )
+        agents = [state]
+        for step in range(30):
+            step_pedestrian_agents(
+                agents,
+                ObstacleContext(),
+                dt_s=0.1,
+                sim_time_s=(step + 1) * 0.1,
+            )
+        self.assertLess(abs(state.position[1]), 1.5)
+
+    def test_clustered_agents_keep_different_headings(self):
+        agents = [
+            PedestrianAgentState(
+                actor_id="ped_a",
+                radius_m=0.35,
+                position=(0.0, 0.0, 0.0),
+                waypoints=[(-5.0, 0.0, 0.0), (5.0, 0.0, 0.0)],
+                target_speed_mps=1.2,
+                max_speed_mps=1.2,
+            ),
+            PedestrianAgentState(
+                actor_id="ped_b",
+                radius_m=0.35,
+                position=(0.1, 0.0, 0.0),
+                waypoints=[(0.0, -5.0, 0.0), (0.0, 5.0, 0.0)],
+                target_speed_mps=1.2,
+                max_speed_mps=1.2,
+            ),
+            PedestrianAgentState(
+                actor_id="ped_c",
+                radius_m=0.35,
+                position=(-0.1, 0.0, 0.0),
+                waypoints=[(5.0, 0.0, 0.0), (-5.0, 0.0, 0.0)],
+                target_speed_mps=1.2,
+                max_speed_mps=1.2,
+            ),
+        ]
+        for step in range(40):
+            step_pedestrian_agents(
+                agents,
+                ObstacleContext(),
+                dt_s=0.05,
+                sim_time_s=(step + 1) * 0.05,
+            )
+
+        headings = [
+            math.atan2(agent.velocity[1], agent.velocity[0])
+            for agent in agents
+            if math.hypot(agent.velocity[0], agent.velocity[1]) > 0.05
+        ]
+        self.assertGreaterEqual(len(headings), 2)
+        spread = max(headings) - min(headings)
+        self.assertGreater(abs(spread), 0.3)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,8 @@ from .backends import (
     DEFAULT_DYNAMIC_ROOT,
     KinematicDynamicAgentBackend,
     OrcaPedestrianDynamicAgentBackend,
+    OrcaSumoDynamicAgentBackend,
+    SumoVehicleDynamicAgentBackend,
 )
 from .manager import DynamicAgentManager
 
@@ -10,6 +12,8 @@ DEFAULT_DYNAMIC_AGENT_BACKEND = "kinematic"
 DYNAMIC_AGENT_BACKEND_REGISTRY = {
     DEFAULT_DYNAMIC_AGENT_BACKEND: KinematicDynamicAgentBackend,
     "orca_pedestrian": OrcaPedestrianDynamicAgentBackend,
+    "sumo_vehicle": SumoVehicleDynamicAgentBackend,
+    "orca_sumo": OrcaSumoDynamicAgentBackend,
 }
 
 

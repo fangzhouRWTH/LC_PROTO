@@ -18,6 +18,16 @@ class ObstacleContext:
 
 
 @dataclass
+class OrcaPedestrianPlannerConfig:
+    separation_max_ratio: float = 0.55
+    route_attraction_gain: float = 2.5
+    route_attraction_max_mps: float = 1.0
+    off_route_separation_decay_m: float = 1.5
+
+DEFAULT_ORCA_PEDESTRIAN_PLANNER_CONFIG = OrcaPedestrianPlannerConfig()
+
+
+@dataclass
 class PedestrianAgentState:
     actor_id: str
     radius_m: float
@@ -108,9 +118,12 @@ def step_pedestrian_agents(
     obstacle_context: ObstacleContext,
     dt_s: float,
     sim_time_s: float,
+    planner_config: OrcaPedestrianPlannerConfig | None = None,
 ) -> None:
     if dt_s <= 0.0:
         return
+
+    config = planner_config or DEFAULT_ORCA_PEDESTRIAN_PLANNER_CONFIG
 
     for agent in agents:
         if sim_time_s < agent.spawn_time_s:
@@ -121,19 +134,34 @@ def step_pedestrian_agents(
             continue
 
         pref_vx, pref_vy = _preferred_velocity(agent)
+        _, off_route_m = _nearest_route_point(agent.waypoints, _vec2_xy(agent.position))
         sep_vx, sep_vy = _separation_velocity(
             agent,
             agents,
             obstacle_context.agent_neighbor_radius_m,
         )
+        sep_vx, sep_vy = _scale_separation_by_off_route(
+            sep_vx,
+            sep_vy,
+            off_route_m,
+            config.off_route_separation_decay_m,
+        )
+        sep_vx, sep_vy = _cap_separation_velocity(
+            sep_vx,
+            sep_vy,
+            pref_vx,
+            pref_vy,
+            config.separation_max_ratio,
+        )
+        route_vx, route_vy = _route_attraction_velocity(agent, config)
         obs_vx, obs_vy = _obstacle_repulsion(
             agent,
             obstacle_context.static_polygons_xy,
             obstacle_context.obstacle_influence_m,
         )
         vx, vy = _clamp_speed(
-            pref_vx + sep_vx + obs_vx,
-            pref_vy + sep_vy + obs_vy,
+            pref_vx + sep_vx + route_vx + obs_vx,
+            pref_vy + sep_vy + route_vy + obs_vy,
             agent.max_speed_mps,
         )
         agent.position = (
@@ -218,6 +246,74 @@ def _preferred_velocity(agent: PedestrianAgentState) -> Vec2:
         direction[0] * agent.target_speed_mps,
         direction[1] * agent.target_speed_mps,
     )
+
+
+def _nearest_route_point(
+    waypoints: list[Vec3],
+    point: Vec2,
+) -> tuple[Vec2, float]:
+    if len(waypoints) < 2:
+        return point, 0.0
+
+    best_distance = float("inf")
+    best_point = point
+    for index in range(len(waypoints) - 1):
+        start = _vec2_xy(waypoints[index])
+        end = _vec2_xy(waypoints[index + 1])
+        closest = _closest_point_on_segment(point, start, end)
+        distance = _distance_xy(point, closest)
+        if distance < best_distance:
+            best_distance = distance
+            best_point = closest
+    return best_point, best_distance
+
+
+def _route_attraction_velocity(
+    agent: PedestrianAgentState,
+    config: OrcaPedestrianPlannerConfig,
+) -> Vec2:
+    if len(agent.waypoints) < 2:
+        return (0.0, 0.0)
+
+    current = _vec2_xy(agent.position)
+    nearest, off_route_m = _nearest_route_point(agent.waypoints, current)
+    if off_route_m < 0.05:
+        return (0.0, 0.0)
+
+    direction = _normalize_xy((nearest[0] - current[0], nearest[1] - current[1]))
+    speed = min(
+        config.route_attraction_max_mps,
+        config.route_attraction_gain * off_route_m,
+    )
+    return direction[0] * speed, direction[1] * speed
+
+
+def _cap_separation_velocity(
+    sep_vx: float,
+    sep_vy: float,
+    pref_vx: float,
+    pref_vy: float,
+    max_ratio: float,
+) -> Vec2:
+    pref_speed = math.hypot(pref_vx, pref_vy)
+    max_sep_speed = max_ratio * max(pref_speed, 0.3)
+    sep_speed = math.hypot(sep_vx, sep_vy)
+    if sep_speed <= max_sep_speed or sep_speed < 1e-8:
+        return sep_vx, sep_vy
+    scale = max_sep_speed / sep_speed
+    return sep_vx * scale, sep_vy * scale
+
+
+def _scale_separation_by_off_route(
+    sep_vx: float,
+    sep_vy: float,
+    off_route_m: float,
+    decay_m: float,
+) -> Vec2:
+    if decay_m <= 1e-6:
+        return sep_vx, sep_vy
+    scale = 1.0 / (1.0 + off_route_m / decay_m)
+    return sep_vx * scale, sep_vy * scale
 
 
 def _separation_velocity(

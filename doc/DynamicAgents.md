@@ -160,6 +160,8 @@ isaac_agents/
   backends/
     kinematic.py       # current P0 implementation
     orca_pedestrian.py # mock ORCA pedestrian backend (P2.1 spike)
+    sumo_vehicle.py    # mock SUMO lane-following vehicle backend (P2.0 spike)
+    orca_sumo.py       # composite: ORCA pedestrians + SUMO vehicles
 ```
 
 `simulation.py` only asks the factory for a manager and calls:
@@ -173,6 +175,20 @@ step(dt)
 
 Backend-specific implementation details stay out of the main simulation loop.
 
+### Mock ORCA pedestrian tuning (P2.1.5)
+
+`engine/orca_pedestrian.py` uses a lightweight mock (preferred velocity + local separation + static polygon repulsion), not a real ORCA library. When many pedestrians meet at a crossing, unconstrained separation can push agents off their polylines and into a shared heading.
+
+P2.1.5 adds three stabilizers exposed via `OrcaPedestrianPlannerConfig`:
+
+| Field | Default | Effect |
+| --- | --- | --- |
+| `route_attraction_gain` | `2.5` | Pull toward nearest point on the route polyline when off-route |
+| `separation_max_ratio` | `0.55` | Cap repulsion relative to preferred velocity |
+| `off_route_separation_decay_m` | `1.5` | Reduce separation strength while far from the route |
+
+`tests/test_orca_pedestrian_planner.py` covers off-route recovery and heading diversity in clustered crossings.
+
 ## 5. Runtime Parameters
 
 Dynamic agent runtime options can be passed through environment variables used by `scripts/run_sim.sh`:
@@ -180,14 +196,25 @@ Dynamic agent runtime options can be passed through environment variables used b
 | Environment variable | Default | Meaning |
 | --- | --- | --- |
 | `ENABLE_DYNAMIC_AGENTS` | `true` | Enable dynamic plan generation and runtime actors. |
-| `DYNAMIC_AGENT_BACKEND` | `kinematic` | Runtime backend name. Supported: `kinematic`, `orca_pedestrian`. |
+| `DYNAMIC_AGENT_BACKEND` | `kinematic` | Runtime backend name. Supported: `kinematic`, `orca_pedestrian`, `sumo_vehicle`, `orca_sumo`. |
 | `DYNAMIC_MAX_PEDESTRIAN_ACTORS` | `1` | Max number of pedestrian actors generated from route placeholders or spawn/goal pairs. |
 | `DYNAMIC_MAX_VEHICLE_ACTORS` | `1` | Max number of vehicle actors generated from route placeholders or spawn/goal pairs. |
 | `DYNAMIC_PEDESTRIAN_SPEED_MPS` | `1.2` | Pedestrian speed in meters per second. |
 | `DYNAMIC_VEHICLE_SPEED_MPS` | `4.0` | Vehicle speed in meters per second. |
 | `DYNAMIC_SPAWN_TIME_S` | `0.0` | Delay before actors begin moving. |
 
-Example run (5 pedestrians on the multi-route test scene):
+Example run (5 ORCA pedestrians + 2 SUMO vehicles on the multi-route test scene):
+
+```bash
+WARMUP_FRAMES=0 \
+SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
+DYNAMIC_MAX_PEDESTRIAN_ACTORS=5 \
+DYNAMIC_MAX_VEHICLE_ACTORS=2 \
+DYNAMIC_AGENT_BACKEND=orca_sumo \
+scripts/run_sim.sh
+```
+
+ORCA pedestrians only:
 
 ```bash
 WARMUP_FRAMES=0 \
@@ -214,6 +241,19 @@ Select the current backend explicitly:
 ```bash
 DYNAMIC_AGENT_BACKEND=kinematic scripts/run_sim.sh
 DYNAMIC_AGENT_BACKEND=orca_pedestrian scripts/run_sim.sh
+DYNAMIC_AGENT_BACKEND=sumo_vehicle scripts/run_sim.sh
+DYNAMIC_AGENT_BACKEND=orca_sumo scripts/run_sim.sh
+```
+
+Vehicle-focused test on the dynamic agents scene:
+
+```bash
+WARMUP_FRAMES=0 \
+SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
+DYNAMIC_MAX_PEDESTRIAN_ACTORS=0 \
+DYNAMIC_MAX_VEHICLE_ACTORS=1 \
+DYNAMIC_AGENT_BACKEND=sumo_vehicle \
+scripts/run_sim.sh
 ```
 
 Export a `DynamicScenePlan` JSON from scene stats for offline adapter experiments:
@@ -245,6 +285,8 @@ Recommended next backend additions:
 | `orca` | Pedestrian local avoidance | Add `backends/orca.py` and register it in `factory.py`. |
 | `orca_pedestrian` | Mock ORCA pedestrian spike for runtime validation | Already registered as `orca_pedestrian`; uses `engine/orca_pedestrian.py`. |
 | `sumo` | Traffic simulation and lane-level vehicle flow | Add `backends/sumo.py` and synchronize TraCI state to USD transforms. |
+| `sumo_vehicle` | Mock SUMO lane-following spike for runtime validation | Already registered as `sumo_vehicle`; uses `engine/sumo_vehicle.py`. |
+| `orca_sumo` | Combined ORCA pedestrians + SUMO vehicles in one run | Already registered as `orca_sumo`; composes the two backends above. |
 | `asset_visual` | Replace cube visuals with referenced USD assets | Keep motion backend stable and swap visual creation logic. |
 
 ### Pedestrian Animation Roadmap
