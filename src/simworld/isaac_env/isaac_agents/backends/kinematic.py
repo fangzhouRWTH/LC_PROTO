@@ -22,6 +22,7 @@ class _ActorRuntime:
     segment_lengths: list[float]
     total_length: float
     visual_height: float
+    route_mode: str = "loop"
     elapsed_s: float = 0.0
     translate_op: Any = None
     rotate_op: Any = None
@@ -80,7 +81,12 @@ class KinematicDynamicAgentBackend:
 
             actor.elapsed_s += float(dt)
             travel_time_s = max(0.0, actor.elapsed_s - actor.plan.spawn_time_s)
-            distance = (travel_time_s * actor.plan.speed_mps) % actor.total_length
+            raw_distance = travel_time_s * actor.plan.speed_mps
+            distance = self._distance_along_route(
+                raw_distance,
+                actor.total_length,
+                actor.route_mode,
+            )
             position, yaw = self._pose_at_distance(actor, distance)
             self._apply_actor_pose(actor, position, yaw)
 
@@ -113,6 +119,7 @@ class KinematicDynamicAgentBackend:
             segment_lengths=segment_lengths,
             total_length=total_length,
             visual_height=visual.scale_xyz[2],
+            route_mode=self._route_mode_for_plan(plan),
         )
 
     def _spawn_actor(self, actor: _ActorRuntime):
@@ -184,6 +191,30 @@ class KinematicDynamicAgentBackend:
         if actor_type == "vehicle":
             return _VisualSpec(scale_xyz=(1.8, 0.9, 0.5), color_rgb=(0.1, 0.35, 0.9))
         return _VisualSpec(scale_xyz=(0.35, 0.35, 1.7), color_rgb=(0.9, 0.25, 0.15))
+
+    def _route_mode_for_plan(self, plan: DynamicActorPlan) -> str:
+        route_plan = plan.route_plan
+        if route_plan is not None and route_plan.route_mode:
+            return str(route_plan.route_mode)
+        return "loop"
+
+    def _distance_along_route(
+        self,
+        raw_distance: float,
+        total_length: float,
+        route_mode: str,
+    ) -> float:
+        if total_length < 1e-8:
+            return 0.0
+
+        mode = str(route_mode or "loop").lower()
+        if mode in {"once", "stop_at_end", "stop-at-end"}:
+            return min(raw_distance, total_length)
+        if mode == "ping_pong":
+            period = total_length * 2.0
+            phase = raw_distance % period
+            return phase if phase <= total_length else period - phase
+        return raw_distance % total_length
 
     def _safe_prim_name(self, value: str) -> str:
         name = re.sub(r"[^0-9a-zA-Z_]", "_", value.strip())
