@@ -159,6 +159,7 @@ isaac_agents/
   manager.py           # lifecycle wrapper
   backends/
     kinematic.py       # current P0 implementation
+    orca_pedestrian.py # mock ORCA pedestrian backend (P2.1 spike)
 ```
 
 `simulation.py` only asks the factory for a manager and calls:
@@ -179,17 +180,21 @@ Dynamic agent runtime options can be passed through environment variables used b
 | Environment variable | Default | Meaning |
 | --- | --- | --- |
 | `ENABLE_DYNAMIC_AGENTS` | `true` | Enable dynamic plan generation and runtime actors. |
-| `DYNAMIC_AGENT_BACKEND` | `kinematic` | Runtime backend name. Currently only `kinematic` is registered. |
+| `DYNAMIC_AGENT_BACKEND` | `kinematic` | Runtime backend name. Supported: `kinematic`, `orca_pedestrian`. |
 | `DYNAMIC_MAX_PEDESTRIAN_ACTORS` | `1` | Max number of pedestrian actors generated from route placeholders or spawn/goal pairs. |
 | `DYNAMIC_MAX_VEHICLE_ACTORS` | `1` | Max number of vehicle actors generated from route placeholders or spawn/goal pairs. |
 | `DYNAMIC_PEDESTRIAN_SPEED_MPS` | `1.2` | Pedestrian speed in meters per second. |
 | `DYNAMIC_VEHICLE_SPEED_MPS` | `4.0` | Vehicle speed in meters per second. |
 | `DYNAMIC_SPAWN_TIME_S` | `0.0` | Delay before actors begin moving. |
 
-Example run:
+Example run (5 pedestrians on the multi-route test scene):
 
 ```bash
-WARMUP_FRAMES=0 SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda scripts/run_sim.sh
+WARMUP_FRAMES=0 \
+SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
+DYNAMIC_MAX_PEDESTRIAN_ACTORS=5 \
+DYNAMIC_AGENT_BACKEND=orca_pedestrian \
+scripts/run_sim.sh
 ```
 
 Disable dynamic agents:
@@ -208,6 +213,15 @@ Select the current backend explicitly:
 
 ```bash
 DYNAMIC_AGENT_BACKEND=kinematic scripts/run_sim.sh
+DYNAMIC_AGENT_BACKEND=orca_pedestrian scripts/run_sim.sh
+```
+
+Export a `DynamicScenePlan` JSON from scene stats for offline adapter experiments:
+
+```bash
+PYTHONPATH=src/simworld python3 scripts/export_dynamic_plan.py \
+  --input path/to/scene_stats.json \
+  --output /tmp/dynamic_scene_plan.json
 ```
 
 ## 6. P0 Limitations
@@ -229,6 +243,7 @@ Recommended next backend additions:
 | Backend | Purpose | Integration point |
 | --- | --- | --- |
 | `orca` | Pedestrian local avoidance | Add `backends/orca.py` and register it in `factory.py`. |
+| `orca_pedestrian` | Mock ORCA pedestrian spike for runtime validation | Already registered as `orca_pedestrian`; uses `engine/orca_pedestrian.py`. |
 | `sumo` | Traffic simulation and lane-level vehicle flow | Add `backends/sumo.py` and synchronize TraCI state to USD transforms. |
 | `asset_visual` | Replace cube visuals with referenced USD assets | Keep motion backend stable and swap visual creation logic. |
 
