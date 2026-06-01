@@ -89,6 +89,44 @@ def parse_args():
         default=simulation.DEFAULT_DYNAMIC_SPAWN_TIME_S,
     )
     parser.add_argument(
+        "--dynamic-route-mode",
+        default=simulation.DEFAULT_DYNAMIC_ROUTE_MODE,
+        choices=("loop", "once", "stop_at_end", "stop-at-end", "ping_pong"),
+    )
+    parser.add_argument(
+        "--dynamic-placeholder-visibility",
+        default=simulation.DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY,
+        choices=("hidden", "visible"),
+    )
+    parser.add_argument(
+        "--dynamic-pedestrian-visual",
+        default=simulation.DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL,
+        choices=("proxy", "asset"),
+    )
+    parser.add_argument(
+        "--dynamic-pedestrian-asset-path",
+        default=simulation.DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_PATH,
+    )
+    parser.add_argument(
+        "--dynamic-pedestrian-asset-scale",
+        type=float,
+        default=simulation.DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_SCALE,
+    )
+    parser.add_argument(
+        "--dynamic-vehicle-visual",
+        default=simulation.DEFAULT_DYNAMIC_VEHICLE_VISUAL,
+        choices=("proxy", "asset"),
+    )
+    parser.add_argument(
+        "--dynamic-vehicle-asset-path",
+        default=simulation.DEFAULT_DYNAMIC_VEHICLE_ASSET_PATH,
+    )
+    parser.add_argument(
+        "--dynamic-vehicle-asset-scale",
+        type=float,
+        default=simulation.DEFAULT_DYNAMIC_VEHICLE_ASSET_SCALE,
+    )
+    parser.add_argument(
         "--weather",
         default=simulation.DEFAULT_WEATHER,
         choices=simulation.available_weather_names(),
@@ -174,6 +212,14 @@ if __name__ == "__main__":
             dynamic_pedestrian_speed_mps=args.dynamic_pedestrian_speed_mps,
             dynamic_vehicle_speed_mps=args.dynamic_vehicle_speed_mps,
             dynamic_spawn_time_s=args.dynamic_spawn_time_s,
+            dynamic_route_mode=args.dynamic_route_mode,
+            dynamic_placeholder_visibility=args.dynamic_placeholder_visibility,
+            dynamic_pedestrian_visual=args.dynamic_pedestrian_visual,
+            dynamic_pedestrian_asset_path=args.dynamic_pedestrian_asset_path,
+            dynamic_pedestrian_asset_scale=args.dynamic_pedestrian_asset_scale,
+            dynamic_vehicle_visual=args.dynamic_vehicle_visual,
+            dynamic_vehicle_asset_path=args.dynamic_vehicle_asset_path,
+            dynamic_vehicle_asset_scale=args.dynamic_vehicle_asset_scale,
             weather=args.weather,
             daytime=args.daytime,
             sky_texture_path=args.sky_texture,

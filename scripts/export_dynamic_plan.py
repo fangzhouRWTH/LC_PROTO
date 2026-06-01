@@ -21,10 +21,19 @@ def _to_jsonable(value: Any) -> Any:
     return value
 
 
+def _to_namespace(value: Any) -> Any:
+    if isinstance(value, dict):
+        return SimpleNamespace(
+            **{str(key): _to_namespace(item) for key, item in value.items()}
+        )
+    if isinstance(value, list):
+        return [_to_namespace(item) for item in value]
+    return value
+
+
 def _load_scene_stats(payload: dict[str, Any]) -> Any:
-    if "scene_stats" in payload:
-        return SimpleNamespace(**payload["scene_stats"])
-    return SimpleNamespace(**payload)
+    raw_scene_stats = payload.get("scene_stats", payload)
+    return _to_namespace(raw_scene_stats)
 
 
 def _load_plan_config(payload: dict[str, Any]) -> DynamicPlanConfig:

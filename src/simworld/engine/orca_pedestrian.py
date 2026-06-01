@@ -336,7 +336,7 @@ def _separation_velocity(
         if distance < 1e-6 or distance > neighbor_radius_m:
             continue
 
-        strength = (min_sep - distance) / max(min_sep, 1e-6)
+        strength = max(0.0, (min_sep - distance) / max(min_sep, 1e-6))
         direction = _normalize_xy(offset)
         repulse_x += direction[0] * strength * agent.target_speed_mps
         repulse_y += direction[1] * strength * agent.target_speed_mps
@@ -390,8 +390,13 @@ def _closest_point_on_segment(point: Vec2, a: Vec2, b: Vec2) -> Vec2:
 
 
 def _advance_waypoint(agent: PedestrianAgentState, waypoint_reach_m: float = 0.35) -> None:
-    if agent.finished or agent.waypoint_index >= len(agent.waypoints) - 1:
-        agent.finished = True
+    if agent.finished:
+        return
+
+    if agent.waypoint_index >= len(agent.waypoints) - 1:
+        if _is_stop_at_end_mode(agent.route_mode):
+            agent.finished = True
+            agent.velocity = (0.0, 0.0, 0.0)
         return
 
     target = _vec2_xy(agent.waypoints[agent.waypoint_index + 1])
@@ -400,9 +405,13 @@ def _advance_waypoint(agent: PedestrianAgentState, waypoint_reach_m: float = 0.3
         agent.waypoint_index += 1
         if agent.waypoint_index >= len(agent.waypoints) - 1:
             agent.position = agent.waypoints[-1]
-            if agent.route_mode in {"once", "stop_at_end", "stop-at-end"}:
+            if _is_stop_at_end_mode(agent.route_mode):
                 agent.finished = True
                 agent.velocity = (0.0, 0.0, 0.0)
+
+
+def _is_stop_at_end_mode(route_mode: str) -> bool:
+    return str(route_mode or "").lower() in {"once", "stop_at_end", "stop-at-end"}
 
 
 def _frame_record(t_s: float, position: Vec3, velocity: Vec3) -> dict[str, Any]:

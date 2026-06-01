@@ -98,16 +98,28 @@ def _as_list(value: Any) -> list[Any]:
     return list(value)
 
 
+def _get_field(value: Any, name: str, default: Any = None) -> Any:
+    if isinstance(value, dict):
+        return value.get(name, default)
+    return getattr(value, name, default)
+
+
 def _get_stats_list(scene_stats: Any, name: str) -> list[Any]:
-    return _as_list(getattr(scene_stats, name, []))
+    return _as_list(_get_field(scene_stats, name, []))
 
 
 def _to_vec3(value: Any) -> Vec3:
     if value is None:
         raise ValueError("Missing position")
 
-    if hasattr(value, "position"):
-        value = value.position
+    position = _get_field(value, "position")
+    if position is not None:
+        value = position
+
+    if isinstance(value, dict):
+        if all(axis in value for axis in ("x", "y", "z")):
+            return (float(value["x"]), float(value["y"]), float(value["z"]))
+        raise ValueError(f"Position dict must contain position or x/y/z, got {value}")
 
     if len(value) < 3:
         raise ValueError(f"Position must have 3 values, got {value}")
@@ -116,7 +128,7 @@ def _to_vec3(value: Any) -> Vec3:
 
 
 def _source_prim_path(value: Any) -> str | None:
-    prim_path = getattr(value, "prim_path", "")
+    prim_path = _get_field(value, "prim_path", "")
     if not prim_path:
         return None
     return str(prim_path)
@@ -182,12 +194,12 @@ def _make_speed_profile(speed_mps: float) -> DynamicSpeedProfile:
 
 
 def _route_waypoints(value: Any) -> list[Vec3]:
-    vertices = getattr(value, "vertices", value)
+    vertices = _get_field(value, "vertices", value)
     return [_to_vec3(vertex) for vertex in vertices]
 
 
 def _placeholder_index(value: Any) -> str:
-    index = getattr(value, "index", "")
+    index = _get_field(value, "index", "")
     return str(index) if index else ""
 
 
@@ -268,7 +280,7 @@ def _route_metadata_for_placeholder(route_placeholder: Any) -> dict[str, Any]:
     index = _placeholder_index(route_placeholder)
     if index:
         metadata["placeholder_index"] = index
-    raw_name = getattr(route_placeholder, "raw_name", "")
+    raw_name = _get_field(route_placeholder, "raw_name", "")
     if raw_name:
         metadata["raw_name"] = str(raw_name)
     return metadata
@@ -291,7 +303,7 @@ def _midpoint(a: Vec3, b: Vec3) -> Vec3:
 
 
 def _lane_polygon(value: Any) -> list[Vec3]:
-    vertices = getattr(value, "vertices", value)
+    vertices = _get_field(value, "vertices", value)
     return [_to_vec3(vertex) for vertex in vertices]
 
 
@@ -322,7 +334,7 @@ def _lane_metadata_for_placeholder(lane_placeholder: Any) -> dict[str, Any]:
     index = _placeholder_index(lane_placeholder)
     if index:
         metadata["placeholder_index"] = index
-    raw_name = getattr(lane_placeholder, "raw_name", "")
+    raw_name = _get_field(lane_placeholder, "raw_name", "")
     if raw_name:
         metadata["raw_name"] = str(raw_name)
     return metadata
@@ -346,7 +358,11 @@ def _append_vehicle_lanes(plan: DynamicScenePlan, lane_placeholders: list[Any]) 
         try:
             plan.lanes.append(_make_lane_plan(lane_placeholder, index))
         except Exception as exc:
-            source = getattr(lane_placeholder, "prim_path", f"vehicle_lane_{index + 1:03d}")
+            source = _get_field(
+                lane_placeholder,
+                "prim_path",
+                f"vehicle_lane_{index + 1:03d}",
+            )
             plan.warnings.append(f"Vehicle lane placeholder skipped: {source}: {exc}")
 
 

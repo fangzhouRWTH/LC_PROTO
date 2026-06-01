@@ -114,3 +114,63 @@ def extract_prim_position(prim):
     pos = world_mat.ExtractTranslation()
 
     return [float(pos[0]), float(pos[1]), float(pos[2])]
+
+
+def normalize_dynamic_placeholder_visibility(value):
+    normalized = str(value or "hidden").strip().lower()
+    if normalized in {"hidden", "hide", "off", "false", "0"}:
+        return "hidden"
+    if normalized in {"visible", "show", "on", "true", "1"}:
+        return "visible"
+    raise ValueError(
+        "dynamic_placeholder_visibility must be 'hidden' or 'visible', "
+        f"got {value!r}"
+    )
+
+
+def apply_dynamic_placeholder_visibility(stage, stats, visibility="hidden"):
+    normalized = normalize_dynamic_placeholder_visibility(visibility)
+    visible = normalized == "visible"
+    paths = _dynamic_placeholder_paths(stats)
+    if not paths:
+        return []
+
+    UsdGeom = iscctx.get_isaac_context().pxr_usd_geom
+    updated = []
+    for prim_path in paths:
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim or not prim.IsValid():
+            continue
+        imageable = UsdGeom.Imageable(prim)
+        if visible:
+            imageable.MakeVisible()
+        else:
+            imageable.MakeInvisible()
+        updated.append(str(prim_path))
+
+    print(
+        f"[INFO] Dynamic placeholders {normalized}: "
+        f"{len(updated)} prim(s)."
+    )
+    return updated
+
+
+def _dynamic_placeholder_paths(stats):
+    paths = []
+    field_names = (
+        "pedestrian_spawn_points",
+        "pedestrian_goal_points",
+        "pedestrian_routes",
+        "vehicle_spawn_points",
+        "vehicle_goal_points",
+        "vehicle_routes",
+        "vehicle_lanes",
+        "sidewalk_areas",
+        "crosswalk_areas",
+    )
+    for field_name in field_names:
+        for placeholder in getattr(stats, field_name, []) or []:
+            prim_path = getattr(placeholder, "prim_path", "")
+            if prim_path and prim_path not in paths:
+                paths.append(prim_path)
+    return paths

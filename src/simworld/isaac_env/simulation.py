@@ -4,6 +4,7 @@ from .isaac_scene import scene
 from .isaac_scene import world
 from .isaac_robots import factory as robot_factory
 from .isaac_agents import factory as agent_factory
+from .isaac_agents.backends.visuals import DynamicVisualConfig
 from .isaac_sensor_sim import (
     available_sensor_profiles as _available_sensor_profiles,
     create_sensor_rig,
@@ -55,6 +56,14 @@ DEFAULT_DYNAMIC_PEDESTRIAN_SPEED_MPS = (
 )
 DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS = _DEFAULT_DYNAMIC_PLAN_CONFIG.vehicle_speed_mps
 DEFAULT_DYNAMIC_SPAWN_TIME_S = _DEFAULT_DYNAMIC_PLAN_CONFIG.default_spawn_time_s
+DEFAULT_DYNAMIC_ROUTE_MODE = _DEFAULT_DYNAMIC_PLAN_CONFIG.default_route_mode
+DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY = "hidden"
+DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL = "proxy"
+DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_PATH = ""
+DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_SCALE = 1.0
+DEFAULT_DYNAMIC_VEHICLE_VISUAL = "proxy"
+DEFAULT_DYNAMIC_VEHICLE_ASSET_PATH = ""
+DEFAULT_DYNAMIC_VEHICLE_ASSET_SCALE = 1.0
 DEFAULT_FOG_BILLBOARD_DEBUG = False
 DEFAULT_FOG_BILLBOARD_OPACITY_GAIN = 10.0
 DEFAULT_WEATHER = None
@@ -80,6 +89,14 @@ class SimulationConfig:
     dynamic_pedestrian_speed_mps: float = DEFAULT_DYNAMIC_PEDESTRIAN_SPEED_MPS
     dynamic_vehicle_speed_mps: float = DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS
     dynamic_spawn_time_s: float = DEFAULT_DYNAMIC_SPAWN_TIME_S
+    dynamic_route_mode: str = DEFAULT_DYNAMIC_ROUTE_MODE
+    dynamic_placeholder_visibility: str = DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY
+    dynamic_pedestrian_visual: str = DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL
+    dynamic_pedestrian_asset_path: str = DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_PATH
+    dynamic_pedestrian_asset_scale: float = DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_SCALE
+    dynamic_vehicle_visual: str = DEFAULT_DYNAMIC_VEHICLE_VISUAL
+    dynamic_vehicle_asset_path: str = DEFAULT_DYNAMIC_VEHICLE_ASSET_PATH
+    dynamic_vehicle_asset_scale: float = DEFAULT_DYNAMIC_VEHICLE_ASSET_SCALE
     fallback_spawn_position: tuple[float, float, float] = (
         DEFAULT_FALLBACK_SPAWN_POSITION
     )
@@ -124,6 +141,26 @@ def _make_dynamic_plan_config(config: SimulationConfig) -> dynamic.DynamicPlanCo
         pedestrian_speed_mps=max(0.0, float(config.dynamic_pedestrian_speed_mps)),
         vehicle_speed_mps=max(0.0, float(config.dynamic_vehicle_speed_mps)),
         default_spawn_time_s=max(0.0, float(config.dynamic_spawn_time_s)),
+        default_route_mode=str(config.dynamic_route_mode or DEFAULT_DYNAMIC_ROUTE_MODE),
+    )
+
+
+def _make_dynamic_visual_config(config: SimulationConfig) -> DynamicVisualConfig:
+    return DynamicVisualConfig(
+        pedestrian_visual=str(
+            config.dynamic_pedestrian_visual or DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL
+        ),
+        pedestrian_asset_path=str(config.dynamic_pedestrian_asset_path or ""),
+        pedestrian_asset_scale=max(
+            1e-6,
+            float(config.dynamic_pedestrian_asset_scale or 1.0),
+        ),
+        vehicle_visual=str(config.dynamic_vehicle_visual or DEFAULT_DYNAMIC_VEHICLE_VISUAL),
+        vehicle_asset_path=str(config.dynamic_vehicle_asset_path or ""),
+        vehicle_asset_scale=max(
+            1e-6,
+            float(config.dynamic_vehicle_asset_scale or 1.0),
+        ),
     )
 
 
@@ -208,6 +245,7 @@ def run(config: SimulationConfig | None = None):
         scene_stats = sim_scene.prepare(
             dynamic_plan_config=dynamic_plan_config,
             build_dynamic_plan=config.enable_dynamic_agents,
+            dynamic_placeholder_visibility=config.dynamic_placeholder_visibility,
         )
 
         weather_lighting = WeatherLightingManager.from_weather(
@@ -223,7 +261,8 @@ def run(config: SimulationConfig | None = None):
         weather_lighting.apply(sim_scene.stage)
 
         agent_manager = agent_factory.create_dynamic_agent_manager(
-            config.dynamic_agent_backend
+            config.dynamic_agent_backend,
+            visual_config=_make_dynamic_visual_config(config),
         )
         if config.enable_dynamic_agents:
             agent_manager.build_from_plan(sim_scene.dynamic_plan)

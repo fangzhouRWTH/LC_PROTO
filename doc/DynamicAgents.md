@@ -124,6 +124,8 @@ The planner uses explicit pedestrian or vehicle route placeholders first. Route 
 
 Set the default through `DynamicPlanConfig.default_route_mode`. The kinematic backend reads `route_plan.route_mode`; legacy plans without a route plan continue to loop.
 
+Route mode support is currently backend-specific. The `kinematic` backend honors `loop`, `once`, and `ping_pong`. The mock ORCA/SUMO spikes primarily validate `once` / `stop_at_end` behavior; full `loop` and `ping_pong` parity for those mock backends is a later behavior-consistency task.
+
 Reset and step ownership for dynamic backends:
 
 ```text
@@ -133,7 +135,7 @@ simulation loop
     -> backend writes USD transform
 ```
 
-`agent_manager.reset()` is called when the Isaac world stops; backends reset elapsed time and snap actors back to route start.
+`agent_manager.reset()` is called when the Isaac world stops; backends reset elapsed time, snap actors back to route start, and make previously hidden actors visible again. For `once` / `stop_at_end` routes, runtime backends hide the actor at the final waypoint instead of deleting the prim. The current demo places final waypoints outside the visible parcel, so leaving the parcel reads as an automatic despawn.
 
 ### P1.0 Backend Compatibility
 
@@ -189,6 +191,10 @@ P2.1.5 adds three stabilizers exposed via `OrcaPedestrianPlannerConfig`:
 
 `tests/test_orca_pedestrian_planner.py` covers off-route recovery and heading diversity in clustered crossings.
 
+### Mock SUMO vehicle spacing (P2.0.5)
+
+`engine/sumo_vehicle.py` is still a lightweight mock, not real SUMO. For visual demos it applies two runtime-only helpers: sparse vehicle lanes/routes are expanded with circular fillet arcs at supported turns, and vehicles use a minimal spacing/yield rule. Vehicles sharing a lane keep a configurable center gap; vehicles on crossing or merging headings yield when their candidate poses would overlap. This avoids obvious sharp yaw jumps and cube interpenetration in the demo while keeping full junction priority, traffic lights, and car-following models as future real SUMO work.
+
 ## 5. Runtime Parameters
 
 Dynamic agent runtime options can be passed through environment variables used by `scripts/run_sim.sh`:
@@ -202,15 +208,28 @@ Dynamic agent runtime options can be passed through environment variables used b
 | `DYNAMIC_PEDESTRIAN_SPEED_MPS` | `1.2` | Pedestrian speed in meters per second. |
 | `DYNAMIC_VEHICLE_SPEED_MPS` | `4.0` | Vehicle speed in meters per second. |
 | `DYNAMIC_SPAWN_TIME_S` | `0.0` | Delay before actors begin moving. |
+| `DYNAMIC_ROUTE_MODE` | `loop` | Default route lifecycle. Use `once` for route-end hide/despawn demos. |
+| `DYNAMIC_PLACEHOLDER_VISIBILITY` | `hidden` | Show or hide dynamic authoring placeholders. Use `visible` for route debugging. |
+| `DYNAMIC_PEDESTRIAN_VISUAL` | `proxy` | Pedestrian visual mode. Use `asset` to reference a real USD pedestrian asset. |
+| `DYNAMIC_PEDESTRIAN_ASSET_PATH` | unset | Optional USD file or directory for pedestrian assets. Leave empty to try Isaac People defaults. |
+| `DYNAMIC_PEDESTRIAN_ASSET_SCALE` | `1.0` | Extra multiplier after automatic pedestrian height fitting; use for artistic adjustment, not raw unit conversion. |
+| `DYNAMIC_VEHICLE_VISUAL` | `proxy` | Vehicle visual mode. Use `asset` to reference a USD vehicle asset. |
+| `DYNAMIC_VEHICLE_ASSET_PATH` | unset | Optional USD file or directory for street-car assets. Explicit path is recommended; empty path falls back to proxy. |
+| `DYNAMIC_VEHICLE_ASSET_SCALE` | `1.0` | Extra multiplier after automatic vehicle bounds fitting. |
+| `SENSOR_PROFILE` | `default` | Sensor rig profile forwarded by `scripts/run_sim.sh`; use `none` for stage-authored demo cameras. |
+| `ACTIVE_SENSOR` | unset | Initial active sensor id when a sensor rig is enabled. |
 
 Example run (5 ORCA pedestrians + 2 SUMO vehicles on the multi-route test scene):
 
 ```bash
 WARMUP_FRAMES=0 \
 SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
+SENSOR_PROFILE=none \
+CAMERA_PRIM_PATH=/World/DemoCamera \
 DYNAMIC_MAX_PEDESTRIAN_ACTORS=5 \
 DYNAMIC_MAX_VEHICLE_ACTORS=2 \
 DYNAMIC_AGENT_BACKEND=orca_sumo \
+DYNAMIC_ROUTE_MODE=once \
 scripts/run_sim.sh
 ```
 
@@ -263,6 +282,135 @@ PYTHONPATH=src/simworld python3 scripts/export_dynamic_plan.py \
   --input path/to/scene_stats.json \
   --output /tmp/dynamic_scene_plan.json
 ```
+
+
+### Demo visual polish
+
+The demo runtime hides dynamic authoring placeholders by default after parsing. Set `DYNAMIC_PLACEHOLDER_VISIBILITY=visible` to inspect route, lane, sidewalk, and crosswalk placeholders in the viewport. The runtime actors use lightweight proxy visuals shared by all current backends: a simple human-shaped pedestrian proxy and a simple vehicle proxy. These are placeholders for future real USD assets and USD Skel animation, not the final asset system.
+
+### P1.4 Demo Parcel Behavior
+
+The local `assets/blocks/test_dynamic_agents/test_dynamic_agents.usda` demo is intentionally a lightweight, ignored test asset. It now uses a larger street-block scale with a wider road intersection, sidewalks, crosswalks, denser ordered route points, and final pedestrian/vehicle waypoints outside the visible parcel. Running with `DYNAMIC_ROUTE_MODE=once` makes agents follow the route and disappear at the route end.
+
+Curved corners do not require a spline engine in the current contract. Pedestrian paths can still use denser ordered route points when a visibly curved sidewalk path is needed. Vehicle lanes/routes should prefer sparse ordered control points around turns; the mock SUMO backend uses the matching `DynamicLanePlan.centerline` when `route_plan.lane_ids` is present and generates runtime circular fillets for smoother demo turns.
+
+Recommended visual check:
+
+```bash
+WARMUP_FRAMES=0 \
+SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
+SENSOR_PROFILE=none \
+CAMERA_PRIM_PATH=/World/DemoCamera \
+DYNAMIC_MAX_PEDESTRIAN_ACTORS=5 \
+DYNAMIC_MAX_VEHICLE_ACTORS=2 \
+DYNAMIC_AGENT_BACKEND=orca_sumo \
+DYNAMIC_ROUTE_MODE=once \
+scripts/run_sim.sh
+```
+
+
+### Test Plot Authoring Guide
+
+The current test plot is the authoring template for dynamic placeholders until formal parcels are introduced. Vehicle and pedestrian route mesh points are always ordered in travel direction. Route and lane placeholders with the same index should describe the same vehicle movement so the vehicle actor can reference the matching `DynamicLanePlan`.
+
+For vehicle turns, author clean control points instead of dense zig-zag samples. A right turn should usually be authored as `entry straight -> corner control point -> exit straight`; the mock SUMO runtime generates a circular fillet for visual smoothness. Keep enough distance before and after the corner for the default `turn_radius_m=6.0`, and reduce the radius later only if the lane is genuinely narrow. Dense points are still accepted, but they can produce visible heading jitter.
+
+Route endpoints used for `DYNAMIC_ROUTE_MODE=once` should sit outside the visible plot when the desired behavior is "leave the block and disappear". Use `DYNAMIC_PLACEHOLDER_VISIBILITY=visible` to debug route and lane authoring, then return to the default hidden mode for demos.
+
+Next asset work should start with Isaac People pedestrian assets. This guide intentionally does not require real human, vehicle, SUMO, ORCA, or formal parcel assets.
+
+### Pedestrian USD Asset Path
+
+P1.6 adds an optional pedestrian asset visual layer. The default remains `DYNAMIC_PEDESTRIAN_VISUAL=proxy`; set `DYNAMIC_PEDESTRIAN_VISUAL=asset` to try a real USD pedestrian asset. If no usable USD is found, the runtime prints one warning and falls back to the lightweight proxy so the demo can still run. Referenced pedestrian assets are height-fitted to the actor shape by default, so centimeter-scale or character-pack USD files do not dwarf the test block. `DYNAMIC_PEDESTRIAN_ASSET_SCALE` is an extra multiplier after that fit.
+
+Recommended sources:
+
+- Isaac Sim official Local Assets Pack. The People assets are under `Isaac/People/Characters/` when the asset root is configured. The Replicator Agent configuration also uses `Isaac/People/Characters/` as the default character path and `Isaac/People/MotionLibrary/HumanMotionLibrary.usd` as the default motion library.
+- External USD people assets from RenderPeople or Reallusion ActorCore / Character Creator. Prefer USD exports for this phase; FBX/GLB conversion and animation retargeting are later tasks.
+
+Recommended local layout for purchased or downloaded people assets:
+
+```bash
+/home/sstormw/LeapsCora/local_assets/dynamic_people/
+```
+
+Current local test asset installed by P1.6:
+
+```bash
+/home/sstormw/LeapsCora/local_assets/omniverse_rigged_characters/Assets/Characters/Reallusion/ActorCore/Business_F_0002/Actor/business-f-0002/business-f-0002.usd
+```
+
+The broader extracted character directory is:
+
+```bash
+/home/sstormw/LeapsCora/local_assets/omniverse_rigged_characters/Assets/Characters/Reallusion/ActorCore
+```
+
+This directory intentionally lives outside `LC_PROTO/assets/library`, because that folder is scanned by the static `AssetLibrary` placement system and treats parent directories as placement categories. Dynamic pedestrians should stay as runtime references through `DYNAMIC_PEDESTRIAN_ASSET_PATH` until we introduce a dedicated dynamic asset catalog. The current Omniverse/Reallusion test character measured about 177.89 stage units high. Its rig/control bounds extend slightly below the visible foot/root area, so the runtime now treats that small negative Z as rig slack instead of lifting the character; this keeps the feet on the route ground while still fitting the visible height near the default 1.7 m pedestrian shape.
+
+Run with an explicit asset directory:
+
+```bash
+WARMUP_FRAMES=0 \
+SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
+SENSOR_PROFILE=none \
+CAMERA_PRIM_PATH=/World/DemoCamera \
+DYNAMIC_MAX_PEDESTRIAN_ACTORS=5 \
+DYNAMIC_MAX_VEHICLE_ACTORS=2 \
+DYNAMIC_AGENT_BACKEND=orca_sumo \
+DYNAMIC_ROUTE_MODE=once \
+DYNAMIC_PEDESTRIAN_VISUAL=asset \
+DYNAMIC_PEDESTRIAN_ASSET_PATH=/home/sstormw/LeapsCora/local_assets/omniverse_rigged_characters/Assets/Characters/Reallusion/ActorCore/Business_F_0002/Actor/business-f-0002/business-f-0002.usd \
+scripts/run_sim.sh
+```
+
+A directory path also works; the resolver skips motion clips such as `Motions/Default.usd` when a character actor USD is available:
+
+```bash
+DYNAMIC_PEDESTRIAN_ASSET_PATH=/home/sstormw/LeapsCora/local_assets/omniverse_rigged_characters/Assets/Characters/Reallusion/ActorCore scripts/run_sim.sh
+```
+
+Run with Isaac People defaults after configuring the Isaac asset root:
+
+```bash
+DYNAMIC_PEDESTRIAN_VISUAL=asset scripts/run_sim.sh
+```
+
+Current limitations: this phase references static USD appearance only. It does not call the Isaac Replicator Agent behavior system, bind USD Skel animations, retarget external characters, or blend walk/idle clips. The actor root transform still comes from the LC_PROTO motion backend. The referenced pedestrian asset child is rotated `+90` degrees around Z to match the common Isaac People / NVIDIA biped `-Y-forward` convention. Vehicle USD asset reference is supported as a static visual layer, but no vehicle asset pack is bundled in this branch; if no local/Isaac vehicle USD is found, vehicles still fall back to the proxy visual.
+
+### Vehicle USD Asset Plan
+
+Vehicle assets now follow the same runtime-reference pattern as pedestrians: `DYNAMIC_VEHICLE_VISUAL=proxy|asset`, `DYNAMIC_VEHICLE_ASSET_PATH`, and `DYNAMIC_VEHICLE_ASSET_SCALE`. The vehicle root keeps receiving motion/yaw from the backend; the referenced child is auto-fitted inside `DynamicActorShape.length_m`, `width_m`, and `height_m`. For this street-block demo, vehicle assets should be ordinary road cars, not delivery robots, carts, or Coco-style sidewalk vehicles. Use an explicit local USD file or directory for reproducible demos; if no path is provided, the runtime falls back to the proxy instead of guessing an Isaac default vehicle.
+
+Local test vehicle asset installed for this branch:
+
+```bash
+/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/lc_proto_sedan_vehicle_zup.usda
+```
+
+It wraps the CC0 `USD_Mini_Car_Kit` sedan street-car asset from `usd-wg/assets`, converts the source Y-up vehicle into the LC_PROTO Z-up stage, and rotates the model so its long axis is `+X forward` for the runtime yaw convention. The wrapper also carries `lc_proto:visualZOffsetM = -0.25`, which the runtime applies after automatic bounds fitting to keep the current sedan visually on the road surface. This is intentionally a road car placeholder, not a delivery robot.
+
+Do not put downloaded vehicle packs under `LC_PROTO/assets/library` unless they are intended for the static placement planner. For shared dynamic demos, prefer a tracked manifest/download helper plus ignored payloads under `assets/dynamic/vehicles/` or a repo-external path such as `/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/`. Candidate sources should prioritize USD / OpenUSD / SimReady assets from Isaac Sim Content Browser, NVIDIA Omniverse downloadable packs, or validated external vendors. If a source vehicle model is not `+X` forward, add a per-asset orientation override in a later pass rather than baking that assumption into route planning.
+
+
+Run with an explicit vehicle asset path after downloading one:
+
+```bash
+DYNAMIC_VEHICLE_VISUAL=asset \
+DYNAMIC_VEHICLE_ASSET_PATH=/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/lc_proto_sedan_vehicle_zup.usda \
+scripts/run_sim.sh
+```
+
+Reference links:
+
+- Isaac Sim Local Assets Packs: <https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_faq.html>
+- Isaac Sim Replicator Agent character path and motion library: <https://docs.isaacsim.omniverse.nvidia.com/latest/action_and_event_data_generation/ext_replicator-agent/ext_isaacsim_replicator_agent_configuration.html>
+- Isaac asset root helper API: <https://docs.isaacsim.omniverse.nvidia.com/latest/py/source/extensions/isaacsim.storage.native/docs/index.html>
+- Isaac Sim USD assets overview: <https://docs.isaacsim.omniverse.nvidia.com/latest/assets/usd_assets_overview.html>
+- Omniverse downloadable asset packs: <https://docs-prod.omniverse.nvidia.com/usd/latest/usd_content_samples/downloadable_packs.html>
+- RenderPeople 3D people: <https://renderpeople.com/3d-people/>
+- RenderPeople animated people: <https://renderpeople.com/3d-animated-people/>
+- Reallusion ActorCore: <https://actorcore.reallusion.com/>
 
 ## 6. P0 Limitations
 

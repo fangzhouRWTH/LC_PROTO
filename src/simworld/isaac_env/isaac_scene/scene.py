@@ -75,6 +75,7 @@ class SimScene:
         verbose: bool = False,
         dynamic_plan_config: dynamic.DynamicPlanConfig | None = None,
         build_dynamic_plan: bool = True,
+        dynamic_placeholder_visibility: str = "hidden",
     ):
         self.stats = parser.SceneStats()
         tools.deactivate_all_lights(self.stage)
@@ -94,6 +95,12 @@ class SimScene:
             print_dynamic_plan_summary(self.dynamic_plan)
         else:
             self.dynamic_plan = dynamic.DynamicScenePlan()
+
+        tools.apply_dynamic_placeholder_visibility(
+            self.stage,
+            self.stats,
+            visibility=dynamic_placeholder_visibility,
+        )
 
         footprints: list[placement.Footprint3D] = []
         for ply in self.stats.placeholder_areas:
