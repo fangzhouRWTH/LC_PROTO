@@ -6,6 +6,7 @@ from .backends import (
     SumoVehicleDynamicAgentBackend,
 )
 from .manager import DynamicAgentManager
+from .backends.visuals import DynamicVisualConfig
 
 DEFAULT_DYNAMIC_AGENT_BACKEND = "kinematic"
 
@@ -24,6 +25,7 @@ def available_dynamic_agent_backends() -> tuple[str, ...]:
 def create_dynamic_agent_manager(
     backend_name: str = DEFAULT_DYNAMIC_AGENT_BACKEND,
     root_prim_path: str = DEFAULT_DYNAMIC_ROOT,
+    visual_config: DynamicVisualConfig | None = None,
 ) -> DynamicAgentManager:
     try:
         backend_cls = DYNAMIC_AGENT_BACKEND_REGISTRY[backend_name]
@@ -34,4 +36,9 @@ def create_dynamic_agent_manager(
             f"{backend_name}. Available dynamic agent backends: {available}"
         ) from exc
 
-    return DynamicAgentManager(backend_cls(root_prim_path=root_prim_path))
+    return DynamicAgentManager(
+        backend_cls(
+            root_prim_path=root_prim_path,
+            visual_config=visual_config or DynamicVisualConfig(),
+        )
+    )

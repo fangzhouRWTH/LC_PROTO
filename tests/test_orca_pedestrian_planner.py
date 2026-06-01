@@ -135,6 +135,41 @@ class OrcaPedestrianPlannerTest(unittest.TestCase):
         spread = max(headings) - min(headings)
         self.assertGreater(abs(spread), 0.3)
 
+    def test_neighbors_outside_min_separation_do_not_attract(self):
+        agents = [
+            PedestrianAgentState(
+                actor_id="ped_a",
+                radius_m=0.35,
+                position=(0.0, 0.0, 0.0),
+                target_speed_mps=1.2,
+                max_speed_mps=1.2,
+            ),
+            PedestrianAgentState(
+                actor_id="ped_b",
+                radius_m=0.35,
+                position=(1.0, 0.0, 0.0),
+                target_speed_mps=1.2,
+                max_speed_mps=1.2,
+            ),
+        ]
+        initial_distance = math.hypot(
+            agents[1].position[0] - agents[0].position[0],
+            agents[1].position[1] - agents[0].position[1],
+        )
+
+        step_pedestrian_agents(
+            agents,
+            ObstacleContext(agent_neighbor_radius_m=4.0),
+            dt_s=0.1,
+            sim_time_s=0.1,
+        )
+        final_distance = math.hypot(
+            agents[1].position[0] - agents[0].position[0],
+            agents[1].position[1] - agents[0].position[1],
+        )
+
+        self.assertGreaterEqual(final_distance, initial_distance)
+
 
 if __name__ == "__main__":
     unittest.main()

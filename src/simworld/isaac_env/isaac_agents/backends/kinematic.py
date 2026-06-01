@@ -5,13 +5,9 @@ import re
 
 from engine.dynamic import DynamicActorPlan, DynamicScenePlan
 
+from .visuals import DynamicVisualConfig, proxy_visual_spec_for_actor, spawn_actor_visual
+
 DEFAULT_DYNAMIC_ROOT = "/World/DynamicActors"
-
-
-@dataclass
-class _VisualSpec:
-    scale_xyz: tuple[float, float, float]
-    color_rgb: tuple[float, float, float]
 
 
 @dataclass
@@ -26,11 +22,17 @@ class _ActorRuntime:
     elapsed_s: float = 0.0
     translate_op: Any = None
     rotate_op: Any = None
+    hidden: bool = False
 
 
 class KinematicDynamicAgentBackend:
-    def __init__(self, root_prim_path: str = DEFAULT_DYNAMIC_ROOT):
+    def __init__(
+        self,
+        root_prim_path: str = DEFAULT_DYNAMIC_ROOT,
+        visual_config: DynamicVisualConfig | None = None,
+    ):
         self.root_prim_path = root_prim_path
+        self.visual_config = visual_config or DynamicVisualConfig()
         self.context = None
         self.stage = None
         self.plan = DynamicScenePlan()
@@ -68,6 +70,7 @@ class KinematicDynamicAgentBackend:
     def reset(self):
         for actor in self.actors:
             actor.elapsed_s = 0.0
+            self._set_actor_visible(actor, True)
             position, yaw = self._pose_at_distance(actor, 0.0)
             self._apply_actor_pose(actor, position, yaw)
 
@@ -89,6 +92,10 @@ class KinematicDynamicAgentBackend:
             )
             position, yaw = self._pose_at_distance(actor, distance)
             self._apply_actor_pose(actor, position, yaw)
+            self._set_actor_visible(
+                actor,
+                not self._should_hide_actor_at_distance(actor, raw_distance),
+            )
 
     def _get_context(self):
         if self.context is None:
@@ -111,14 +118,14 @@ class KinematicDynamicAgentBackend:
             print(f"[WARN] Skip dynamic actor with zero-length route: {plan.actor_id}")
             return None
 
-        visual = self._visual_spec(plan.actor_type)
+        visual = proxy_visual_spec_for_actor(plan.actor_type, plan.shape)
         return _ActorRuntime(
             plan=plan,
             prim_path=f"{self.root_prim_path}/{self._safe_prim_name(plan.actor_id)}",
             route=route,
             segment_lengths=segment_lengths,
             total_length=total_length,
-            visual_height=visual.scale_xyz[2],
+            visual_height=visual.bounds_xyz[2],
             route_mode=self._route_mode_for_plan(plan),
         )
 
@@ -130,18 +137,14 @@ class KinematicDynamicAgentBackend:
         actor.translate_op = xformable.AddTranslateOp()
         actor.rotate_op = xformable.AddRotateXYZOp()
 
-        visual = self._visual_spec(actor.plan.actor_type)
-        body_path = f"{actor.prim_path}/Body"
-        body = context.pxr_usd_geom.Cube.Define(self.stage, body_path)
-        body.CreateSizeAttr(1.0)
-        body.CreateDisplayColorAttr().Set([context.pxr_gf.Vec3f(*visual.color_rgb)])
-
-        body_xform = context.pxr_usd_geom.Xformable(body.GetPrim())
-        body_xform.ClearXformOpOrder()
-        body_xform.AddTranslateOp().Set(
-            context.pxr_gf.Vec3d(0.0, 0.0, visual.scale_xyz[2] * 0.5)
+        spawn_actor_visual(
+            self.stage,
+            context,
+            actor.prim_path,
+            actor.plan.actor_type,
+            actor.plan.shape,
+            self.visual_config,
         )
-        body_xform.AddScaleOp().Set(context.pxr_gf.Vec3f(*visual.scale_xyz))
 
     def _ensure_xform_prim(self, prim_path: str):
         context = self._get_context()
@@ -187,10 +190,20 @@ class KinematicDynamicAgentBackend:
         actor.translate_op.Set(Gf.Vec3d(position[0], position[1], position[2]))
         actor.rotate_op.Set(Gf.Vec3f(0.0, 0.0, math.degrees(yaw)))
 
-    def _visual_spec(self, actor_type: str) -> _VisualSpec:
-        if actor_type == "vehicle":
-            return _VisualSpec(scale_xyz=(1.8, 0.9, 0.5), color_rgb=(0.1, 0.35, 0.9))
-        return _VisualSpec(scale_xyz=(0.35, 0.35, 1.7), color_rgb=(0.9, 0.25, 0.15))
+    def _set_actor_visible(self, actor: _ActorRuntime, visible: bool):
+        actor.hidden = not visible
+        if self.stage is None:
+            return
+
+        prim = self.stage.GetPrimAtPath(actor.prim_path)
+        if not prim.IsValid():
+            return
+
+        imageable = self._get_context().pxr_usd_geom.Imageable(prim)
+        if visible:
+            imageable.MakeVisible()
+        else:
+            imageable.MakeInvisible()
 
     def _route_mode_for_plan(self, plan: DynamicActorPlan) -> str:
         route_plan = plan.route_plan
@@ -208,13 +221,26 @@ class KinematicDynamicAgentBackend:
             return 0.0
 
         mode = str(route_mode or "loop").lower()
-        if mode in {"once", "stop_at_end", "stop-at-end"}:
+        if self._is_stop_at_end_mode(mode):
             return min(raw_distance, total_length)
         if mode == "ping_pong":
             period = total_length * 2.0
             phase = raw_distance % period
             return phase if phase <= total_length else period - phase
         return raw_distance % total_length
+
+    def _should_hide_actor_at_distance(
+        self,
+        actor: _ActorRuntime,
+        raw_distance: float,
+    ) -> bool:
+        return (
+            self._is_stop_at_end_mode(actor.route_mode)
+            and raw_distance >= actor.total_length
+        )
+
+    def _is_stop_at_end_mode(self, route_mode: str) -> bool:
+        return str(route_mode or "").lower() in {"once", "stop_at_end", "stop-at-end"}
 
     def _safe_prim_name(self, value: str) -> str:
         name = re.sub(r"[^0-9a-zA-Z_]", "_", value.strip())
