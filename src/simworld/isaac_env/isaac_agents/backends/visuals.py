@@ -12,6 +12,9 @@ DEFAULT_PEDESTRIAN_VISUAL = "proxy"
 DEFAULT_PEDESTRIAN_ASSET_PATH = ""
 DEFAULT_PEDESTRIAN_ASSET_SCALE = 1.0
 DEFAULT_PEDESTRIAN_ASSET_FIT = "height"
+DEFAULT_PEDESTRIAN_ANIMATION = "none"
+DEFAULT_PEDESTRIAN_ANIMATION_CLIP_PATH = ""
+DEFAULT_PEDESTRIAN_ANIMATION_TIME_SCALE = 1.0
 DEFAULT_VEHICLE_VISUAL = "proxy"
 DEFAULT_VEHICLE_ASSET_PATH = ""
 DEFAULT_VEHICLE_ASSET_SCALE = 1.0
@@ -19,8 +22,10 @@ DEFAULT_VEHICLE_ASSET_FIT = "shape"
 DEFAULT_ISAAC_PEOPLE_CHARACTERS_PATH = "Isaac/People/Characters/"
 DEFAULT_ISAAC_VEHICLE_PATHS: tuple[str, ...] = ()
 _ASSET_CHILD_NAME = "Asset"
+_ANIMATION_CHILD_NAME = "Animation"
 _KNOWN_VISUAL_CHILDREN = (
     _ASSET_CHILD_NAME,
+    _ANIMATION_CHILD_NAME,
     "Legs",
     "Torso",
     "Head",
@@ -30,6 +35,17 @@ _KNOWN_VISUAL_CHILDREN = (
     "RearMarker",
 )
 _WARNED_MESSAGES: set[str] = set()
+_ANIMATION_CLIP_KEYWORDS = (
+    "walk",
+    "walking",
+    "run",
+    "running",
+    "corridor",
+    "mobile",
+    "traffic",
+    "idle",
+    "stand",
+)
 
 
 @dataclass(frozen=True)
@@ -38,6 +54,9 @@ class DynamicVisualConfig:
     pedestrian_asset_path: str = DEFAULT_PEDESTRIAN_ASSET_PATH
     pedestrian_asset_scale: float = DEFAULT_PEDESTRIAN_ASSET_SCALE
     pedestrian_asset_fit: str = DEFAULT_PEDESTRIAN_ASSET_FIT
+    pedestrian_animation: str = DEFAULT_PEDESTRIAN_ANIMATION
+    pedestrian_animation_clip_path: str = DEFAULT_PEDESTRIAN_ANIMATION_CLIP_PATH
+    pedestrian_animation_time_scale: float = DEFAULT_PEDESTRIAN_ANIMATION_TIME_SCALE
     vehicle_visual: str = DEFAULT_VEHICLE_VISUAL
     vehicle_asset_path: str = DEFAULT_VEHICLE_ASSET_PATH
     vehicle_asset_scale: float = DEFAULT_VEHICLE_ASSET_SCALE
@@ -241,6 +260,22 @@ def resolve_vehicle_asset_path(
     return None
 
 
+def resolve_pedestrian_animation_clip_path(
+    clip_path: str | None = None,
+    asset_path: str | None = None,
+    context: Any | None = None,
+) -> str | None:
+    raw_path = str(clip_path or "").strip()
+    if raw_path:
+        return _resolve_animation_clip_reference(raw_path, context)
+
+    for candidate_dir in _candidate_animation_clip_dirs_for_asset(asset_path):
+        candidate = _first_usd_in_dir(candidate_dir, asset_kind="animation")
+        if candidate is not None:
+            return str(candidate)
+    return None
+
+
 def spawn_actor_visual(
     stage: Any,
     context: Any,
@@ -267,6 +302,13 @@ def spawn_actor_visual(
                     config.pedestrian_asset_scale,
                     config.pedestrian_asset_fit,
                     shape,
+                )
+                _maybe_bind_pedestrian_animation_clip(
+                    stage,
+                    context,
+                    root_prim_path,
+                    asset_path,
+                    config,
                 )
                 return "asset"
             except Exception as exc:  # pragma: no cover - Isaac/USD runtime path
@@ -339,6 +381,28 @@ def _normalize_visual_config(
         pedestrian_asset_fit=_normalize_asset_fit(
             getattr(config, "pedestrian_asset_fit", DEFAULT_PEDESTRIAN_ASSET_FIT)
         ),
+        pedestrian_animation=_normalize_pedestrian_animation(
+            getattr(config, "pedestrian_animation", DEFAULT_PEDESTRIAN_ANIMATION)
+        ),
+        pedestrian_animation_clip_path=str(
+            getattr(
+                config,
+                "pedestrian_animation_clip_path",
+                DEFAULT_PEDESTRIAN_ANIMATION_CLIP_PATH,
+            )
+            or ""
+        ).strip(),
+        pedestrian_animation_time_scale=max(
+            1e-6,
+            float(
+                getattr(
+                    config,
+                    "pedestrian_animation_time_scale",
+                    DEFAULT_PEDESTRIAN_ANIMATION_TIME_SCALE,
+                )
+                or DEFAULT_PEDESTRIAN_ANIMATION_TIME_SCALE
+            ),
+        ),
         vehicle_visual=_normalize_visual_mode(
             getattr(config, "vehicle_visual", DEFAULT_VEHICLE_VISUAL)
         ),
@@ -360,6 +424,13 @@ def _normalize_visual_mode(visual_mode: str | None) -> str:
     if mode in {"proxy", "asset"}:
         return mode
     return "proxy"
+
+
+def _normalize_pedestrian_animation(animation_mode: str | None) -> str:
+    mode = str(animation_mode or DEFAULT_PEDESTRIAN_ANIMATION).strip().lower()
+    if mode in {"none", "clip"}:
+        return mode
+    return DEFAULT_PEDESTRIAN_ANIMATION
 
 
 def _normalize_asset_fit(asset_fit: str | None) -> str:
@@ -472,6 +543,12 @@ def _first_usd_in_dir(directory: Path, asset_kind: str = "pedestrian") -> Path |
         for candidate in directory.rglob("*")
         if candidate.is_file() and candidate.suffix.lower() in USD_SUFFIXES
     )
+    if asset_kind == "animation":
+        return (
+            sorted(usd_files, key=_animation_clip_sort_key)[0].resolve()
+            if usd_files
+            else None
+        )
     if asset_kind == "vehicle":
         for candidate in usd_files:
             if _is_preferred_street_vehicle_usd(candidate):
@@ -481,6 +558,61 @@ def _first_usd_in_dir(directory: Path, asset_kind: str = "pedestrian") -> Path |
             if _is_preferred_character_usd(candidate):
                 return candidate.resolve()
     return usd_files[0].resolve() if usd_files else None
+
+
+def _resolve_animation_clip_reference(
+    raw_path: str,
+    context: Any | None,
+) -> str | None:
+    local_asset = _select_local_usd(raw_path, asset_kind="animation")
+    if local_asset is not None:
+        return str(local_asset)
+
+    if _looks_like_url(raw_path):
+        if _is_usd_file_reference(raw_path):
+            return raw_path
+        return _select_usd_from_remote_dir(raw_path, asset_kind="animation")
+
+    if Path(raw_path).expanduser().is_absolute():
+        return None
+
+    resolved = _resolve_with_isaac_storage(raw_path, context)
+    if resolved is None or resolved == raw_path:
+        return None
+    return _select_reference_from_resolved(resolved, context, asset_kind="animation")
+
+
+def _candidate_animation_clip_dirs_for_asset(asset_path: str | None) -> tuple[Path, ...]:
+    if not asset_path or _looks_like_url(str(asset_path)):
+        return ()
+
+    path = Path(str(asset_path)).expanduser()
+    start = path.parent if path.suffix.lower() in USD_SUFFIXES else path
+    roots = [start]
+    roots.extend(list(start.parents)[:6])
+
+    candidates: list[Path] = []
+    seen: set[Path] = set()
+    for root in roots:
+        for dirname in ("Motion", "Motions", "motion", "motions"):
+            candidate = root / dirname
+            if candidate.is_dir() and candidate not in seen:
+                seen.add(candidate)
+                candidates.append(candidate)
+    return tuple(candidates)
+
+
+def _animation_clip_sort_key(path: Path) -> tuple[int, int, str]:
+    searchable = "/".join(part.lower() for part in path.parts)
+    keyword_rank = len(_ANIMATION_CLIP_KEYWORDS)
+    for index, keyword in enumerate(_ANIMATION_CLIP_KEYWORDS):
+        if keyword in searchable:
+            keyword_rank = index
+            break
+
+    parts = {part.lower() for part in path.parts}
+    structural_penalty = 10 if parts & {"props", "bones", "materials"} else 0
+    return (keyword_rank, structural_penalty, str(path).lower())
 
 
 def _is_preferred_street_vehicle_usd(path: Path) -> bool:
@@ -552,7 +684,10 @@ def _select_usd_from_remote_dir_recursive(
             continue
         child_dirs.append(child_path)
 
-    if asset_kind == "vehicle":
+    if asset_kind == "animation":
+        if usd_children:
+            return sorted(usd_children, key=lambda child: _animation_clip_sort_key(Path(child)))[0]
+    elif asset_kind == "vehicle":
         for child_path in usd_children:
             if _is_preferred_street_vehicle_usd(Path(child_path)):
                 return child_path
@@ -582,6 +717,139 @@ def _looks_like_url(path_text: str) -> bool:
 
 def _is_usd_file_reference(path_text: str) -> bool:
     return Path(path_text.split("?")[0]).suffix.lower() in USD_SUFFIXES
+
+
+def _maybe_bind_pedestrian_animation_clip(
+    stage: Any,
+    context: Any,
+    root_prim_path: str,
+    asset_path: str,
+    config: DynamicVisualConfig,
+) -> None:
+    if _normalize_pedestrian_animation(config.pedestrian_animation) != "clip":
+        return
+
+    clip_path = resolve_pedestrian_animation_clip_path(
+        config.pedestrian_animation_clip_path,
+        asset_path=asset_path,
+        context=context,
+    )
+    if clip_path is None:
+        requested = config.pedestrian_animation_clip_path or f"Motion/Motions near {asset_path}"
+        _warn_once(
+            "Pedestrian animation clip unavailable: "
+            f"{requested}. Keeping static pedestrian asset."
+        )
+        return
+
+    try:
+        _spawn_animation_clip_reference_and_bind(
+            stage,
+            context,
+            root_prim_path,
+            clip_path,
+            config.pedestrian_animation_time_scale,
+        )
+    except Exception as exc:  # pragma: no cover - Isaac/USD runtime path
+        _warn_once(
+            "Pedestrian animation clip failed to bind "
+            f"({clip_path}): {exc}. Keeping static pedestrian asset."
+        )
+
+
+def _spawn_animation_clip_reference_and_bind(
+    stage: Any,
+    context: Any,
+    root_prim_path: str,
+    clip_path: str,
+    time_scale: float,
+) -> None:
+    animation_prim_path = f"{root_prim_path}/{_ANIMATION_CHILD_NAME}"
+    animation_prim = context.pxr_usd_geom.Xform.Define(
+        stage,
+        animation_prim_path,
+    ).GetPrim()
+    references = animation_prim.GetReferences()
+    references.ClearReferences()
+    _add_animation_reference(references, context, clip_path, time_scale)
+    _set_animation_time_scale_attr(animation_prim, context, time_scale)
+
+    asset_prim = stage.GetPrimAtPath(f"{root_prim_path}/{_ASSET_CHILD_NAME}")
+    skeleton_prim = _find_first_prim_with_type(asset_prim, "Skeleton")
+    animation_source_prim = _find_first_prim_with_type(animation_prim, "SkelAnimation")
+    if skeleton_prim is None:
+        raise RuntimeError("No Skeleton prim found under pedestrian Asset.")
+    if animation_source_prim is None:
+        raise RuntimeError("No SkelAnimation prim found under Animation clip.")
+
+    _bind_skeleton_animation_source(skeleton_prim, animation_source_prim)
+    print(
+        "[OK] Bound pedestrian animation clip: "
+        f"{clip_path} -> {skeleton_prim.GetPath()}"
+    )
+
+
+def _add_animation_reference(
+    references: Any,
+    context: Any,
+    clip_path: str,
+    time_scale: float,
+) -> None:
+    scale = max(1e-6, float(time_scale or DEFAULT_PEDESTRIAN_ANIMATION_TIME_SCALE))
+    if abs(scale - 1.0) > 1e-9:
+        try:
+            layer_offset = context.pxr_Sdf.LayerOffset(0.0, scale)
+            references.AddReference(
+                clip_path,
+                context.pxr_Sdf.Path.emptyPath,
+                layer_offset,
+            )
+            return
+        except Exception:
+            pass
+    references.AddReference(clip_path)
+
+
+def _set_animation_time_scale_attr(prim: Any, context: Any, time_scale: float) -> None:
+    try:
+        attr = prim.CreateAttribute(
+            "lc_proto:animationTimeScale",
+            context.pxr_Sdf.ValueTypeNames.Double,
+        )
+        attr.Set(float(time_scale or DEFAULT_PEDESTRIAN_ANIMATION_TIME_SCALE))
+    except Exception:
+        return
+
+
+def _find_first_prim_with_type(root_prim: Any, type_name: str) -> Any | None:
+    try:
+        if root_prim is None or not root_prim.IsValid():
+            return None
+    except Exception:
+        return None
+
+    stack = [root_prim]
+    while stack:
+        prim = stack.pop(0)
+        try:
+            if prim.GetTypeName() == type_name:
+                return prim
+            stack.extend(list(prim.GetChildren()))
+        except Exception:
+            continue
+    return None
+
+
+def _bind_skeleton_animation_source(skeleton_prim: Any, animation_source_prim: Any) -> None:
+    try:
+        from pxr import UsdSkel
+
+        binding_api = UsdSkel.BindingAPI.Apply(skeleton_prim)
+        relationship = binding_api.CreateAnimationSourceRel()
+    except Exception:
+        relationship = skeleton_prim.CreateRelationship("skel:animationSource")
+
+    relationship.SetTargets([animation_source_prim.GetPath()])
 
 
 def _spawn_referenced_asset_visual(

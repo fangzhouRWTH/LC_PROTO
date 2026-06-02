@@ -1,5 +1,7 @@
 from .backends import (
     DEFAULT_DYNAMIC_ROOT,
+    IsaacPeopleDynamicAgentBackend,
+    IsaacPeopleSumoDynamicAgentBackend,
     KinematicDynamicAgentBackend,
     OrcaPedestrianDynamicAgentBackend,
     OrcaSumoDynamicAgentBackend,
@@ -12,6 +14,8 @@ DEFAULT_DYNAMIC_AGENT_BACKEND = "kinematic"
 
 DYNAMIC_AGENT_BACKEND_REGISTRY = {
     DEFAULT_DYNAMIC_AGENT_BACKEND: KinematicDynamicAgentBackend,
+    "isaac_people": IsaacPeopleDynamicAgentBackend,
+    "isaac_people_sumo": IsaacPeopleSumoDynamicAgentBackend,
     "orca_pedestrian": OrcaPedestrianDynamicAgentBackend,
     "sumo_vehicle": SumoVehicleDynamicAgentBackend,
     "orca_sumo": OrcaSumoDynamicAgentBackend,

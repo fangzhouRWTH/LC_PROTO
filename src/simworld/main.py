@@ -113,6 +113,20 @@ def parse_args():
         default=simulation.DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_SCALE,
     )
     parser.add_argument(
+        "--dynamic-pedestrian-animation",
+        default=simulation.DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION,
+        choices=("none", "clip"),
+    )
+    parser.add_argument(
+        "--dynamic-pedestrian-animation-clip-path",
+        default=simulation.DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH,
+    )
+    parser.add_argument(
+        "--dynamic-pedestrian-animation-time-scale",
+        type=float,
+        default=simulation.DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE,
+    )
+    parser.add_argument(
         "--dynamic-vehicle-visual",
         default=simulation.DEFAULT_DYNAMIC_VEHICLE_VISUAL,
         choices=("proxy", "asset"),
@@ -243,6 +257,9 @@ if __name__ == "__main__":
             dynamic_pedestrian_visual=args.dynamic_pedestrian_visual,
             dynamic_pedestrian_asset_path=args.dynamic_pedestrian_asset_path,
             dynamic_pedestrian_asset_scale=args.dynamic_pedestrian_asset_scale,
+            dynamic_pedestrian_animation=args.dynamic_pedestrian_animation,
+            dynamic_pedestrian_animation_clip_path=args.dynamic_pedestrian_animation_clip_path,
+            dynamic_pedestrian_animation_time_scale=args.dynamic_pedestrian_animation_time_scale,
             dynamic_vehicle_visual=args.dynamic_vehicle_visual,
             dynamic_vehicle_asset_path=args.dynamic_vehicle_asset_path,
             dynamic_vehicle_asset_scale=args.dynamic_vehicle_asset_scale,

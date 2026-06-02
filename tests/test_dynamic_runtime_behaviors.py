@@ -237,6 +237,9 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL="proxy",
             DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_PATH="",
             DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_SCALE=1.0,
+            DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION="none",
+            DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH="",
+            DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE=1.0,
             DEFAULT_DYNAMIC_VEHICLE_VISUAL="proxy",
             DEFAULT_DYNAMIC_VEHICLE_ASSET_PATH="",
             DEFAULT_DYNAMIC_VEHICLE_ASSET_SCALE=1.0,
@@ -245,6 +248,10 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             DEFAULT_WEATHER_TIME_SCALE=1.0,
             DEFAULT_SENSOR_PROFILE="default",
             DEFAULT_ACTIVE_SENSOR_ID=None,
+            DEFAULT_SENSOR_DIAGNOSTICS=False,
+            DEFAULT_SENSOR_DIAGNOSTICS_INTERVAL_S=1.0,
+            DEFAULT_SENSOR_DEBUG_OUTPUT_DIR=None,
+            DEFAULT_SENSOR_DEBUG_INTERVAL_S=1.0,
             available_robot_types=lambda: ("spot",),
             available_dynamic_agent_backends=lambda: ("kinematic",),
             available_weather_names=lambda: ("clear",),
@@ -281,6 +288,12 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
                     "/tmp/people",
                     "--dynamic-pedestrian-asset-scale",
                     "1.25",
+                    "--dynamic-pedestrian-animation",
+                    "clip",
+                    "--dynamic-pedestrian-animation-clip-path",
+                    "/tmp/people/walk.usd",
+                    "--dynamic-pedestrian-animation-time-scale",
+                    "0.8",
                     "--dynamic-vehicle-visual",
                     "asset",
                     "--dynamic-vehicle-asset-path",
@@ -296,6 +309,9 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
         self.assertEqual(args.dynamic_pedestrian_visual, "asset")
         self.assertEqual(args.dynamic_pedestrian_asset_path, "/tmp/people")
         self.assertAlmostEqual(args.dynamic_pedestrian_asset_scale, 1.25)
+        self.assertEqual(args.dynamic_pedestrian_animation, "clip")
+        self.assertEqual(args.dynamic_pedestrian_animation_clip_path, "/tmp/people/walk.usd")
+        self.assertAlmostEqual(args.dynamic_pedestrian_animation_time_scale, 0.8)
         self.assertEqual(args.dynamic_vehicle_visual, "asset")
         self.assertEqual(args.dynamic_vehicle_asset_path, "/tmp/cars")
         self.assertAlmostEqual(args.dynamic_vehicle_asset_scale, 0.75)
@@ -307,6 +323,9 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
         self.assertIn('DYNAMIC_PEDESTRIAN_VISUAL="${DYNAMIC_PEDESTRIAN_VISUAL:-}"', sim_defaults)
         self.assertIn('DYNAMIC_PEDESTRIAN_ASSET_PATH="${DYNAMIC_PEDESTRIAN_ASSET_PATH:-}"', sim_defaults)
         self.assertIn('DYNAMIC_PEDESTRIAN_ASSET_SCALE="${DYNAMIC_PEDESTRIAN_ASSET_SCALE:-}"', sim_defaults)
+        self.assertIn('DYNAMIC_PEDESTRIAN_ANIMATION="${DYNAMIC_PEDESTRIAN_ANIMATION:-}"', sim_defaults)
+        self.assertIn('DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH="${DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH:-}"', sim_defaults)
+        self.assertIn('DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE="${DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE:-}"', sim_defaults)
         self.assertIn('DYNAMIC_VEHICLE_VISUAL="${DYNAMIC_VEHICLE_VISUAL:-}"', sim_defaults)
         self.assertIn('DYNAMIC_VEHICLE_ASSET_PATH="${DYNAMIC_VEHICLE_ASSET_PATH:-}"', sim_defaults)
         self.assertIn('DYNAMIC_VEHICLE_ASSET_SCALE="${DYNAMIC_VEHICLE_ASSET_SCALE:-}"', sim_defaults)
@@ -330,6 +349,18 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
         )
         self.assertIn(
             'append_sim_arg_if_set "--dynamic-pedestrian-asset-scale" "${DYNAMIC_PEDESTRIAN_ASSET_SCALE}"',
+            sim_defaults,
+        )
+        self.assertIn(
+            'append_sim_arg_if_set "--dynamic-pedestrian-animation" "${DYNAMIC_PEDESTRIAN_ANIMATION}"',
+            sim_defaults,
+        )
+        self.assertIn(
+            'append_sim_arg_if_set "--dynamic-pedestrian-animation-clip-path" "${DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH}"',
+            sim_defaults,
+        )
+        self.assertIn(
+            'append_sim_arg_if_set "--dynamic-pedestrian-animation-time-scale" "${DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE}"',
             sim_defaults,
         )
         self.assertIn(

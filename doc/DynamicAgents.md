@@ -202,7 +202,7 @@ Dynamic agent runtime options can be passed through environment variables used b
 | Environment variable | Default | Meaning |
 | --- | --- | --- |
 | `ENABLE_DYNAMIC_AGENTS` | `true` | Enable dynamic plan generation and runtime actors. |
-| `DYNAMIC_AGENT_BACKEND` | `kinematic` | Runtime backend name. Supported: `kinematic`, `orca_pedestrian`, `sumo_vehicle`, `orca_sumo`. |
+| `DYNAMIC_AGENT_BACKEND` | `kinematic` | Runtime backend name. Supported: `kinematic`, `orca_pedestrian`, `sumo_vehicle`, `orca_sumo`, `isaac_people`, `isaac_people_sumo`. |
 | `DYNAMIC_MAX_PEDESTRIAN_ACTORS` | `1` | Max number of pedestrian actors generated from route placeholders or spawn/goal pairs. |
 | `DYNAMIC_MAX_VEHICLE_ACTORS` | `1` | Max number of vehicle actors generated from route placeholders or spawn/goal pairs. |
 | `DYNAMIC_PEDESTRIAN_SPEED_MPS` | `1.2` | Pedestrian speed in meters per second. |
@@ -213,6 +213,9 @@ Dynamic agent runtime options can be passed through environment variables used b
 | `DYNAMIC_PEDESTRIAN_VISUAL` | `proxy` | Pedestrian visual mode. Use `asset` to reference a real USD pedestrian asset. |
 | `DYNAMIC_PEDESTRIAN_ASSET_PATH` | unset | Optional USD file or directory for pedestrian assets. Leave empty to try Isaac People defaults. |
 | `DYNAMIC_PEDESTRIAN_ASSET_SCALE` | `1.0` | Extra multiplier after automatic pedestrian height fitting; use for artistic adjustment, not raw unit conversion. |
+| `DYNAMIC_PEDESTRIAN_ANIMATION` | `none` | Pedestrian animation mode. Use `clip` to bind a USD Skel animation clip to the referenced pedestrian asset. |
+| `DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH` | unset | Optional USD file or directory for pedestrian motion clips. If unset, the runtime searches nearby `Motion/` or `Motions/` folders. |
+| `DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE` | `1.0` | Best-effort USD layer time scale for the referenced animation clip. |
 | `DYNAMIC_VEHICLE_VISUAL` | `proxy` | Vehicle visual mode. Use `asset` to reference a USD vehicle asset. |
 | `DYNAMIC_VEHICLE_ASSET_PATH` | unset | Optional USD file or directory for street-car assets. Explicit path is recommended; empty path falls back to proxy. |
 | `DYNAMIC_VEHICLE_ASSET_SCALE` | `1.0` | Extra multiplier after automatic vehicle bounds fitting. |
@@ -376,7 +379,84 @@ Run with Isaac People defaults after configuring the Isaac asset root:
 DYNAMIC_PEDESTRIAN_VISUAL=asset scripts/run_sim.sh
 ```
 
-Current limitations: this phase references static USD appearance only. It does not call the Isaac Replicator Agent behavior system, bind USD Skel animations, retarget external characters, or blend walk/idle clips. The actor root transform still comes from the LC_PROTO motion backend. The referenced pedestrian asset child is rotated `+90` degrees around Z to match the common Isaac People / NVIDIA biped `-Y-forward` convention. Vehicle USD asset reference is supported as a static visual layer, but no vehicle asset pack is bundled in this branch; if no local/Isaac vehicle USD is found, vehicles still fall back to the proxy visual.
+P1.6 originally referenced static USD appearance only. The actor root transform still comes from the LC_PROTO motion backend. The referenced pedestrian asset child is rotated `+90` degrees around Z to match the common Isaac People / NVIDIA biped `-Y-forward` convention. Vehicle USD asset reference is supported as a static visual layer, but no vehicle asset pack is bundled in this branch; if no local/Isaac vehicle USD is found, vehicles still fall back to the proxy visual.
+
+### Pedestrian USD Clip Animation
+
+P1.7 is now treated as an experimental fallback path. It adds a low-level pedestrian animation experiment: Set `DYNAMIC_PEDESTRIAN_ANIMATION=clip` while using `DYNAMIC_PEDESTRIAN_VISUAL=asset`; the runtime creates an `/Animation` child under each actor root, references a USD motion clip, finds the first `Skeleton` under `/Asset`, finds the first `SkelAnimation` under `/Animation`, and authors `skel:animationSource` on the skeleton. If the clip path is missing, not a USD file, contains no `SkelAnimation`, or cannot bind to the skeleton, the runtime prints one warning and keeps the static pedestrian asset alive. It does not fall back to proxy unless the visual asset itself failed.
+
+Clip selection is explicit-first. `DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH` may point at a USD file or a directory. If it is unset, the resolver searches `Motion/` and `Motions/` directories near the character asset and its parent folders. It prefers names containing `walk`, `run`, `corridor`, `mobile`, `traffic`, `idle`, or `stand`, then falls back to deterministic path order. This lets Reallusion/ActorCore and Isaac-style asset layouts work without hard-coding one vendor.
+
+Recommended animated demo command:
+
+```bash
+WARMUP_FRAMES=0 \
+SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
+SENSOR_PROFILE=none \
+CAMERA_PRIM_PATH=/World/DemoCamera \
+DYNAMIC_AGENT_BACKEND=orca_sumo \
+DYNAMIC_ROUTE_MODE=once \
+DYNAMIC_PEDESTRIAN_VISUAL=asset \
+DYNAMIC_PEDESTRIAN_ASSET_PATH=/home/sstormw/LeapsCora/local_assets/omniverse_rigged_characters/Assets/Characters/Reallusion/ActorCore/Business_F_0002/Actor/business-f-0002/business-f-0002.usd \
+DYNAMIC_PEDESTRIAN_ANIMATION=clip \
+DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH=/home/sstormw/LeapsCora/local_assets/omniverse_rigged_characters/Assets/Characters/Reallusion/ActorCore/Business_F_0002/Motion/corridor_idle-b_f.usd \
+DYNAMIC_VEHICLE_VISUAL=asset \
+DYNAMIC_VEHICLE_ASSET_PATH=/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/lc_proto_sedan_vehicle_zup.usda \
+scripts/run_sim.sh
+```
+
+Implementation route judgment for future optimization:
+
+- `USD clip` is the current path. It is minimally invasive because LC_PROTO still owns route following, ORCA/SUMO motion, visibility, and actor root transforms while USD Skel only animates the child asset.
+- Isaac Replicator Agent / People Simulation is a richer future option for people behavior and motion libraries, but it would introduce a second system that wants to control agent movement. It should be evaluated after the LC_PROTO dynamic plan contract is stable.
+- A pure interface-only pass is lower risk but does not satisfy visual demo requirements; keep it as the fallback strategy when a clip or skeleton cannot bind.
+
+Current P1.7 limitations: there is no walk/idle blending, no automatic retargeting between mismatched skeletons, and no semantic animation selection from `DynamicActorPlan.animation_profile` yet. `DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE` is authored as a best-effort USD layer offset/custom attribute; verify clip playback speed in Isaac before depending on it for production timing.
+
+### Isaac People Animated Pedestrian Backend
+
+P1.8 is the practical path for visible walking pedestrians. Use `DYNAMIC_AGENT_BACKEND=isaac_people_sumo` for the current street-block demo: pedestrians are spawned through Isaac `omni.anim.people`, while vehicles continue to use the mock SUMO vehicle backend. LC_PROTO still parses route placeholders and writes a command file, but it no longer moves pedestrian roots by hand. Each pedestrian route becomes `GoTo x y z angle` lines in an OAP command file, and the People extension drives the character with its built-in `Walk` action.
+
+This backend requires Isaac People-compatible assets and motion libraries. The expected official assets are:
+
+```text
+Isaac/People/Characters/
+Isaac/People/MotionLibrary/HumanMotionLibrary.usd
+```
+
+If those assets are not installed/configured, the backend prints an actionable error and will not spawn animated pedestrians. The Reallusion/ActorCore Business_F asset used in P1.6 can remain useful as a static visual reference, but it is not enough for reliable walking animation in this backend unless it has been retargeted to the NVIDIA biped / Isaac People graph.
+
+Recommended animated people demo after installing Isaac Sim Assets Pack:
+
+```bash
+WARMUP_FRAMES=0 \
+SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
+SENSOR_PROFILE=none \
+CAMERA_PRIM_PATH=/World/DemoCamera \
+DYNAMIC_AGENT_BACKEND=isaac_people_sumo \
+DYNAMIC_ROUTE_MODE=once \
+DYNAMIC_MAX_PEDESTRIAN_ACTORS=1 \
+DYNAMIC_MAX_VEHICLE_ACTORS=2 \
+DYNAMIC_VEHICLE_VISUAL=asset \
+DYNAMIC_VEHICLE_ASSET_PATH=/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/lc_proto_sedan_vehicle_zup.usda \
+scripts/run_sim.sh
+```
+
+The backend writes the generated OAP command file to:
+
+```text
+/tmp/lc_proto_dynamic_people/dynamic_people_commands.txt
+```
+
+Expected lines look like:
+
+```text
+Character GoTo 12 3 0 0
+Character GoTo 18 9 0 45
+Character Idle 9999
+```
+
+Notes for authoring: route waypoints still come from LC_PROTO `placeholder_pedestrian_route_*`; keep them on the walkable surface and inside/reachable by the Isaac navmesh. Out-of-parcel disappearance is not handled by root hiding in this backend yet, because Isaac People owns character movement. Use route endpoints and camera framing for the first animation demo, then add a People-specific despawn policy after command completion.
 
 ### Vehicle USD Asset Plan
 
@@ -407,6 +487,8 @@ Reference links:
 - Isaac Sim Replicator Agent character path and motion library: <https://docs.isaacsim.omniverse.nvidia.com/latest/action_and_event_data_generation/ext_replicator-agent/ext_isaacsim_replicator_agent_configuration.html>
 - Isaac asset root helper API: <https://docs.isaacsim.omniverse.nvidia.com/latest/py/source/extensions/isaacsim.storage.native/docs/index.html>
 - Isaac Sim USD assets overview: <https://docs.isaacsim.omniverse.nvidia.com/latest/assets/usd_assets_overview.html>
+- OpenUSD UsdSkel overview: <https://openusd.org/docs/api/usd_skel_page_front.html>
+- Isaac Sim custom character / retargeting notes: <https://docs.isaacsim.omniverse.nvidia.com/latest/action_and_event_data_generation/ext_replicator-agent/customization.html>
 - Omniverse downloadable asset packs: <https://docs-prod.omniverse.nvidia.com/usd/latest/usd_content_samples/downloadable_packs.html>
 - RenderPeople 3D people: <https://renderpeople.com/3d-people/>
 - RenderPeople animated people: <https://renderpeople.com/3d-animated-people/>
@@ -419,7 +501,7 @@ The current backend is intentionally simple:
 - It does not perform collision-aware avoidance.
 - It does not run pedestrian social-force or ORCA behavior.
 - It does not integrate SUMO traffic state.
-- It does not use animated human or vehicle assets.
+- It does not provide production animation blending, retargeting, or real vehicle animation.
 - It does not infer vehicle actors or full traffic routes from lanes yet when explicit route or spawn/goal data is missing.
 
 These limitations are acceptable for P0 because the goal is to validate the LC_PROTO integration path.
@@ -436,6 +518,8 @@ Recommended next backend additions:
 | `sumo_vehicle` | Mock SUMO lane-following spike for runtime validation | Already registered as `sumo_vehicle`; uses `engine/sumo_vehicle.py`. |
 | `orca_sumo` | Combined ORCA pedestrians + SUMO vehicles in one run | Already registered as `orca_sumo`; composes the two backends above. |
 | `asset_visual` | Replace cube visuals with referenced USD assets | Keep motion backend stable and swap visual creation logic. |
+| `isaac_people` | Animated pedestrians through Isaac `omni.anim.people` | Converts LC_PROTO pedestrian routes into OAP `GoTo` command files and lets Isaac People drive walking animation. |
+| `isaac_people_sumo` | Animated pedestrians + current mock SUMO vehicles | Recommended demo backend once Isaac People assets are installed. |
 
 ### Pedestrian Animation Roadmap
 

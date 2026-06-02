@@ -9,6 +9,7 @@ from isaac_env.isaac_agents.backends.visuals import (
     actor_visual_source,
     pedestrian_asset_transform_for_bounds,
     proxy_visual_spec_for_actor,
+    resolve_pedestrian_animation_clip_path,
     resolve_pedestrian_asset_path,
     resolve_vehicle_asset_path,
     vehicle_asset_transform_for_bounds,
@@ -73,6 +74,54 @@ class DynamicProxyVisualTest(unittest.TestCase):
 
             self.assertIsNone(resolve_pedestrian_asset_path(str(root / "missing.usd")))
             self.assertIsNone(resolve_pedestrian_asset_path(str(non_usd)))
+
+    def test_resolve_pedestrian_animation_clip_accepts_explicit_usd_file(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            clip = root / "walk_cycle.usd"
+            clip.write_text("#usda 1.0")
+
+            resolved = resolve_pedestrian_animation_clip_path(str(clip))
+
+        self.assertEqual(resolved, str(clip.resolve()))
+
+    def test_resolve_pedestrian_animation_clip_prefers_motion_keywords(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "z_idle.usd").write_text("#usda 1.0")
+            walk_clip = root / "m_walk_cycle.usd"
+            walk_clip.write_text("#usda 1.0")
+            (root / "a_default.usd").write_text("#usda 1.0")
+
+            resolved = resolve_pedestrian_animation_clip_path(str(root))
+
+        self.assertEqual(resolved, str(walk_clip.resolve()))
+
+    def test_resolve_pedestrian_animation_clip_discovers_asset_sibling_motion_dir(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            actor_dir = root / "Actor" / "business"
+            actor_dir.mkdir(parents=True)
+            actor_usd = actor_dir / "business.usd"
+            actor_usd.write_text("#usda 1.0")
+            motion_dir = root / "Motion"
+            motion_dir.mkdir()
+            corridor_clip = motion_dir / "corridor_idle.usd"
+            corridor_clip.write_text("#usda 1.0")
+
+            resolved = resolve_pedestrian_animation_clip_path(asset_path=str(actor_usd))
+
+        self.assertEqual(resolved, str(corridor_clip.resolve()))
+
+    def test_resolve_pedestrian_animation_clip_rejects_missing_and_non_usd_paths(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            non_usd = root / "clip.txt"
+            non_usd.write_text("not a usd")
+
+            self.assertIsNone(resolve_pedestrian_animation_clip_path(str(root / "missing.usd")))
+            self.assertIsNone(resolve_pedestrian_animation_clip_path(str(non_usd)))
+            self.assertIsNone(resolve_pedestrian_animation_clip_path(asset_path=str(root / "actor.usd")))
 
 
     def test_pedestrian_asset_transform_fits_root_based_humanoid_to_actor_height(self):

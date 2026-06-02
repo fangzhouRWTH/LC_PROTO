@@ -63,6 +63,9 @@ DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY = "hidden"
 DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL = "proxy"
 DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_PATH = ""
 DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_SCALE = 1.0
+DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION = "none"
+DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH = ""
+DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE = 1.0
 DEFAULT_DYNAMIC_VEHICLE_VISUAL = "proxy"
 DEFAULT_DYNAMIC_VEHICLE_ASSET_PATH = ""
 DEFAULT_DYNAMIC_VEHICLE_ASSET_SCALE = 1.0
@@ -100,6 +103,9 @@ class SimulationConfig:
     dynamic_pedestrian_visual: str = DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL
     dynamic_pedestrian_asset_path: str = DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_PATH
     dynamic_pedestrian_asset_scale: float = DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_SCALE
+    dynamic_pedestrian_animation: str = DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION
+    dynamic_pedestrian_animation_clip_path: str = DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH
+    dynamic_pedestrian_animation_time_scale: float = DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE
     dynamic_vehicle_visual: str = DEFAULT_DYNAMIC_VEHICLE_VISUAL
     dynamic_vehicle_asset_path: str = DEFAULT_DYNAMIC_VEHICLE_ASSET_PATH
     dynamic_vehicle_asset_scale: float = DEFAULT_DYNAMIC_VEHICLE_ASSET_SCALE
@@ -164,6 +170,17 @@ def _make_dynamic_visual_config(config: SimulationConfig) -> DynamicVisualConfig
         pedestrian_asset_scale=max(
             1e-6,
             float(config.dynamic_pedestrian_asset_scale or 1.0),
+        ),
+        pedestrian_animation=str(
+            config.dynamic_pedestrian_animation
+            or DEFAULT_DYNAMIC_PEDESTRIAN_ANIMATION
+        ),
+        pedestrian_animation_clip_path=str(
+            config.dynamic_pedestrian_animation_clip_path or ""
+        ),
+        pedestrian_animation_time_scale=max(
+            1e-6,
+            float(config.dynamic_pedestrian_animation_time_scale or 1.0),
         ),
         vehicle_visual=str(config.dynamic_vehicle_visual or DEFAULT_DYNAMIC_VEHICLE_VISUAL),
         vehicle_asset_path=str(config.dynamic_vehicle_asset_path or ""),
