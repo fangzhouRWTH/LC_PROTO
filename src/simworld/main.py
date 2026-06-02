@@ -191,6 +191,32 @@ def parse_args():
             "for example follow_view or spot_front_view."
         ),
     )
+    parser.add_argument(
+        "--sensor-diagnostics",
+        nargs="?",
+        const=True,
+        type=parse_bool,
+        default=simulation.DEFAULT_SENSOR_DIAGNOSTICS,
+        help="Print active sensor frame diagnostics periodically.",
+    )
+    parser.add_argument(
+        "--sensor-diagnostics-interval-s",
+        type=float,
+        default=simulation.DEFAULT_SENSOR_DIAGNOSTICS_INTERVAL_S,
+        help="Seconds between sensor diagnostic log lines.",
+    )
+    parser.add_argument(
+        "--sensor-debug-output-dir",
+        type=pathlib.Path,
+        default=simulation.DEFAULT_SENSOR_DEBUG_OUTPUT_DIR,
+        help="Optional directory for active sensor PNG preview frames.",
+    )
+    parser.add_argument(
+        "--sensor-debug-interval-s",
+        type=float,
+        default=simulation.DEFAULT_SENSOR_DEBUG_INTERVAL_S,
+        help="Seconds between active sensor PNG preview writes.",
+    )
     args, _ = parser.parse_known_args()
     return args
 
@@ -230,5 +256,9 @@ if __name__ == "__main__":
             weather_start_time=args.weather_start_time,
             sensor_profile=args.sensor_profile,
             active_sensor_id=args.active_sensor,
+            sensor_diagnostics=args.sensor_diagnostics,
+            sensor_diagnostics_interval_s=args.sensor_diagnostics_interval_s,
+            sensor_debug_output_dir=args.sensor_debug_output_dir,
+            sensor_debug_interval_s=args.sensor_debug_interval_s,
         )
     )

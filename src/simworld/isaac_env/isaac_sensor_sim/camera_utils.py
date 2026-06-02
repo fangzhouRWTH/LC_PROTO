@@ -5,6 +5,8 @@ import numpy as np
 
 DEPTH_DISPLAY_RENDER_VAR = "DistanceToCamera"
 DEPTH_DISPLAY_RENDER_VAR_OUTPUT = "DistanceToCameraSDDisplay"
+NORMAL_DISPLAY_RENDER_VAR = "Normals"
+NORMAL_DISPLAY_RENDER_VAR_OUTPUT = "NormalsSDDisplay"
 
 
 def get_active_viewport():
@@ -48,6 +50,96 @@ def get_viewport_render_product_path(viewport) -> str | None:
     if not render_product_path.startswith("/"):
         render_product_path = f"/Render/RenderProduct_{render_product_path}"
     return render_product_path
+
+
+def set_active_viewport_render_product(render_product_path: str) -> dict | None:
+    viewport = get_active_viewport()
+    if viewport is None or not render_product_path:
+        return None
+
+    previous_render_product_path = get_viewport_render_product_path(viewport)
+    try:
+        viewport.render_product_path = str(render_product_path)
+        return {
+            "viewport": viewport,
+            "previous_render_product_path": previous_render_product_path,
+            "render_product_path": str(render_product_path),
+        }
+    except Exception as exc:
+        print(f"[WARNING] Could not set viewport render product: {exc}")
+        return None
+
+
+def restore_viewport_render_product(render_product_state: dict | None) -> bool:
+    if not render_product_state:
+        return False
+
+    viewport = render_product_state.get("viewport") or get_active_viewport()
+    previous_render_product_path = render_product_state.get(
+        "previous_render_product_path"
+    )
+    if viewport is None or not previous_render_product_path:
+        return False
+
+    try:
+        viewport.render_product_path = previous_render_product_path
+        return True
+    except Exception:
+        return False
+
+
+def activate_viewport_render_var_display(
+    *,
+    render_var: str,
+    display_render_var: str | None = None,
+    templates: tuple[str, ...] | None = None,
+) -> dict | None:
+    viewport = get_active_viewport()
+    if viewport is None:
+        return None
+
+    render_product_path = get_viewport_render_product_path(viewport)
+    if render_product_path is None:
+        return None
+
+    previous_display_render_var = getattr(viewport, "display_render_var", None)
+    display_render_var = display_render_var or f"{render_var}SDDisplay"
+    templates = templates or (f"{render_var}Display",)
+    activated_templates: list[str] = []
+
+    try:
+        from omni.syntheticdata import SyntheticData
+
+        stage = getattr(viewport, "stage", None)
+        synthetic_data = SyntheticData.Get()
+        for template in templates:
+            try:
+                synthetic_data.activate_node_template(
+                    template,
+                    0,
+                    [render_product_path],
+                    None,
+                    stage,
+                )
+                activated_templates.append(template)
+            except Exception as exc:
+                print(f"[WARNING] Could not activate {template}: {exc}")
+    except Exception as exc:
+        print(f"[WARNING] Could not access SyntheticData render-var display: {exc}")
+
+    try:
+        viewport.display_render_var = display_render_var
+    except Exception as exc:
+        print(f"[WARNING] Could not set viewport display render var: {exc}")
+        if not activated_templates:
+            return None
+
+    return {
+        "viewport": viewport,
+        "render_product_path": render_product_path,
+        "previous_display_render_var": previous_display_render_var,
+        "display_templates": activated_templates,
+    }
 
 
 def activate_viewport_depth_display(
@@ -111,6 +203,17 @@ def activate_viewport_depth_display(
     except Exception as exc:
         print(f"[WARNING] Could not activate viewport depth display: {exc}")
         return None
+
+
+def activate_viewport_normal_display(
+    *,
+    render_var: str = NORMAL_DISPLAY_RENDER_VAR,
+) -> dict | None:
+    return activate_viewport_render_var_display(
+        render_var=render_var,
+        display_render_var=NORMAL_DISPLAY_RENDER_VAR_OUTPUT,
+        templates=(f"{render_var}Display",),
+    )
 
 
 def restore_viewport_display(display_state: dict | None) -> bool:

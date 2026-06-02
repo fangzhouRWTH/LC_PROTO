@@ -110,8 +110,13 @@ class MountedViewportCameraSensor(PseudoSensor):
                 "dt": float(dt),
             },
             meta={
+                "data_source": _data_source_value(self.data_source),
                 "visual_output": "active_viewport" if self._is_active else "usd_camera",
                 "requires_renderer_control": False,
                 "requires_external_labels": False,
             },
         )
+
+
+def _data_source_value(value) -> str:
+    return getattr(value, "value", str(value))

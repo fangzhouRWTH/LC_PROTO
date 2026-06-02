@@ -1,0 +1,22 @@
+mdl 1.5;
+
+import ::df::*;
+import ::math::*;
+import ::state::*;
+
+
+export material normal_view(
+    float normal_scale = 0.5,
+    float normal_bias = 0.5
+) = material(
+    thin_walled: false,
+    surface: material_surface(
+        scattering: df::diffuse_reflection_bsdf(
+            tint: color(
+                math::saturate(state::normal().x * normal_scale + normal_bias),
+                math::saturate(state::normal().y * normal_scale + normal_bias),
+                math::saturate(state::normal().z * normal_scale + normal_bias)
+            )
+        )
+    )
+);

@@ -225,11 +225,11 @@ Location:
 
 Responsibilities:
 
-- Provide robot-decoupled pseudo sensors.
+- Provide robot-decoupled pseudo sensors and Isaac-backed annotator sensors.
 - Manage sensor lifecycle, sensor mounting, active sensor selection, and viewport camera switching.
-- Emit structured `SensorFrame` outputs with pose, data, timestamp, and metadata.
+- Emit structured `SensorFrame` outputs with pose, data, timestamp, metadata, and `data_source`.
 - Own renderer-control behavior for sensors that need viewport display changes.
-- Define external label contracts for pseudo sensors that cannot infer useful output from geometry alone.
+- Define external label contracts for sensors that cannot infer useful output from geometry or Isaac annotators alone.
 
 Current state:
 
@@ -237,12 +237,15 @@ Current state:
 - `follow_view` is a sensor-owned follow camera and replaces the old robot-owned chase camera path.
 - `spot_front_view` is a mounted Spot preview camera.
 - `spot_depth_view` is a mounted pseudo depth camera. It emits pseudo depth arrays and switches the active viewport to `DistanceToCameraSDDisplay`.
-- Built-in profiles include `default`, `follow_camera`, `spot_front_camera`, `spot_depth_camera`, and `none`.
+- `normal_view` is a mounted pseudo plane-normal camera. It emits constant camera-frame plane normals, tries to switch the active viewport to `NormalsSDDisplay`, and uses a temporary material-override fallback when render-var display is unavailable.
+- `isaac_depth_view` is a mounted Isaac annotator camera using the `distance_to_camera` annotator.
+- `isaac_normal_view` is a mounted Isaac annotator camera using the `normals` annotator. It keeps viewport render-product routing and material override disabled by default to avoid RTX/Hydra startup instability.
+- Built-in profiles include `default`, `follow_camera`, `spot_front_camera`, `spot_depth_camera`, `spot_normal_camera`, `spot_isaac_depth_camera`, `spot_isaac_normal_camera`, `spot_isaac_camera_suite`, and `none`.
 
 Recommendation:
 
-- Extract a reusable `RenderVarViewportSensor` base for depth, normal, semantic, instance, and motion-style sensors.
-- Require every pseudo sensor to declare `requires_renderer_control`, `requires_external_labels`, and `visualization_mode`.
+- Keep pseudo sensors and Isaac annotator sensors behind the same `SensorFrame` contract, but mark `data_source` explicitly.
+- Require every sensor to declare `requires_renderer_control`, `requires_external_labels`, and `visualization_mode`.
 - Keep semantic labels, object registries, and raster label maps as explicit inputs rather than hidden renderer side effects.
 
 ## 4. Recommended Data Contracts

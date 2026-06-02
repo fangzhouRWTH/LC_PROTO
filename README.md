@@ -199,10 +199,14 @@ Pseudo sensors are managed by `isaac_sensor_sim.SensorRig`. Viewport cameras, fo
 
 Available profiles:
 
-- `default` / `spot_camera_suite`: `follow_view`, `spot_front_view`, and `spot_depth_view`; active sensor defaults to `follow_view`.
+- `default` / `spot_camera_suite`: `follow_view`, `spot_front_view`, `spot_depth_view`, and `normal_view`; active sensor defaults to `follow_view`.
 - `follow_camera` / `chase_camera`: sensor-owned follow camera only.
 - `spot_front_camera`: forward-facing Spot preview camera.
 - `spot_depth_camera` / `depth`: forward-facing Spot pseudo depth sensor and depth viewport visualization.
+- `spot_normal_camera` / `pseudo_normal`: forward-facing Spot pseudo plane-normal sensor with normal render-var display and material-override fallback.
+- `spot_isaac_depth_camera` / `isaac_depth`: forward-facing Spot camera with Isaac `distance_to_camera` annotator.
+- `spot_isaac_normal_camera` / `normal` / `isaac_normal`: forward-facing Spot camera with Isaac `normals` annotator.
+- `spot_isaac_camera_suite` / `isaac`: follow/front cameras plus Isaac depth and normal annotator sensors.
 - `none` / `off`: no sensor rig; the simulation falls back to `--camera-prim-path`.
 
 Examples:
@@ -211,6 +215,9 @@ Examples:
 scripts/run_sim.sh --sensor-profile default
 scripts/run_sim.sh --sensor-profile default --active-sensor spot_depth_view
 scripts/run_sim.sh --sensor-profile spot_depth_camera --active-sensor spot_depth_view
+scripts/run_sim.sh --sensor-profile pseudo_normal --active-sensor normal_view
+scripts/run_sim.sh --sensor-profile spot_isaac_depth_camera --active-sensor isaac_depth_view
+scripts/run_sim.sh --sensor-profile normal --active-sensor isaac_normal_view
 ```
 
 See [Isaac Sensor Sim](src/simworld/isaac_env/isaac_sensor_sim/README.md) for sensor frame contracts, renderer-control policy, external label formats, and recommended next visual sensors.

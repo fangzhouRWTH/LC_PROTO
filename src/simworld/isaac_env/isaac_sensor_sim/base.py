@@ -1,14 +1,22 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from enum import Enum
 
 from .frame import SensorFrame
 
 
-class PseudoSensor(ABC):
+class SensorDataSource(str, Enum):
+    PSEUDO = "pseudo"
+    ISAAC_ANNOTATOR = "isaac_annotator"
+    ISAAC_RTX = "isaac_rtx"
+
+
+class BaseSensor(ABC):
     sensor_id: str
     sensor_type: str
     frame_id: str
+    data_source: SensorDataSource | str = SensorDataSource.PSEUDO
 
     @abstractmethod
     def initialize(self) -> None:
@@ -23,3 +31,11 @@ class PseudoSensor(ABC):
 
     def deactivate(self) -> None:
         pass
+
+
+class PseudoSensor(BaseSensor):
+    data_source: SensorDataSource | str = SensorDataSource.PSEUDO
+
+
+class IsaacSensor(BaseSensor):
+    data_source: SensorDataSource | str = SensorDataSource.ISAAC_ANNOTATOR

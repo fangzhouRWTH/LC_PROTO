@@ -6,6 +6,8 @@ from .isaac_robots import factory as robot_factory
 from .isaac_agents import factory as agent_factory
 from .isaac_agents.backends.visuals import DynamicVisualConfig
 from .isaac_sensor_sim import (
+    SensorDebugFrameWriter,
+    SensorDiagnosticsPrinter,
     available_sensor_profiles as _available_sensor_profiles,
     create_sensor_rig,
 )
@@ -71,6 +73,10 @@ DEFAULT_DAYTIME = None
 DEFAULT_WEATHER_TIME_SCALE = 1.0
 DEFAULT_SENSOR_PROFILE = "default"
 DEFAULT_ACTIVE_SENSOR_ID = None
+DEFAULT_SENSOR_DIAGNOSTICS = False
+DEFAULT_SENSOR_DIAGNOSTICS_INTERVAL_S = 1.0
+DEFAULT_SENSOR_DEBUG_OUTPUT_DIR = None
+DEFAULT_SENSOR_DEBUG_INTERVAL_S = 1.0
 
 
 @dataclass
@@ -112,6 +118,10 @@ class SimulationConfig:
     weather_time_scale: float = DEFAULT_WEATHER_TIME_SCALE
     sensor_profile: str | None = DEFAULT_SENSOR_PROFILE
     active_sensor_id: str | None = DEFAULT_ACTIVE_SENSOR_ID
+    sensor_diagnostics: bool = DEFAULT_SENSOR_DIAGNOSTICS
+    sensor_diagnostics_interval_s: float = DEFAULT_SENSOR_DIAGNOSTICS_INTERVAL_S
+    sensor_debug_output_dir: pathlib.Path | None = DEFAULT_SENSOR_DEBUG_OUTPUT_DIR
+    sensor_debug_interval_s: float = DEFAULT_SENSOR_DEBUG_INTERVAL_S
 
 
 def available_robot_types() -> tuple[str, ...]:
@@ -301,6 +311,14 @@ def run(config: SimulationConfig | None = None):
                 f"{sensor_rig.rig_id} sensors={sensor_rig.sensor_ids()} "
                 f"active={sensor_rig.active_sensor_id}"
             )
+        sensor_diagnostics = SensorDiagnosticsPrinter(
+            enabled=config.sensor_diagnostics,
+            interval_s=float(config.sensor_diagnostics_interval_s),
+        )
+        sensor_debug_writer = SensorDebugFrameWriter(
+            output_dir=config.sensor_debug_output_dir,
+            interval_s=float(config.sensor_debug_interval_s),
+        )
 
         particle_effects = []
         if _is_rain_weather(weather_lighting.config.name):
@@ -371,7 +389,17 @@ def run(config: SimulationConfig | None = None):
             sim_world.update_state()
 
             if sensor_rig is not None:
-                sensor_rig.update(state["sim_time"], DEFAULT_VFX_DT)
+                sensor_frames = sensor_rig.update(state["sim_time"], DEFAULT_VFX_DT)
+                sensor_diagnostics.maybe_print(
+                    timestamp=state["sim_time"],
+                    frames=sensor_frames,
+                    active_sensor_id=sensor_rig.active_sensor_id,
+                )
+                sensor_debug_writer.maybe_write(
+                    timestamp=state["sim_time"],
+                    frames=sensor_frames,
+                    active_sensor_id=sensor_rig.active_sensor_id,
+                )
                 sensor_camera_path = sensor_rig.active_viewport_camera_prim_path
                 if sensor_camera_path is not None:
                     active_camera_prim_path = sensor_camera_path

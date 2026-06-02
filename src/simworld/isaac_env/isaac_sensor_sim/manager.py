@@ -3,14 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from .base import PseudoSensor
+from .base import BaseSensor
 from .frame import SensorFrame
 
 
 @dataclass
 class SensorRig:
     rig_id: str
-    sensors: list[PseudoSensor] = field(default_factory=list)
+    sensors: list[BaseSensor] = field(default_factory=list)
     active_sensor_id: str | None = None
 
     def initialize(self) -> None:
@@ -41,12 +41,12 @@ class SensorRig:
         return frames
 
     @property
-    def active_sensor(self) -> PseudoSensor | None:
+    def active_sensor(self) -> BaseSensor | None:
         if self.active_sensor_id is None:
             return None
         return self.get_sensor(self.active_sensor_id)
 
-    def get_sensor(self, sensor_id: str) -> PseudoSensor | None:
+    def get_sensor(self, sensor_id: str) -> BaseSensor | None:
         return next(
             (sensor for sensor in self.sensors if sensor.sensor_id == sensor_id),
             None,
@@ -90,7 +90,7 @@ class SensorRig:
     def from_sensors(
         cls,
         rig_id: str,
-        sensors: Iterable[PseudoSensor],
+        sensors: Iterable[BaseSensor],
         active_sensor_id: str | None = None,
     ) -> "SensorRig":
         return cls(

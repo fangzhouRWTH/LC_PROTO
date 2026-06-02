@@ -72,6 +72,12 @@ SKY_INTENSITY="${SKY_INTENSITY:-}"
 SKY_EXPOSURE="${SKY_EXPOSURE:-}"
 WEATHER_TIME_SCALE="${WEATHER_TIME_SCALE:-}"
 WEATHER_START_TIME="${WEATHER_START_TIME:-}"
+SENSOR_PROFILE="${SENSOR_PROFILE:-}"
+ACTIVE_SENSOR="${ACTIVE_SENSOR:-}"
+SENSOR_DIAGNOSTICS="${SENSOR_DIAGNOSTICS:-}"
+SENSOR_DIAGNOSTICS_INTERVAL_S="${SENSOR_DIAGNOSTICS_INTERVAL_S:-}"
+SENSOR_DEBUG_OUTPUT_DIR="${SENSOR_DEBUG_OUTPUT_DIR:-}"
+SENSOR_DEBUG_INTERVAL_S="${SENSOR_DEBUG_INTERVAL_S:-}"
 
 KIT_LOG_LEVEL="${KIT_LOG_LEVEL:-error}"
 KIT_FILE_LOG_LEVEL="${KIT_FILE_LOG_LEVEL:-error}"
@@ -119,6 +125,12 @@ build_sim_args() {
   append_sim_arg_if_set "--sky-exposure" "${SKY_EXPOSURE}"
   append_sim_arg_if_set "--weather-time-scale" "${WEATHER_TIME_SCALE}"
   append_sim_arg_if_set "--weather-start-time" "${WEATHER_START_TIME}"
+  append_sim_arg_if_set "--sensor-profile" "${SENSOR_PROFILE}"
+  append_sim_arg_if_set "--active-sensor" "${ACTIVE_SENSOR}"
+  append_sim_arg_if_set "--sensor-diagnostics" "${SENSOR_DIAGNOSTICS}"
+  append_sim_arg_if_set "--sensor-diagnostics-interval-s" "${SENSOR_DIAGNOSTICS_INTERVAL_S}"
+  append_sim_arg_if_set "--sensor-debug-output-dir" "${SENSOR_DEBUG_OUTPUT_DIR}"
+  append_sim_arg_if_set "--sensor-debug-interval-s" "${SENSOR_DEBUG_INTERVAL_S}"
 }
 
 build_kit_log_args() {
