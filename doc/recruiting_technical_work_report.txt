@@ -1,0 +1,73 @@
+LC_01 SimWorld 近期工作报告（招聘技术匹配参考）
+生成日期：2026-06-02
+依据范围：当前 master 分支近期工作记录与项目文档，重点覆盖 2026-05-26 至 2026-06-02 的开发内容。
+
+一、项目背景
+
+LC_01 SimWorld 是一个基于 NVIDIA Isaac Sim 的城市/园区尺度仿真项目。项目已从早期验证脚本演进为 src/simworld 下的模块化运行框架，当前可以打开 USD 场景、按命名规则解析场景语义、在占位区域内生成静态资产布局、导入 USD 资产、配置天气与光照、生成动态行人/车辆计划、挂载机器人传感器，并运行 Spot 交互式演示。
+
+项目的核心工程目标是把“算法生成”和“Isaac Sim 执行”分离：算法层负责读取场景语义、资产目录、标签输入和配置，并输出结构化 plan；Isaac 层负责打开 USD stage、应用 plan、创建或更新 prim、控制渲染器状态，并推进仿真循环。静态资产、动态体、环境效果和传感器模块都尽量遵循 Input -> Contract -> Apply -> Runtime Update 的模式。
+
+这一路径使算法可以脱离 Isaac Sim 做快速迭代和单元测试，也使招聘时可以按模块匹配候选人的能力：有人偏算法规划，有人偏 USD/Omniverse 工程，有人偏传感器和渲染，有人偏仿真系统集成。
+
+二、远期考虑
+
+远期上，项目不只是一个单场景 demo，而是在构建一套可复用的仿真生产框架。它需要支持不同城市/园区场景、不同资产库、不同动态行为模型、不同天气光照组合、不同机器人/传感器平台，以及可复现实验配置。
+
+当前架构的长期取向包括：
+
+1. 模块边界清晰：Isaac/Omniverse/PXR API 集中在 isaac_env 侧，纯算法尽量放在 engine 或 algorithm_lab，避免算法和运行时互相污染。
+2. 数据契约优先：用 DynamicScenePlan、AssetImportPlan、SensorFrame 等结构化对象承接模块之间的信息流，减少临时脚本式耦合。
+3. 渐进式后端升级：动态体先用 kinematic/mock ORCA/mock SUMO 验证 plan 形状和运行链路，后续再接入真实 ORCA、SUMO/TraCI、动画人、车辆资产和更完整交通逻辑。
+4. 传感器与机器人解耦：传感器 rig 按 mount/profile 管理，机器人 adapter 只承担运动和平台接口，传感器可以在不同机器人或场景 prim 上复用。
+5. 可配置和可复现：后续需要 ScenePipelineConfig 或类似配置系统，把场景、资产、动态体、天气、传感器、随机种子和输出记录统一管理。
+6. 实验路径独立：algorithm_lab 作为轻量算法实验区，要求 JSON/CSV/NPZ 等显式输入输出，便于未来把成熟实验提升到生产模块。
+
+三、技术内容
+
+近期工作主要集中在四条技术线。
+
+1. 架构与运行框架
+项目维护了清晰的主运行链路：scripts/run_sim.sh -> main.py -> SimulationConfig -> IsaacContext -> SimScene.prepare() -> WeatherLightingManager -> RobotFactory -> DynamicAgentManager -> SensorRig -> simulation loop。运行时负责串联场景准备、世界 reset、机器人控制、动态体 step、天气/VFX 更新、传感器更新和调试输出。
+
+Isaac adaptor 层集中管理 Isaac Sim、Omniverse、USD/PXR 依赖。scene 层负责打开 USD、关闭导入场景自带灯光、按命名规则解析 prim、生成静态布局并导入资产。engine 层保留纯 Python 的几何、布局、动态计划等逻辑。
+
+2. 动态行人和车辆
+动态体模块已经形成从 USD 占位符到运行时 actor 的完整 P0/P1 链路。scene_parser 会提取 pedestrian spawn/goal/route、vehicle spawn/goal/route/lane、sidewalk/crosswalk 等语义。engine.dynamic 输出 DynamicScenePlan，包含 DynamicActorPlan、DynamicRoutePlan、DynamicLanePlan、速度、形状、spawn/goal pose、route mode、asset/animation/backend hints 等字段。
+
+运行时 backend 目前包括 kinematic、orca_pedestrian、sumo_vehicle 和 orca_sumo。kinematic 后端直接更新 USD transform，用于验证动态体生命周期。mock ORCA 行人后端实现了首选速度、局部分离、静态区域排斥、路线吸附和交叉口稳定逻辑。mock SUMO 车辆后端实现了简化 lane-following、转弯圆角补点、车辆间距和交叉/汇入让行规则。orca_sumo 后端组合行人与车辆，用于演示混合动态交通。
+
+动态体还补充了 route mode 支持，包括 loop、once/stop_at_end、ping_pong；补充了动态代理视觉、真实资产引用入口、占位符显隐控制，以及 export_dynamic_plan.py 供离线适配器实验使用。相关测试覆盖 dynamic contract、ORCA 行人规划、SUMO 车辆规划、组合后端、runtime behavior、proxy visual 和 plan export。
+
+3. 天气、光照与 VFX
+isaac_vfx 已支持 sunny、rain、overcast、foggy、storm 等天气预设。SimScene.prepare() 会关闭 stage-authored lights，WeatherLightingManager 统一控制 runtime sun、dome sky、fill light 和时间变化。rain/storm 可启用 camera-local rain particle effect。
+
+粒子 VFX 当前是 Python/USD 视觉实现，支持 rain、snow、fog。fog 包含 distant/near 两种相机空间模式，billboard fog 支持纹理 alpha、PreviewSurface 材质、阴影关闭和调试四边形。另有 isaac_graph_vfx scaffold，用于未来把粒子更新迁移到 OmniGraph/Warp 或 Omniverse 粒子节点库，当前主循环仍以 Python particle manager 为主。
+
+4. 传感器模拟与 annotator
+isaac_sensor_sim 已形成机器人解耦的 sensor runtime。SensorRig 统一管理 sensor lifecycle、active sensor selection、viewport switching 和 SensorFrame 输出。SensorFrame 包含 pose、timestamp、data、metadata、data_source 等字段，明确区分 pseudo、isaac_annotator、isaac_rtx 等来源。
+
+当前传感器 profile 包括 follow_view、spot_front_view、spot_depth_view、normal_view、isaac_depth_view、isaac_normal_view 及组合 profile。pseudo depth/normal 提供确定性数据和 viewport 可视化；Isaac annotator camera 通过 Replicator/SyntheticData render product 读取 distance_to_camera 或 normals annotator。normal 视图还加入 material override fallback，以应对部分 Isaac/Kit 环境下 render-var display 不稳定的问题。近期也加入了 sensor diagnostics、debug frame writer、CLI/env 参数和 README 文档。
+
+四、未来潜在技术需求
+
+1. Isaac Sim / Omniverse / USD 工程能力
+需要熟悉 USD stage、prim、schema、material binding、render product、SyntheticData、Replicator、viewport 和 Kit 扩展机制的人。后续真实传感器、资产导入、材质替换、VFX 图系统都会依赖这一能力。
+
+2. 动态行为与交通仿真能力
+需要把当前 mock ORCA/SUMO 升级为真实可用后端，包括 ORCA/RVO 行人避障、SUMO 网络生成、TraCI 同步、junction priority、traffic light、car-following、lane-change、spawn/despawn schedule，以及行人与车辆混合交互。
+
+3. 场景语义与资产生成能力
+需要继续增强 USD 命名规则、custom attributes、语义标签、区域布局算法、资产匹配、尺度归一化、碰撞设置、道路/人行道/建筑/植被等资产库组织。候选人若具备 procedural generation、城市建模或 GIS/地图数据经验，会很有价值。
+
+4. 传感器与合成数据能力
+需要把 pseudo depth/normal 逐步升级到真实 RTX/Replicator 数据，并扩展语义分割、实例分割、bbox、LiDAR、Radar、event camera 等传感器。还需要建立外部 label contract、数据落盘格式、同步时间戳、标定参数和质量诊断流程。
+
+5. 图形/VFX 与环境建模能力
+需要把 Python 粒子视觉效果迁移或补充为 OmniGraph/Warp/粒子系统实现，并把可见雨雾雪与深度、LiDAR、Radar 等 range-domain 模型配套，避免只在 RGB 中“看起来有天气”，但传感器数据没有物理影响。
+
+6. 工程化测试与配置能力
+需要建立更完整的配置系统、场景 pipeline 开关、plan export/import、随机种子管理、回归测试、可视化验证、CI 中的纯 Python 单测，以及 Isaac 环境下的集成测试策略。当前已有多组纯 Python 测试，但真实 Isaac runtime 的自动化验证仍是潜在短板。
+
+7. 推荐技术匹配关键词
+招聘时可重点关注以下关键词：Python、NVIDIA Isaac Sim、Omniverse Kit、USD/PXR、Replicator、SyntheticData、robot simulation、procedural scene generation、motion planning、ORCA/RVO、SUMO/TraCI、traffic simulation、sensor simulation、synthetic data、computer graphics/VFX、OmniGraph/Warp、geometry processing、testing/CI、simulation platform engineering。

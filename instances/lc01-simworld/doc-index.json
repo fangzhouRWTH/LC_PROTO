@@ -1,0 +1,738 @@
+{
+  "schemaVersion": "0.1.0",
+  "projectId": "lc01-simworld",
+  "generatedAt": "2026-06-02T02:13:04+00:00",
+  "entryCount": 13,
+  "entries": [
+    {
+      "id": "docs-adr-readme",
+      "path": "docs/adr/README.md",
+      "title": "Architecture Decision Records",
+      "category": "decision",
+      "contentType": "markdown",
+      "summary": "Durable decisions for LC01 SimWorld. Distinct from doc/Architecture.md (technical design) and guidance.json (AI collaboration contract).",
+      "inclusionReason": "path:docs/adr/",
+      "sections": [
+        {
+          "level": 1,
+          "title": "Architecture Decision Records",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "Records",
+          "line": 5
+        }
+      ],
+      "linkedFrom": []
+    },
+    {
+      "id": "project-readme",
+      "path": "README.md",
+      "title": "LC_01 SimWorld",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "LC01 SimWorld is an NVIDIA Isaac Sim based simulation project for urban and campus-scale environments. The codebase has moved from early validation scripts into a modular runtime under src/simworld. The current pipeline can open USD scen...",
+      "inclusionReason": "dashboard.completed:task-unittest-engine; filename:README.md (repository root); guidance:project-readme",
+      "sections": [
+        {
+          "level": 1,
+          "title": "LC_01 SimWorld",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "AI Collaboration (Anyplan)",
+          "line": 5
+        },
+        {
+          "level": 2,
+          "title": "Documentation",
+          "line": 28
+        },
+        {
+          "level": 2,
+          "title": "Current Framework",
+          "line": 36
+        },
+        {
+          "level": 2,
+          "title": "Algorithm Lab",
+          "line": 73
+        },
+        {
+          "level": 2,
+          "title": "Install And Run",
+          "line": 79
+        },
+        {
+          "level": 3,
+          "title": "Prerequisites",
+          "line": 81
+        },
+        {
+          "level": 3,
+          "title": "Normal Run",
+          "line": 100
+        },
+        {
+          "level": 3,
+          "title": "Debug Run",
+          "line": 134
+        },
+        {
+          "level": 2,
+          "title": "Runtime Parameters",
+          "line": 148
+        },
+        {
+          "level": 2,
+          "title": "Sensor Profiles",
+          "line": 219
+        },
+        {
+          "level": 2,
+          "title": "Scene And Asset Conventions",
+          "line": 248
+        }
+      ],
+      "linkedFrom": [
+        "dashboard.completed:task-unittest-engine",
+        "guidance:project-readme"
+      ],
+      "memoryType": "overview",
+      "documentId": "project-readme"
+    },
+    {
+      "id": "algorithm-lab-guideline",
+      "path": "algorithm_lab/guideline.md",
+      "title": "Algorithm Lab Guideline",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "algorithmlab/ is a lightweight workspace for independent algorithm experiments. It exists so algorithm developers can prototype layout, dynamic asset, and environment ideas without touching the main Isaac Sim runtime framework in src/sim...",
+      "inclusionReason": "guidance:algorithm-lab-guideline",
+      "sections": [
+        {
+          "level": 1,
+          "title": "Algorithm Lab Guideline",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "Purpose",
+          "line": 3
+        },
+        {
+          "level": 2,
+          "title": "Directory Layout",
+          "line": 9
+        },
+        {
+          "level": 2,
+          "title": "Core Principles",
+          "line": 32
+        },
+        {
+          "level": 2,
+          "title": "Suggested Experiment Structure",
+          "line": 58
+        },
+        {
+          "level": 2,
+          "title": "Recommended CLI Pattern",
+          "line": 80
+        },
+        {
+          "level": 2,
+          "title": "Recommended Data Contracts",
+          "line": 99
+        },
+        {
+          "level": 2,
+          "title": "Review Checklist",
+          "line": 142
+        }
+      ],
+      "linkedFrom": [
+        "guidance:algorithm-lab-guideline"
+      ],
+      "memoryType": "methodology",
+      "documentId": "algorithm-lab-guideline"
+    },
+    {
+      "id": "architecture",
+      "path": "doc/Architecture.md",
+      "title": "SimWorld Architecture And Integration Plan",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "SimWorld separates algorithm generation from Isaac Sim execution:",
+      "inclusionReason": "dashboard.completed:task-simworld-runtime; guidance:architecture",
+      "sections": [
+        {
+          "level": 1,
+          "title": "SimWorld Architecture And Integration Plan",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "1. Design Goal",
+          "line": 3
+        },
+        {
+          "level": 2,
+          "title": "2. Current Runtime Path",
+          "line": 13
+        },
+        {
+          "level": 2,
+          "title": "3. Module Boundaries",
+          "line": 59
+        },
+        {
+          "level": 3,
+          "title": "3.1 Runtime Orchestration Layer",
+          "line": 61
+        },
+        {
+          "level": 3,
+          "title": "3.2 Isaac Adapter Layer",
+          "line": 80
+        },
+        {
+          "level": 3,
+          "title": "3.3 Scene Service Layer",
+          "line": 97
+        },
+        {
+          "level": 3,
+          "title": "3.4 Algorithm Layer",
+          "line": 120
+        },
+        {
+          "level": 3,
+          "title": "3.5 Robot Layer",
+          "line": 150
+        },
+        {
+          "level": 3,
+          "title": "3.6 Dynamic Agent Layer",
+          "line": 171
+        },
+        {
+          "level": 3,
+          "title": "3.7 Visual And Environment Layer",
+          "line": 195
+        },
+        {
+          "level": 3,
+          "title": "3.8 Sensor Simulation Layer",
+          "line": 220
+        }
+      ],
+      "linkedFrom": [
+        "dashboard.completed:task-simworld-runtime",
+        "guidance:architecture"
+      ],
+      "memoryType": "architecture-policy",
+      "documentId": "architecture"
+    },
+    {
+      "id": "dynamic-agents",
+      "path": "doc/DynamicAgents.md",
+      "title": "Dynamic Agents",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "Dynamic agents represent pedestrians, vehicles, and future moving scene actors in the urban simulation. The current implementation follows the same LCPROTO integration pattern used by static scene generation and robots:",
+      "inclusionReason": "dashboard.completed:task-architecture-docs; guidance:dynamic-agents",
+      "sections": [
+        {
+          "level": 1,
+          "title": "Dynamic Agents",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "1. Design Goal",
+          "line": 3
+        },
+        {
+          "level": 2,
+          "title": "2. Current P0 Capability",
+          "line": 17
+        },
+        {
+          "level": 2,
+          "title": "3. Scene Naming Contract",
+          "line": 29
+        },
+        {
+          "level": 2,
+          "title": "4. Data Flow",
+          "line": 55
+        },
+        {
+          "level": 3,
+          "title": "SceneStats",
+          "line": 57
+        },
+        {
+          "level": 3,
+          "title": "DynamicScenePlan",
+          "line": 61
+        },
+        {
+          "level": 3,
+          "title": "P1.3 Route Mode And Kinematic Behavior",
+          "line": 115
+        },
+        {
+          "level": 3,
+          "title": "P1.0 Backend Compatibility",
+          "line": 140
+        },
+        {
+          "level": 3,
+          "title": "Runtime Backend",
+          "line": 153
+        },
+        {
+          "level": 3,
+          "title": "Mock ORCA pedestrian tuning (P2.1.5)",
+          "line": 180
+        },
+        {
+          "level": 3,
+          "title": "Mock SUMO vehicle spacing (P2.0.5)",
+          "line": 194
+        }
+      ],
+      "linkedFrom": [
+        "dashboard.completed:task-architecture-docs",
+        "guidance:dynamic-agents"
+      ],
+      "memoryType": "architecture-policy",
+      "documentId": "dynamic-agents"
+    },
+    {
+      "id": "guidance-manifest",
+      "path": "docs/GuidanceManifest.md",
+      "title": "Guidance Manifest",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "Routes LC01 SimWorld project memory for human and AI collaborators. Separates authority from retrieval depth.",
+      "inclusionReason": "guidance:guidance-manifest",
+      "sections": [
+        {
+          "level": 1,
+          "title": "Guidance Manifest",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "Default Startup Path",
+          "line": 5
+        },
+        {
+          "level": 2,
+          "title": "Source of Truth by Question",
+          "line": 14
+        },
+        {
+          "level": 2,
+          "title": "Document Map",
+          "line": 30
+        },
+        {
+          "level": 2,
+          "title": "Context Expansion Triggers",
+          "line": 46
+        },
+        {
+          "level": 2,
+          "title": "Update Rules",
+          "line": 57
+        }
+      ],
+      "linkedFrom": [
+        "guidance:guidance-manifest"
+      ],
+      "memoryType": "manifest",
+      "documentId": "guidance-manifest"
+    },
+    {
+      "id": "project-state",
+      "path": "docs/ProjectState.md",
+      "title": "Project State",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "Operational snapshot for LC01 SimWorld. Structured progress: instances/lc01-simworld/dashboard.json.",
+      "inclusionReason": "dashboard.overview; filename:ProjectState.md; guidance:project-state",
+      "sections": [
+        {
+          "level": 1,
+          "title": "Project State",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "Active Phase",
+          "line": 5
+        },
+        {
+          "level": 2,
+          "title": "Current Priorities",
+          "line": 11
+        },
+        {
+          "level": 2,
+          "title": "Do Not Reopen Casually",
+          "line": 18
+        },
+        {
+          "level": 2,
+          "title": "Open Questions",
+          "line": 25
+        },
+        {
+          "level": 2,
+          "title": "Validation (Current Phase)",
+          "line": 31
+        },
+        {
+          "level": 1,
+          "title": "Debug: scripts/run_sim_dbg.sh",
+          "line": 42
+        },
+        {
+          "level": 2,
+          "title": "Risks",
+          "line": 54
+        },
+        {
+          "level": 2,
+          "title": "Document Routing",
+          "line": 60
+        }
+      ],
+      "linkedFrom": [
+        "dashboard.overview",
+        "guidance:project-state"
+      ],
+      "memoryType": "state",
+      "documentId": "project-state"
+    },
+    {
+      "id": "adr-0001",
+      "path": "docs/adr/0001-anyplan-adoption.md",
+      "title": "ADR 0001: Anyplan Framework Adoption",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "Accepted",
+      "inclusionReason": "dashboard.task:task-adr-0001; guidance:adr-0001; path:docs/adr/",
+      "sections": [
+        {
+          "level": 1,
+          "title": "ADR 0001: Anyplan Framework Adoption",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "Status",
+          "line": 3
+        },
+        {
+          "level": 2,
+          "title": "Context",
+          "line": 7
+        },
+        {
+          "level": 2,
+          "title": "Decision",
+          "line": 18
+        },
+        {
+          "level": 2,
+          "title": "Consequences",
+          "line": 29
+        },
+        {
+          "level": 2,
+          "title": "Follow-up",
+          "line": 43
+        }
+      ],
+      "linkedFrom": [
+        "dashboard.task:task-adr-0001",
+        "guidance:adr-0001"
+      ],
+      "memoryType": "decision",
+      "documentId": "adr-0001"
+    },
+    {
+      "id": "collaboration-log",
+      "path": "docs/ai-collaboration-log.md",
+      "title": "AI Collaboration Log",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "- TaskBrief: Instantiate Anyplan on LC01 SimWorld; assess refactor need; enable zero-context AI via AI-Entry.",
+      "inclusionReason": "filename:ai-collaboration-log.md; guidance:collaboration-log",
+      "sections": [
+        {
+          "level": 1,
+          "title": "AI Collaboration Log",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "2026-06-01 — Anyplan framework instantiation",
+          "line": 3
+        }
+      ],
+      "linkedFrom": [
+        "guidance:collaboration-log"
+      ],
+      "memoryType": "log",
+      "documentId": "collaboration-log"
+    },
+    {
+      "id": "phased-refactoring",
+      "path": "docs/refactoring/PHASED-REFACTORING.md",
+      "title": "Phased Refactoring Plan",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "This plan covers optional engineering and documentation improvements for LC01 SimWorld. Do not execute all phases in one task. Schedule phases explicitly in dashboard.json and ProjectState.md.",
+      "inclusionReason": "dashboard.phase:phase-b-docs; guidance:phased-refactoring",
+      "sections": [
+        {
+          "level": 1,
+          "title": "Phased Refactoring Plan",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "Phase 0 — Anyplan instantiation (done / in progress)",
+          "line": 7
+        },
+        {
+          "level": 2,
+          "title": "Phase A — CI and test gate (low complexity, high value)",
+          "line": 30
+        },
+        {
+          "level": 2,
+          "title": "Phase B — Documentation layout unify (medium complexity)",
+          "line": 49
+        },
+        {
+          "level": 2,
+          "title": "Phase C — ScenePipelineConfig and contracts (higher complexity)",
+          "line": 77
+        },
+        {
+          "level": 2,
+          "title": "Phase D — Active bug reports (optional, low urgency)",
+          "line": 94
+        },
+        {
+          "level": 2,
+          "title": "Phase E — Algorithm lab promotion (as needed)",
+          "line": 110
+        },
+        {
+          "level": 2,
+          "title": "Execution Rules for AI",
+          "line": 118
+        },
+        {
+          "level": 2,
+          "title": "Related",
+          "line": 125
+        }
+      ],
+      "linkedFrom": [
+        "dashboard.phase:phase-b-docs",
+        "guidance:phased-refactoring"
+      ],
+      "memoryType": "roadmap",
+      "documentId": "phased-refactoring"
+    },
+    {
+      "id": "sensor-sim-readme",
+      "path": "src/simworld/isaac_env/isaac_sensor_sim/README.md",
+      "title": "Isaac Sensor Sim",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "isaacsensorsim is the sensor runtime for SimWorld. It provides",
+      "inclusionReason": "guidance:sensor-sim-readme",
+      "sections": [
+        {
+          "level": 1,
+          "title": "Isaac Sensor Sim",
+          "line": 1
+        },
+        {
+          "level": 2,
+          "title": "Responsibilities",
+          "line": 14
+        },
+        {
+          "level": 2,
+          "title": "Current Package Layout",
+          "line": 34
+        },
+        {
+          "level": 2,
+          "title": "Runtime Contract",
+          "line": 56
+        },
+        {
+          "level": 2,
+          "title": "Sensor Rigs And Viewport Switching",
+          "line": 98
+        },
+        {
+          "level": 2,
+          "title": "Current Built-In Sensors",
+          "line": 119
+        },
+        {
+          "level": 3,
+          "title": "`follow_view`",
+          "line": 121
+        },
+        {
+          "level": 3,
+          "title": "`spot_front_view`",
+          "line": 130
+        },
+        {
+          "level": 3,
+          "title": "`spot_depth_view`",
+          "line": 138
+        },
+        {
+          "level": 3,
+          "title": "`isaac_depth_view`",
+          "line": 165
+        },
+        {
+          "level": 3,
+          "title": "`normal_view`",
+          "line": 179
+        },
+        {
+          "level": 3,
+          "title": "`isaac_normal_view`",
+          "line": 217
+        }
+      ],
+      "linkedFrom": [
+        "guidance:sensor-sim-readme"
+      ],
+      "memoryType": "tooling",
+      "documentId": "sensor-sim-readme"
+    },
+    {
+      "id": "isaac-vfx-readme",
+      "path": "src/simworld/isaac_env/isaac_vfx/README.md",
+      "title": "Isaac VFX",
+      "category": "rule",
+      "contentType": "markdown",
+      "summary": "isaacvfx holds runtime-only visual effects for Isaac Sim. The first module is",
+      "inclusionReason": "guidance:isaac-vfx-readme",
+      "sections": [
+        {
+          "level": 1,
+          "title": "Isaac VFX",
+          "line": 1
+        },
+        {
+          "level": 1,
+          "title": "In the simulation loop:",
+          "line": 34
+        },
+        {
+          "level": 2,
+          "title": "Weather Lighting",
+          "line": 43
+        }
+      ],
+      "linkedFrom": [
+        "guidance:isaac-vfx-readme"
+      ],
+      "memoryType": "tooling",
+      "documentId": "isaac-vfx-readme"
+    },
+    {
+      "id": "ai-entry",
+      "path": "docs/AI-Entry.md",
+      "title": "AI Entry",
+      "category": "task-scope",
+      "contentType": "markdown",
+      "summary": "Zero-context onboarding for LC_01 SimWorld. Read order, depth, and path bindings for Isaac Sim simulation development.",
+      "inclusionReason": "filename:AI-Entry.md; frontmatter:anyplan.index; guidance:ai-entry",
+      "sections": [
+        {
+          "level": 1,
+          "title": "AI Entry",
+          "line": 2
+        },
+        {
+          "level": 2,
+          "title": "1. Default Read Order",
+          "line": 8
+        },
+        {
+          "level": 2,
+          "title": "2. Read Depth",
+          "line": 22
+        },
+        {
+          "level": 2,
+          "title": "3. Do Not Read By Default",
+          "line": 39
+        },
+        {
+          "level": 2,
+          "title": "4. Context Expansion Triggers",
+          "line": 48
+        },
+        {
+          "level": 2,
+          "title": "5. Optional Packs (This Instance)",
+          "line": 59
+        },
+        {
+          "level": 2,
+          "title": "6. Module Quick Map (read on demand)",
+          "line": 68
+        },
+        {
+          "level": 2,
+          "title": "7. Validation",
+          "line": 84
+        },
+        {
+          "level": 1,
+          "title": "Engine / contract tests (no Isaac Sim required)",
+          "line": 87
+        },
+        {
+          "level": 1,
+          "title": "After guidance/dashboard edits (from Anyplan repo)",
+          "line": 91
+        },
+        {
+          "level": 2,
+          "title": "8. After Context Recovery",
+          "line": 104
+        }
+      ],
+      "linkedFrom": [
+        "guidance:ai-entry"
+      ],
+      "memoryType": "task-scope",
+      "documentId": "ai-entry"
+    }
+  ]
+}

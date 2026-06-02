@@ -1,0 +1,144 @@
+{
+  "schemaVersion": "0.1.0",
+  "projectId": "lc01-simworld",
+  "overview": {
+    "status": "active",
+    "summary": "LC_01 SimWorld is a modular Isaac Sim pipeline for campus/urban simulation. Anyplan was instantiated to standardize AI onboarding; core runtime and architecture docs already exist under doc/ and README.",
+    "highlights": [
+      "Runtime: scripts/run_sim.sh -> main.py -> simulation.py -> scene, agents, robot, sensors, VFX",
+      "Algorithms testable in engine/ and tests/ without Isaac",
+      "algorithm_lab/ for Isaac-free prototypes",
+      "Anyplan: guidance.json, dashboard, AI-Entry, GuidanceManifest"
+    ],
+    "documentPath": "docs/ProjectState.md",
+    "documentId": "project-state"
+  },
+  "roadmap": {
+    "summary": "Complete Anyplan bootstrap, then optional engineering/doc refactors without blocking feature work.",
+    "phases": [
+      {
+        "id": "phase-0-anyplan",
+        "title": "Anyplan instantiation",
+        "status": "active",
+        "summary": "Guidance instance, AI-Entry, manifest, doc-index, validation hooks.",
+        "milestones": [
+          {
+            "id": "m-guidance",
+            "title": "Guidance and constraints",
+            "summary": "instances/lc01-simworld/guidance.json with SimWorld document map.",
+            "status": "completed"
+          },
+          {
+            "id": "m-ai-entry",
+            "title": "AI-Entry and manifest",
+            "summary": "docs/AI-Entry.md, GuidanceManifest.md, ProjectState.md.",
+            "status": "completed"
+          },
+          {
+            "id": "m-doc-index",
+            "title": "Document index",
+            "summary": "doc-index.json via Anyplan build-doc-index.py.",
+            "status": "completed"
+          }
+        ]
+      },
+      {
+        "id": "phase-a-ci",
+        "title": "CI and test gate",
+        "status": "planned",
+        "summary": "GitHub Actions or local pre-push running unittest discover.",
+        "milestones": [
+          {
+            "id": "m-ci-unittest",
+            "title": "Unit test CI",
+            "summary": "PYTHONPATH=src/simworld unittest in CI.",
+            "status": "planned"
+          }
+        ]
+      },
+      {
+        "id": "phase-b-docs",
+        "title": "Documentation layout unify",
+        "status": "planned",
+        "summary": "Optional merge doc/ into docs/architecture/ with link preservation.",
+        "documentPath": "docs/refactoring/PHASED-REFACTORING.md"
+      },
+      {
+        "id": "phase-c-contracts",
+        "title": "Config and contracts hardening",
+        "status": "planned",
+        "summary": "ScenePipelineConfig, reproducible plans per Architecture recommendations."
+      }
+    ]
+  },
+  "completedTasks": [
+    {
+      "id": "task-simworld-runtime",
+      "title": "Modular SimWorld runtime",
+      "completedAt": "2026-05-01",
+      "summary": "main.py, simulation.py, scene pipeline, Spot, sensors, dynamic agents, VFX.",
+      "phaseId": "phase-0-anyplan",
+      "documentPath": "doc/Architecture.md"
+    },
+    {
+      "id": "task-architecture-docs",
+      "title": "Architecture and DynamicAgents documentation",
+      "completedAt": "2026-05-01",
+      "summary": "doc/Architecture.md, doc/DynamicAgents.md, README operator guide.",
+      "phaseId": "phase-0-anyplan",
+      "documentPath": "doc/DynamicAgents.md"
+    },
+    {
+      "id": "task-unittest-engine",
+      "title": "Engine-layer unit tests",
+      "completedAt": "2026-05-01",
+      "summary": "tests/ for dynamic contracts, ORCA/SUMO planners, export plan.",
+      "phaseId": "phase-0-anyplan",
+      "documentPath": "README.md"
+    }
+  ],
+  "currentPhase": {
+    "phaseId": "phase-0-anyplan",
+    "title": "Anyplan instantiation",
+    "summary": "Finish doc-index build, README Anyplan section, and validate artifacts. Defer Phase A–C unless owner schedules refactor.",
+    "progressPercent": 95,
+    "documentPath": "docs/ProjectState.md",
+    "tasks": [
+      {
+        "id": "task-phase0-closeout",
+        "title": "Phase 0 closeout",
+        "status": "in-progress",
+        "summary": "Optional: add .cursor rule pointing to AI-Entry; wire CI in Phase A.",
+        "documentPath": "docs/refactoring/PHASED-REFACTORING.md"
+      },
+      {
+        "id": "task-validate-anyplan",
+        "title": "Validate guidance and dashboard",
+        "status": "done",
+        "summary": "guidance.json and dashboard.json pass Anyplan schema validation.",
+        "documentPath": "instances/lc01-simworld/guidance.json"
+      },
+      {
+        "id": "task-readme-anyplan",
+        "title": "README Anyplan section",
+        "status": "done",
+        "summary": "AI-Entry invocation, unittest command, validate script paths.",
+        "documentPath": "README.md"
+      },
+      {
+        "id": "task-adr-0001",
+        "title": "ADR 0001 Anyplan adoption",
+        "status": "done",
+        "summary": "Dual doc/docs roots and adoption scope recorded.",
+        "documentPath": "docs/adr/0001-anyplan-adoption.md"
+      },
+      {
+        "id": "task-run-tests-sh",
+        "title": "scripts/run_tests.sh wrapper",
+        "status": "done",
+        "summary": "Local test runner for PYTHONPATH=src/simworld unittest.",
+        "documentPath": "scripts/run_tests.sh"
+      }
+    ]
+  }
+}

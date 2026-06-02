@@ -473,6 +473,17 @@ def _create_spot_camera_suite_rig(
         robot_root_prim_path,
         target_prim_path=join_prim_path(robot_root_prim_path, "body"),
     )
+    front_camera = _create_spot_front_camera_sensor(robot_root_prim_path)
+    depth_camera = _create_spot_depth_camera_sensor(robot_root_prim_path)
+    normal_camera = _create_spot_normal_camera_sensor(robot_root_prim_path)
+    return SensorRig.from_sensors(
+        rig_id="spot_camera_suite_rig",
+        sensors=[follow_camera, front_camera, depth_camera, normal_camera],
+        active_sensor_id=_resolve_active_sensor_id(
+            active_sensor_id,
+            follow_camera.sensor_id,
+        ),
+    )
 
 
 def _create_spot_isaac_camera_suite_rig(
@@ -489,17 +500,6 @@ def _create_spot_isaac_camera_suite_rig(
     normal_camera = _create_spot_isaac_normal_camera_sensor(robot_root_prim_path)
     return SensorRig.from_sensors(
         rig_id="spot_isaac_camera_suite_rig",
-        sensors=[follow_camera, front_camera, depth_camera, normal_camera],
-        active_sensor_id=_resolve_active_sensor_id(
-            active_sensor_id,
-            follow_camera.sensor_id,
-        ),
-    )
-    front_camera = _create_spot_front_camera_sensor(robot_root_prim_path)
-    depth_camera = _create_spot_depth_camera_sensor(robot_root_prim_path)
-    normal_camera = _create_spot_normal_camera_sensor(robot_root_prim_path)
-    return SensorRig.from_sensors(
-        rig_id="spot_camera_suite_rig",
         sensors=[follow_camera, front_camera, depth_camera, normal_camera],
         active_sensor_id=_resolve_active_sensor_id(
             active_sensor_id,

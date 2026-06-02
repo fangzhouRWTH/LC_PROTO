@@ -1,0 +1,566 @@
+{
+  "schemaVersion": "0.2.0",
+  "project": {
+    "id": "lc01-simworld",
+    "name": "LC_01 SimWorld",
+    "purpose": "NVIDIA Isaac Sim urban and campus-scale simulation: USD scenes, static layout, dynamic agents, Spot robot, pseudo sensors, and weather/VFX.",
+    "documentationLanguage": "English",
+    "context": "Mature modular runtime under src/simworld. Anyplan adopted 2026-06. Architecture docs in doc/; algorithm prototypes in algorithm_lab/. Isaac Sim required for runtime; unittest for engine layer without Isaac.",
+    "owners": ["fangzhou"]
+  },
+  "principles": [
+    {
+      "id": "ai-entry-first",
+      "title": "AI entry first",
+      "statement": "Zero-context AI sessions must start from docs/AI-Entry.md unless the owner provides a narrower scoped briefing.",
+      "rationale": "Reduces repeated owner context and enforces bounded retrieval."
+    },
+    {
+      "id": "central-contract",
+      "title": "Central working contract",
+      "statement": "This guidance instance is the central working contract for AI-assisted development; it outranks README and architecture prose for collaboration rules.",
+      "rationale": "A single structured source of truth reduces conflicting instructions across sessions and tools."
+    },
+    {
+      "id": "bounded-context",
+      "title": "Bounded context retrieval",
+      "statement": "Load task-scope documents first per docs/GuidanceManifest.md; read doc/Architecture.md and module READMEs only when the task touches those areas.",
+      "rationale": "Context windows are finite; the repo has large assets/ and deep architecture docs."
+    },
+    {
+      "id": "isaac-adaptor-boundary",
+      "title": "Isaac adaptor boundary",
+      "statement": "Isaac Sim, Omniverse, and USD/PXR APIs must be imported only through isaac_env/isaac_adaptor/ unless the owner approves an exception.",
+      "rationale": "Centralizes Isaac coupling and keeps engine/ and algorithm_lab/ testable without Isaac."
+    },
+    {
+      "id": "algorithm-lab-isolation",
+      "title": "Algorithm lab isolation",
+      "statement": "algorithm_lab/ code must not import Isaac; promote to engine/ with tests before Isaac integration.",
+      "rationale": "Preserves a fast experimental loop for layout and dynamic algorithms."
+    },
+    {
+      "id": "contract-driven-integration",
+      "title": "Contract-driven integration",
+      "statement": "New features should follow Input -> Contract -> Apply -> Runtime Update as described in doc/Architecture.md.",
+      "rationale": "Keeps plans reproducible and modules swappable."
+    },
+    {
+      "id": "english-documentation",
+      "title": "English documentation",
+      "statement": "Durable project documentation must be written in English.",
+      "rationale": "Matches existing docs and enables Anyplan tooling."
+    }
+  ],
+  "roles": [
+    {
+      "id": "human-owner",
+      "name": "Human Project Owner",
+      "responsibilities": [
+        "Define goals, acceptance criteria, and high-impact direction",
+        "Approve changes to central guidance and durable architecture"
+      ],
+      "permissions": [
+        "Change project goals",
+        "Accept or reject AI proposals"
+      ],
+      "handoffRules": [
+        "High-impact guidance or architecture changes require explicit human confirmation"
+      ]
+    },
+    {
+      "id": "ai-coding-agent",
+      "name": "AI Coding Agent",
+      "responsibilities": [
+        "Recover context from the guidance instance and repository",
+        "Implement scoped changes and run available validation",
+        "Record conflicts, verification, and open questions"
+      ],
+      "permissions": [
+        "Edit repository files within task scope",
+        "Run local non-destructive commands"
+      ],
+      "handoffRules": [
+        "Do not revert or overwrite user changes outside the current task",
+        "Surface GuidanceConflict before proceeding on material conflicts"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "default-collaboration-loop",
+      "name": "Default Collaboration Loop",
+      "entrypoints": ["user-request", "bugfix", "feature", "documentation"],
+      "steps": [
+        {
+          "id": "capture-intent",
+          "title": "Capture Intent",
+          "purpose": "Turn a request into a bounded TaskBrief.",
+          "actor": "human-owner, ai-coding-agent",
+          "inputs": ["User request", "Guidance instance"],
+          "actions": [
+            "State goal, scope, acceptance clues, and unknowns",
+            "Flag high-impact choices for human confirmation"
+          ],
+          "outputs": ["TaskBrief"],
+          "checks": ["Deliverable is identifiable", "Scope is explicit"],
+          "next": ["recover-context"]
+        },
+        {
+          "id": "recover-context",
+          "title": "Recover Context",
+          "purpose": "Read the smallest authoritative context needed to act safely.",
+          "actor": "ai-coding-agent",
+          "inputs": ["TaskBrief", "Document map", "Repository state"],
+          "actions": [
+            "Read docs/AI-Entry.md then central guidance and ProjectState",
+            "Follow docs/GuidanceManifest.md for depth and expansion",
+            "Expand to doc/Architecture.md and module READMEs only with task-specific reason",
+            "Preserve existing user changes"
+          ],
+          "outputs": ["ContextSnapshot", "RetrievalScope"],
+          "checks": [
+            "Context is sufficient for the task",
+            "Deep reads are justified"
+          ],
+          "next": ["check-guidance"]
+        },
+        {
+          "id": "check-guidance",
+          "title": "Check Guidance",
+          "purpose": "Compare the request against durable rules.",
+          "actor": "ai-coding-agent",
+          "inputs": ["TaskBrief", "Principles", "Constraints"],
+          "actions": [
+            "Detect conflicts with constraints and document authority",
+            "Propose guidance updates when direction intentionally changes"
+          ],
+          "outputs": ["GuidanceConflict or clearance"],
+          "checks": ["Material conflicts are not ignored"],
+          "next": ["plan-change"]
+        },
+        {
+          "id": "plan-change",
+          "title": "Plan Change",
+          "purpose": "Define a small, verifiable implementation path.",
+          "actor": "ai-coding-agent",
+          "inputs": ["TaskBrief", "ContextSnapshot"],
+          "actions": [
+            "Choose the smallest useful change",
+            "Define validation steps the owner can reproduce"
+          ],
+          "outputs": ["Implementation plan"],
+          "checks": ["Plan matches task scope"],
+          "next": ["implement-change"]
+        },
+        {
+          "id": "implement-change",
+          "title": "Implement Change",
+          "purpose": "Complete the scoped change.",
+          "actor": "ai-coding-agent",
+          "inputs": ["Implementation plan"],
+          "actions": ["Edit code and documentation within scope"],
+          "outputs": ["Diff"],
+          "checks": ["No unrelated refactors"],
+          "next": ["verify-change"]
+        },
+        {
+          "id": "verify-change",
+          "title": "Verify Change",
+          "purpose": "Validate behavior and report residual risk.",
+          "actor": "ai-coding-agent",
+          "inputs": ["Diff"],
+          "actions": [
+            "Run tests, lint, schema validation, or manual checks as available",
+            "State what was not verified"
+          ],
+          "outputs": ["VerificationReport"],
+          "checks": ["Main risks are covered or explicitly deferred"],
+          "next": ["record-decision"]
+        },
+        {
+          "id": "record-decision",
+          "title": "Record Decision",
+          "purpose": "Update the smallest authoritative document set.",
+          "actor": "ai-coding-agent, human-owner",
+          "inputs": ["VerificationReport", "Diff"],
+          "actions": [
+            "Update project state, ADRs, or collaboration log when impact is durable",
+            "Summarize open questions and next actions"
+          ],
+          "outputs": ["Collaboration record", "Final summary"],
+          "checks": ["Future sessions can recover why the change was made"],
+          "next": []
+        }
+      ],
+      "exitCriteria": [
+        "Requested outcome is delivered or blockers are explained",
+        "Available validation has been run",
+        "Durable guidance changes are recorded"
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "id": "protect-user-work",
+      "category": "repository",
+      "rule": "Do not revert or overwrite user changes that were not created in the current task.",
+      "severity": "required",
+      "appliesTo": ["ai-coding-agent"],
+      "validation": "Inspect version control status before and after edits."
+    },
+    {
+      "id": "guidance-schema",
+      "category": "quality",
+      "rule": "The guidance instance must remain valid JSON and validate against the Anyplan schema when validation is available.",
+      "severity": "required",
+      "appliesTo": ["ai-coding-agent", "human-owner"],
+      "validation": "Run Anyplan validate-guidance.sh on the instance after structural edits (see docs/ProjectState.md)."
+    },
+    {
+      "id": "human-reproducible-validation",
+      "category": "communication",
+      "rule": "Meaningful completion summaries should include commands and checks the project owner can reproduce.",
+      "severity": "recommended",
+      "appliesTo": ["ai-coding-agent"],
+      "validation": "Final reports list commands, expected results, and unverified items."
+    },
+    {
+      "id": "unittest-without-isaac",
+      "category": "quality",
+      "rule": "Changes to engine/, isaac_agents contracts, or planners must pass PYTHONPATH=src/simworld python3 -m unittest discover -s tests before claiming completion.",
+      "severity": "required",
+      "appliesTo": ["ai-coding-agent"],
+      "validation": "Run unittest discover -s tests -v from repository root."
+    },
+    {
+      "id": "isaac-runtime-not-ci",
+      "category": "safety",
+      "rule": "Do not assume Isaac Sim is available in CI or sandbox; runtime sim validation is owner-reproducible via scripts/run_sim.sh unless owner confirms Isaac in environment.",
+      "severity": "required",
+      "appliesTo": ["ai-coding-agent"],
+      "validation": "State in VerificationReport whether Isaac run was executed or deferred."
+    },
+    {
+      "id": "no-assets-in-vcs",
+      "category": "repository",
+      "rule": "Do not commit large binary assets; assets/ is gitignored. Use collect_asset.py and asset_config.yaml references.",
+      "severity": "required",
+      "appliesTo": ["ai-coding-agent"],
+      "validation": "git status shows no unintended assets/ additions."
+    },
+    {
+      "id": "phased-refactor-only",
+      "category": "quality",
+      "rule": "Execute docs/refactoring/PHASED-REFACTORING.md phases only when the owner assigns that phase; do not combine Phase B/C with unrelated features.",
+      "severity": "recommended",
+      "appliesTo": ["ai-coding-agent", "human-owner"],
+      "validation": "TaskBrief names the refactor phase id or defers refactors."
+    }
+  ],
+  "interfaces": [
+    {
+      "id": "task-brief",
+      "name": "TaskBrief",
+      "purpose": "Executable task boundary for the current request.",
+      "producer": "human-owner or ai-coding-agent",
+      "consumer": "ai-coding-agent",
+      "fields": [
+        {
+          "name": "intent",
+          "type": "string",
+          "required": true,
+          "description": "Core outcome requested."
+        },
+        {
+          "name": "scope",
+          "type": "string[]",
+          "required": true,
+          "description": "Allowed files, modules, or concepts."
+        },
+        {
+          "name": "acceptance",
+          "type": "string[]",
+          "required": false,
+          "description": "Completion signals."
+        },
+        {
+          "name": "unknowns",
+          "type": "string[]",
+          "required": false,
+          "description": "Open questions to clarify or record."
+        }
+      ]
+    },
+    {
+      "id": "context-snapshot",
+      "name": "ContextSnapshot",
+      "purpose": "Summarize context recovered for the task.",
+      "producer": "ai-coding-agent",
+      "consumer": "human-owner, ai-coding-agent",
+      "fields": [
+        {
+          "name": "filesRead",
+          "type": "string[]",
+          "required": true,
+          "description": "Important files read."
+        },
+        {
+          "name": "currentStructure",
+          "type": "string",
+          "required": true,
+          "description": "Relevant repository or subsystem structure."
+        },
+        {
+          "name": "risks",
+          "type": "string[]",
+          "required": false,
+          "description": "Risks affecting implementation or validation."
+        }
+      ]
+    },
+    {
+      "id": "verification-report",
+      "name": "VerificationReport",
+      "purpose": "Record validation performed and residual risk.",
+      "producer": "ai-coding-agent",
+      "consumer": "human-owner",
+      "fields": [
+        {
+          "name": "checks",
+          "type": "object[]",
+          "required": true,
+          "description": "Each check with command or method and result."
+        },
+        {
+          "name": "ownerSteps",
+          "type": "string[]",
+          "required": false,
+          "description": "Steps the owner can run independently."
+        },
+        {
+          "name": "residualRisk",
+          "type": "string[]",
+          "required": false,
+          "description": "Unverified or deferred items."
+        }
+      ]
+    }
+  ],
+  "documents": [
+    {
+      "id": "project-readme",
+      "title": "Project README",
+      "path": "README.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "overview",
+      "retrievalTier": "task-scope",
+      "defaultRead": "task",
+      "contextCost": "small"
+    },
+    {
+      "id": "guidance-instance",
+      "title": "Project Guidance Instance",
+      "path": "instances/lc01-simworld/guidance.json",
+      "kind": "instance",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "rule",
+      "authority": "central-contract",
+      "retrievalTier": "task-scope",
+      "defaultRead": "always",
+      "contextCost": "medium"
+    },
+    {
+      "id": "project-state",
+      "title": "Project State",
+      "path": "docs/ProjectState.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "state",
+      "authority": "current-state",
+      "retrievalTier": "task-scope",
+      "defaultRead": "task",
+      "contextCost": "small"
+    },
+    {
+      "id": "ai-entry",
+      "title": "AI Entry",
+      "path": "docs/AI-Entry.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "task-scope",
+      "authority": "central-contract",
+      "retrievalTier": "task-scope",
+      "defaultRead": "always",
+      "contextCost": "small",
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "guidance-manifest",
+      "title": "Guidance Manifest",
+      "path": "docs/GuidanceManifest.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "manifest",
+      "retrievalTier": "task-scope",
+      "defaultRead": "task",
+      "contextCost": "small",
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "architecture",
+      "title": "SimWorld Architecture",
+      "path": "doc/Architecture.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "rule",
+      "authority": "architecture-policy",
+      "retrievalTier": "deep-source",
+      "defaultRead": "on-demand",
+      "contextCost": "large",
+      "readTriggers": [
+        "Pipeline or module boundary changes",
+        "New integration contracts",
+        "ScenePipelineConfig work"
+      ],
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "dynamic-agents",
+      "title": "Dynamic Agents",
+      "path": "doc/DynamicAgents.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "rule",
+      "retrievalTier": "deep-source",
+      "defaultRead": "on-demand",
+      "contextCost": "medium",
+      "readTriggers": ["Dynamic actors", "ORCA", "SUMO", "engine/dynamic.py"],
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "project-dashboard",
+      "title": "Project Dashboard",
+      "path": "instances/lc01-simworld/dashboard.json",
+      "kind": "instance",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "roadmap",
+      "retrievalTier": "task-scope",
+      "defaultRead": "task",
+      "contextCost": "small",
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "phased-refactoring",
+      "title": "Phased Refactoring Plan",
+      "path": "docs/refactoring/PHASED-REFACTORING.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "roadmap",
+      "retrievalTier": "phase-context",
+      "defaultRead": "on-demand",
+      "contextCost": "medium",
+      "readTriggers": ["Doc layout unify", "CI setup", "ScenePipelineConfig"],
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "algorithm-lab-guideline",
+      "title": "Algorithm Lab Guideline",
+      "path": "algorithm_lab/guideline.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "methodology",
+      "retrievalTier": "phase-context",
+      "defaultRead": "on-demand",
+      "contextCost": "small",
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "sensor-sim-readme",
+      "title": "Isaac Sensor Sim",
+      "path": "src/simworld/isaac_env/isaac_sensor_sim/README.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "tooling",
+      "retrievalTier": "deep-source",
+      "defaultRead": "on-demand",
+      "contextCost": "medium",
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "isaac-vfx-readme",
+      "title": "Isaac VFX",
+      "path": "src/simworld/isaac_env/isaac_vfx/README.md",
+      "kind": "framework",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "tooling",
+      "retrievalTier": "deep-source",
+      "defaultRead": "on-demand",
+      "contextCost": "small",
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "adr-0001",
+      "title": "ADR 0001 Anyplan Adoption",
+      "path": "docs/adr/0001-anyplan-adoption.md",
+      "kind": "adr",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "decision",
+      "authority": "decision-record",
+      "retrievalTier": "deep-source",
+      "defaultRead": "on-demand",
+      "contextCost": "small",
+      "lastReviewed": "2026-06-01"
+    },
+    {
+      "id": "collaboration-log",
+      "title": "AI Collaboration Log",
+      "path": "docs/ai-collaboration-log.md",
+      "kind": "log",
+      "scope": "project",
+      "portable": false,
+      "memoryType": "log",
+      "authority": "log",
+      "retrievalTier": "archive",
+      "defaultRead": "archive",
+      "contextCost": "medium"
+    }
+  ],
+  "changeControl": {
+    "versioning": "During early adoption, prefer additive schema fields and document changes in the collaboration log.",
+    "proposalRequiredFor": [
+      "Changing central authority order",
+      "Removing required constraints",
+      "Changing the active workflow id without migration notes"
+    ],
+    "reviewChecklist": [
+      "Document map paths exist or are planned",
+      "Constraints match how the team actually works",
+      "Validation commands in constraints are runnable in this repository"
+    ]
+  },
+  "selfGovernance": {
+    "activeWorkflow": "default-collaboration-loop",
+    "recordPath": "docs/ai-collaboration-log.md",
+    "minimumRecord": [
+      "TaskBrief",
+      "ContextSnapshot",
+      "verification",
+      "openQuestions"
+    ]
+  }
+}

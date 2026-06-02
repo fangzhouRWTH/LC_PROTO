@@ -1,0 +1,15 @@
+---
+description: LC_01 SimWorld — Anyplan AI collaboration entry
+alwaysApply: true
+---
+
+Before non-trivial work on this repository:
+
+1. Read `docs/AI-Entry.md` (zero-context onboarding).
+2. Read `instances/lc01-simworld/guidance.json` and `docs/ProjectState.md`.
+3. Follow `docs/GuidanceManifest.md` for read depth; do not scan the whole repo or `assets/`.
+4. For `engine/` and dynamic contract changes, run `scripts/run_tests.sh` before completion.
+5. Isaac Sim runtime is not assumed in CI; use `scripts/run_sim.sh` only when the owner environment has Isaac.
+6. Do not execute `docs/refactoring/PHASED-REFACTORING.md` phases unless the task names that phase.
+
+Owner shortcut: “Follow docs/AI-Entry.md, then …”

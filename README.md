@@ -2,6 +2,29 @@
 
 LC_01 SimWorld is an NVIDIA Isaac Sim based simulation project for urban and campus-scale environments. The codebase has moved from early validation scripts into a modular runtime under `src/simworld`. The current pipeline can open USD scenes, parse scene semantics from naming rules, generate static asset layouts inside placeholder regions, import referenced USD assets, configure weather and lighting, spawn dynamic placeholder actors, attach pseudo sensors to the robot, and run an interactive Spot demo.
 
+## AI Collaboration (Anyplan)
+
+This project uses the [Anyplan](https://github.com/fangzhouRWTH/LC_PROTO) guidance framework for AI-assisted development.
+
+- **New AI session:** follow [docs/AI-Entry.md](docs/AI-Entry.md) (owner can say: “Follow docs/AI-Entry.md, then …”).
+- **Machine-readable contract:** [instances/lc01-simworld/guidance.json](instances/lc01-simworld/guidance.json)
+- **Progress dashboard:** [instances/lc01-simworld/dashboard.json](instances/lc01-simworld/dashboard.json)
+- **Phased refactors (optional):** [docs/refactoring/PHASED-REFACTORING.md](docs/refactoring/PHASED-REFACTORING.md)
+
+Validate guidance (from a checkout of the Anyplan framework repo):
+
+```bash
+ANYPLAN=/path/to/Anyplan
+python3 "$ANYPLAN/scripts/build-doc-index.py" --project-id lc01-simworld --repo-root .
+"$ANYPLAN/scripts/validate-guidance.sh" instances/lc01-simworld/guidance.json
+```
+
+Unit tests (no Isaac Sim required):
+
+```bash
+PYTHONPATH=src/simworld python3 -m unittest discover -s tests -v
+```
+
 ## Documentation
 
 - [Architecture](doc/Architecture.md): describes the current module boundaries, runtime path, data contracts, and next integration steps.

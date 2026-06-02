@@ -46,7 +46,9 @@ class MountedPseudoNormalCameraSensor(MountedViewportCameraSensor):
     def activate(self) -> None:
         super().activate()
         self._normal_display_state = activate_viewport_normal_display()
-        if self.enable_material_override:
+        if self.enable_material_override and not _normal_display_looks_active(
+            self._normal_display_state
+        ):
             self._material_override_state = self._apply_material_override()
 
     def deactivate(self) -> None:
@@ -80,6 +82,8 @@ class MountedPseudoNormalCameraSensor(MountedViewportCameraSensor):
                 "normal_rgb_u8": normal_rgb,
                 "normal_resolution": self.normal_resolution,
                 "normal_encoding": "float32_xyz_unit",
+                "normal_output_source": "pseudo_constant_plane",
+                "normal_from_annotator": False,
                 "coordinate_frame": "camera",
                 "plane_normal_camera": self._normalized_plane_normal(),
                 "invalid_value": (0.0, 0.0, 0.0),
@@ -181,6 +185,7 @@ class MountedPseudoNormalCameraSensor(MountedViewportCameraSensor):
 @dataclass
 class MountedIsaacNormalCameraSensor(MountedIsaacAnnotatorCameraSensor):
     normal_annotator_name: str = "normals"
+    route_viewport_to_render_product: bool = False
     enable_material_override: bool = False
     use_mdl_normal_visualizer: bool = False
     material_override_path: str = (
@@ -220,6 +225,13 @@ class MountedIsaacNormalCameraSensor(MountedIsaacAnnotatorCameraSensor):
             "normal_rgb_u8": self._make_preview_rgb_safe(normal_map),
             "normal_resolution": self.resolution,
             "normal_encoding": "float32_xyz_unit",
+            "normal_output_source": (
+                f"isaac_annotator:{self.normal_annotator_name}"
+                if normal_map is not None
+                else "annotator_unavailable"
+            ),
+            "normal_from_annotator": normal_map is not None,
+            "normal_annotator_name": self.normal_annotator_name,
             "coordinate_frame": "camera_or_renderer",
             "invalid_value": (0.0, 0.0, 0.0),
             "statistics": self._make_normal_stats_safe(normal_map),
@@ -252,6 +264,16 @@ class MountedIsaacNormalCameraSensor(MountedIsaacAnnotatorCameraSensor):
                     if self._material_override_state is not None
                     and self.use_mdl_normal_visualizer
                     else None
+                ),
+                "normal_output_source": (
+                    frame.data.get("normal_output_source")
+                    if isinstance(frame.data, dict)
+                    else None
+                ),
+                "normal_from_annotator": (
+                    frame.data.get("normal_from_annotator")
+                    if isinstance(frame.data, dict)
+                    else False
                 ),
             }
         )
@@ -348,3 +370,12 @@ def _shape_of(value) -> tuple[int, ...] | None:
     if value is None:
         return None
     return tuple(getattr(value, "shape", ()) or ())
+
+
+def _normal_display_looks_active(display_state: dict | None) -> bool:
+    if not display_state:
+        return False
+    templates = display_state.get("display_templates")
+    if isinstance(templates, list) and templates:
+        return True
+    return bool(display_state.get("render_product_path"))

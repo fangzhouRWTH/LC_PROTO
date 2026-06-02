@@ -119,6 +119,8 @@ def _format_sensor_diagnostic(frame: SensorFrame) -> str:
         "raw_depth_shape",
         "normal_resolution",
         "depth_resolution",
+        "normal_output_source",
+        "normal_from_annotator",
     ):
         if key in data:
             parts.append(f"{key}={data.get(key)}")
