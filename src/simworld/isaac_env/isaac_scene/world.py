@@ -41,5 +41,8 @@ class SimWorld:
     def step(self, render=False):
         self.world.step(render=render)
 
+    def play(self):
+        self.world.play()
+
     def stop(self):
         self.world.stop()

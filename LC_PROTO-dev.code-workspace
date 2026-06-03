@@ -1,0 +1,19 @@
+{
+  "folders": [
+    {
+      "name": "LC_PROTO",
+      "path": "."
+    },
+    {
+      "name": "Development",
+      "path": "../prototypes/Development"
+    }
+  ],
+  "settings": {
+    "git.openRepositoryInParentFolders": "never",
+    "files.exclude": {
+      "**/__pycache__": true,
+      "**/.pytest_cache": true
+    }
+  }
+}

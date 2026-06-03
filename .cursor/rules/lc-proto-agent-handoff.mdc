@@ -1,0 +1,52 @@
+---
+description: LC_PROTO dynamic agents context (migrated from UrbanSim workspace chat)
+alwaysApply: true
+---
+
+# LC_PROTO — active development context
+
+## Repos and roles
+
+- **This folder (`LC_PROTO`)**: production Isaac Sim code. Git branch: `dev-SSTORM` (pushed to `origin/dev-SSTORM`).
+- **`../prototypes/Development`**: research vault (experiments, auto-review, decisions). Not the main git repo for shipping code.
+- **`UrbanSim`**: separate project; open in another Cursor window when working on metadriverse/urban-sim.
+
+## Architecture (dynamic agents)
+
+```text
+Input -> Plan -> Apply -> Runtime Update
+scene -> engine.dynamic (DynamicScenePlan) -> isaac_agents backends -> simulation.py step()
+```
+
+## Recent shipped work (on dev-SSTORM, no Co-authored-by)
+
+- P1: `DynamicScenePlan` contract, index spawn/goal pairing, `route_mode`, `tests/test_dynamic_contract.py`
+- P2: `orca_pedestrian`, `sumo_vehicle`, `orca_sumo` backends; `engine/orca_pedestrian.py`, `engine/sumo_vehicle.py`
+- P2.1.5: mock ORCA crossing tuning (route attraction, capped separation)
+- Doc: `doc/DynamicAgents.md`
+
+## Common commands
+
+```bash
+cd /home/sstormw/LeapsCora/LC_PROTO
+PYTHONPATH=src/simworld python3 -m unittest discover -s tests -v
+
+WARMUP_FRAMES=0 \
+SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
+DYNAMIC_MAX_PEDESTRIAN_ACTORS=5 \
+DYNAMIC_MAX_VEHICLE_ACTORS=2 \
+DYNAMIC_AGENT_BACKEND=orca_sumo \
+scripts/run_sim.sh
+```
+
+## Git workflow
+
+- Do not add `Co-authored-by: Cursor` (attribution disabled globally in `~/.cursor/cli-config.json`).
+- Commit only when the user explicitly asks.
+- `master` on remote may lag; merge via PR from `dev-SSTORM`.
+
+## Next backlog
+
+- Isaac hand-test: 5 pedestrians + 2 vehicles, `orca_sumo`, crossing behavior after P2.1.5
+- Real ORCA / SUMO library integration (replace mocks)
+- P1.3 simulation stop-reset
