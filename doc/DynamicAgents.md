@@ -415,40 +415,48 @@ Current P1.7 limitations: there is no walk/idle blending, no automatic retargeti
 
 ### Isaac People Animated Pedestrian Backend
 
-P1.8 is the practical path for visible walking pedestrians. Use `DYNAMIC_AGENT_BACKEND=isaac_people_sumo` for the current street-block demo: pedestrians are spawned through Isaac `omni.anim.people`, while vehicles continue to use the mock SUMO vehicle backend. LC_PROTO still parses route placeholders and writes a command file, but it no longer moves pedestrian roots by hand. Each pedestrian route becomes `GoTo x y z angle` lines in an OAP command file, and the People extension drives the character with its built-in `Walk` action.
+P1.9 is the current practical path for visible walking pedestrians in the local street-block demo. Use `DYNAMIC_AGENT_BACKEND=isaac_people_sumo`: pedestrians are spawned from Isaac People-compatible character USDs, vehicles continue to use the mock SUMO vehicle backend, and LC_PROTO still owns pedestrian route parsing.
 
-This backend requires Isaac People-compatible assets and motion libraries. The expected official assets are:
+The backend has two control modes:
+
+| Env value | Use case | Behavior |
+| --- | --- | --- |
+| `DYNAMIC_ISAAC_PEOPLE_CONTROL=route` | Current default demo | LC_PROTO moves the character root along `placeholder_pedestrian_route_*` waypoints; the isolated `isaac_people_route_animation.py` helper binds an Isaac People in-place walk `*.skelanim.usd` clip to the character skeleton for visible leg motion. |
+| `DYNAMIC_ISAAC_PEOPLE_CONTROL=command` | Future navmesh-backed formal parcels | LC_PROTO writes an OAP command file with `GoTo x y z angle` lines and lets `omni.anim.people` consume the command file. |
+
+`DYNAMIC_ISAAC_PEOPLE_NAVMESH` only matters in `command` mode. The current test USD is not authored as a formal Omniverse navigation scene, so route mode is the reliable demo path. `once` / `stop_at_end` route modes hide the character at the route end and reset makes the character visible again. Route mode is intentionally isolated from the existing kinematic / ORCA / SUMO runtime logic; only `isaac_people` and `isaac_people_sumo` call the Isaac People animation helper.
+
+Isaac People/NVIDIA biped characters commonly use a `-Y-forward` convention while LC_PROTO route yaw treats +X as zero heading. Route mode therefore applies `DYNAMIC_ISAAC_PEOPLE_YAW_OFFSET_DEG=90` by default. If a character appears sideways or reversed, debug by running with `DYNAMIC_ISAAC_PEOPLE_YAW_OFFSET_DEG=0`, `-90`, or `180` without changing route data.
+
+This backend requires Isaac People-compatible assets. The local Isaac Sim 5.1 asset pack layout used for this demo is:
 
 ```text
-Isaac/People/Characters/
-Isaac/People/MotionLibrary/HumanMotionLibrary.usd
+/home/sstormw/isaacsim_assets/Assets/Isaac/5.1/Isaac/People/Characters/Biped_Setup.usd
+/home/sstormw/isaacsim_assets/Assets/Isaac/5.1/Isaac/People/Characters/<character>/<character>.usd
+/home/sstormw/isaacsim_assets/Assets/Isaac/5.1/Isaac/People/Animations/*.skelanim.usd
 ```
 
-If those assets are not installed/configured, the backend prints an actionable error and will not spawn animated pedestrians. The Reallusion/ActorCore Business_F asset used in P1.6 can remain useful as a static visual reference, but it is not enough for reliable walking animation in this backend unless it has been retargeted to the NVIDIA biped / Isaac People graph.
-
-Recommended animated people demo after installing Isaac Sim Assets Pack:
+Recommended animated people demo:
 
 ```bash
-WARMUP_FRAMES=0 \
-SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda \
-SENSOR_PROFILE=none \
-CAMERA_PRIM_PATH=/World/DemoCamera \
-DYNAMIC_AGENT_BACKEND=isaac_people_sumo \
-DYNAMIC_ROUTE_MODE=once \
-DYNAMIC_MAX_PEDESTRIAN_ACTORS=1 \
-DYNAMIC_MAX_VEHICLE_ACTORS=2 \
-DYNAMIC_VEHICLE_VISUAL=asset \
-DYNAMIC_VEHICLE_ASSET_PATH=/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/lc_proto_sedan_vehicle_zup.usda \
-scripts/run_sim.sh
+DYNAMIC_ISAAC_PEOPLE_DEBUG=true scripts/run_isaac_people_demo.sh
 ```
 
-The backend writes the generated OAP command file to:
+Equivalent expanded command:
+
+```bash
+WARMUP_FRAMES=0 SCENE_USD=assets/blocks/test_dynamic_agents/test_dynamic_agents.usda ROBOT_TYPE=none SENSOR_PROFILE=none CAMERA_PRIM_PATH=/World/DemoCamera AUTO_PLAY=true DYNAMIC_AGENT_BACKEND=isaac_people_sumo DYNAMIC_ROUTE_MODE=once DYNAMIC_ISAAC_PEOPLE_CONTROL=route DYNAMIC_ISAAC_PEOPLE_YAW_OFFSET_DEG=90 DYNAMIC_MAX_PEDESTRIAN_ACTORS=1 DYNAMIC_MAX_VEHICLE_ACTORS=2 DYNAMIC_VEHICLE_VISUAL=asset DYNAMIC_VEHICLE_ASSET_PATH=/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/lc_proto_sedan_vehicle_zup.usda scripts/run_sim.sh
+```
+
+Debug mode prints the selected character asset, character root, SkelRoot, animation graph target, route start/end, walk clip binding result, and first/60th route-frame movement. In current route mode, successful animation setup logs `Isaac People route walk clip bound` and references an Isaac People `stand_walk_*.skelanim.usd` clip. If the character appears but has no leg animation, inspect that binding line first; the older `ag.get_character()` AnimGraph variable path is kept only as a fallback.
+
+For future formal parcels, re-test `DYNAMIC_ISAAC_PEOPLE_CONTROL=command` after the parcel has a valid navmesh and reachable pedestrian route points. In that mode the generated command file remains:
 
 ```text
 /tmp/lc_proto_dynamic_people/dynamic_people_commands.txt
 ```
 
-Expected lines look like:
+Example command-mode lines:
 
 ```text
 Character GoTo 12 3 0 0
@@ -456,7 +464,7 @@ Character GoTo 18 9 0 45
 Character Idle 9999
 ```
 
-Notes for authoring: route waypoints still come from LC_PROTO `placeholder_pedestrian_route_*`; keep them on the walkable surface and inside/reachable by the Isaac navmesh. Out-of-parcel disappearance is not handled by root hiding in this backend yet, because Isaac People owns character movement. Use route endpoints and camera framing for the first animation demo, then add a People-specific despawn policy after command completion.
+Notes for authoring: route waypoints still come from LC_PROTO `placeholder_pedestrian_route_*`; in route mode they only need to be ordered and visually on the walkable surface. In command mode, keep them inside/reachable by the Isaac navmesh.
 
 ### Vehicle USD Asset Plan
 

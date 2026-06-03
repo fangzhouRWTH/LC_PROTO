@@ -52,6 +52,20 @@ def parse_args():
         help="Legacy option. Follow view is now managed by --sensor-profile.",
     )
     parser.add_argument(
+        "--auto-play",
+        nargs="?",
+        const=True,
+        type=parse_bool,
+        default=simulation.DEFAULT_AUTO_PLAY,
+        help="Start the simulation timeline automatically after scene setup.",
+    )
+    parser.add_argument(
+        "--auto-play-min-frames",
+        type=int,
+        default=simulation.DEFAULT_AUTO_PLAY_MIN_FRAMES,
+        help="Keep auto-play demos alive for at least this many frames.",
+    )
+    parser.add_argument(
         "--enable-dynamic-agents",
         nargs="?",
         const=True,
@@ -303,6 +317,8 @@ if __name__ == "__main__":
             warmup_frames=args.warmup_frames,
             camera_prim_path=args.camera_prim_path,
             chase_camera=args.chase_camera,
+            auto_play=args.auto_play,
+            auto_play_min_frames=args.auto_play_min_frames,
             enable_dynamic_agents=args.enable_dynamic_agents,
             dynamic_agent_backend=args.dynamic_agent_backend,
             dynamic_max_pedestrian_actors=args.dynamic_max_pedestrian_actors,

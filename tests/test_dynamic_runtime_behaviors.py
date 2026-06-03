@@ -225,6 +225,8 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             DEFAULT_WARMUP_FRAMES=30,
             DEFAULT_CAMERA_PRIM_PATH="/OmniverseKit_Persp",
             DEFAULT_CHASE_CAMERA=False,
+            DEFAULT_AUTO_PLAY=False,
+            DEFAULT_AUTO_PLAY_MIN_FRAMES=0,
             DEFAULT_ENABLE_DYNAMIC_AGENTS=True,
             DEFAULT_DYNAMIC_AGENT_BACKEND="kinematic",
             DEFAULT_DYNAMIC_MAX_PEDESTRIAN_ACTORS=1,
@@ -260,7 +262,7 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             DEFAULT_PUBLIC_SPACE_DUMMY_SIZE_M=0.5,
             DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP=None,
             DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS=True,
-            available_robot_types=lambda: ("spot",),
+            available_robot_types=lambda: ("none", "spot"),
             available_dynamic_agent_backends=lambda: ("kinematic",),
             available_weather_names=lambda: ("clear",),
             available_daytime_names=lambda: ("day",),
@@ -290,6 +292,10 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
                 "argv",
                 [
                     "main.py",
+                    "--auto-play",
+                    "true",
+                    "--auto-play-min-frames",
+                    "120",
                     "--dynamic-route-mode",
                     "once",
                     "--dynamic-placeholder-visibility",
@@ -316,6 +322,8 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             ):
                 args = module.parse_args()
 
+        self.assertTrue(args.auto_play)
+        self.assertEqual(args.auto_play_min_frames, 120)
         self.assertEqual(args.dynamic_route_mode, "once")
         self.assertEqual(args.dynamic_placeholder_visibility, "visible")
         self.assertEqual(args.dynamic_pedestrian_visual, "asset")
@@ -330,6 +338,8 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
 
     def test_run_sim_env_wires_dynamic_demo_arguments(self):
         sim_defaults = (ROOT / "scripts/sim_defaults.sh").read_text()
+        self.assertIn('AUTO_PLAY="${AUTO_PLAY:-}"', sim_defaults)
+        self.assertIn('AUTO_PLAY_MIN_FRAMES="${AUTO_PLAY_MIN_FRAMES:-}"', sim_defaults)
         self.assertIn('DYNAMIC_ROUTE_MODE="${DYNAMIC_ROUTE_MODE:-}"', sim_defaults)
         self.assertIn('DYNAMIC_PLACEHOLDER_VISIBILITY="${DYNAMIC_PLACEHOLDER_VISIBILITY:-}"', sim_defaults)
         self.assertIn('DYNAMIC_PEDESTRIAN_VISUAL="${DYNAMIC_PEDESTRIAN_VISUAL:-}"', sim_defaults)
@@ -343,6 +353,14 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
         self.assertIn('DYNAMIC_VEHICLE_ASSET_SCALE="${DYNAMIC_VEHICLE_ASSET_SCALE:-}"', sim_defaults)
         self.assertIn('SENSOR_PROFILE="${SENSOR_PROFILE:-}"', sim_defaults)
         self.assertIn('ACTIVE_SENSOR="${ACTIVE_SENSOR:-}"', sim_defaults)
+        self.assertIn(
+            'append_sim_arg_if_set "--auto-play" "${AUTO_PLAY}"',
+            sim_defaults,
+        )
+        self.assertIn(
+            'append_sim_arg_if_set "--auto-play-min-frames" "${AUTO_PLAY_MIN_FRAMES}"',
+            sim_defaults,
+        )
         self.assertIn(
             'append_sim_arg_if_set "--dynamic-route-mode" "${DYNAMIC_ROUTE_MODE}"',
             sim_defaults,

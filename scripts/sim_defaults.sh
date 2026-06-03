@@ -47,6 +47,8 @@ ROBOT_NAME="${ROBOT_NAME:-}"
 WARMUP_FRAMES="${WARMUP_FRAMES:-}"
 CAMERA_PRIM_PATH="${CAMERA_PRIM_PATH:-}"
 CHASE_CAMERA="${CHASE_CAMERA:-}"
+AUTO_PLAY="${AUTO_PLAY:-}"
+AUTO_PLAY_MIN_FRAMES="${AUTO_PLAY_MIN_FRAMES:-}"
 SENSOR_PROFILE="${SENSOR_PROFILE:-}"
 ACTIVE_SENSOR="${ACTIVE_SENSOR:-}"
 ENABLE_DYNAMIC_AGENTS="${ENABLE_DYNAMIC_AGENTS:-}"
@@ -85,6 +87,7 @@ SENSOR_DEBUG_INTERVAL_S="${SENSOR_DEBUG_INTERVAL_S:-}"
 KIT_LOG_LEVEL="${KIT_LOG_LEVEL:-error}"
 KIT_FILE_LOG_LEVEL="${KIT_FILE_LOG_LEVEL:-error}"
 KIT_OUTPUT_STREAM_LEVEL="${KIT_OUTPUT_STREAM_LEVEL:-error}"
+ISAAC_ASSET_ROOT="${ISAAC_ASSET_ROOT:-}"
 
 append_sim_arg_if_set() {
   local flag="$1"
@@ -103,6 +106,8 @@ build_sim_args() {
   append_sim_arg_if_set "--warmup-frames" "${WARMUP_FRAMES}"
   append_sim_arg_if_set "--camera-prim-path" "${CAMERA_PRIM_PATH}"
   append_sim_arg_if_set "--chase-camera" "${CHASE_CAMERA}"
+  append_sim_arg_if_set "--auto-play" "${AUTO_PLAY}"
+  append_sim_arg_if_set "--auto-play-min-frames" "${AUTO_PLAY_MIN_FRAMES}"
   append_sim_arg_if_set "--sensor-profile" "${SENSOR_PROFILE}"
   append_sim_arg_if_set "--active-sensor" "${ACTIVE_SENSOR}"
   append_sim_arg_if_set "--enable-dynamic-agents" "${ENABLE_DYNAMIC_AGENTS}"
@@ -145,4 +150,12 @@ build_kit_log_args() {
     "--/log/fileLogLevel=${KIT_FILE_LOG_LEVEL}"
     "--/log/outputStreamLevel=${KIT_OUTPUT_STREAM_LEVEL}"
   )
+
+  if [[ -n "${ISAAC_ASSET_ROOT}" ]]; then
+    kit_log_args+=(
+      "--/persistent/isaac/asset_root/default=${ISAAC_ASSET_ROOT}"
+      "--/persistent/isaac/asset_root/timeout=1.0"
+      "--/exts/isaacsim.replicator.agent/asset_settings/use_isaac_sim_asset_root=true"
+    )
+  fi
 }

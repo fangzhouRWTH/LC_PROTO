@@ -31,6 +31,7 @@ from .isaac_scene.scene_area_placement import AreaPlacementPrepareConfig
 
 from dataclasses import dataclass
 from engine.area_placement_bridge import available_layout_backends
+import os
 import numpy as np
 import pathlib
 
@@ -44,6 +45,8 @@ DEFAULT_CALLBACK_NAME = "simworld_callback"
 DEFAULT_WARMUP_FRAMES = 30
 DEFAULT_CAMERA_PRIM_PATH = "/OmniverseKit_Persp"
 DEFAULT_CHASE_CAMERA = False
+DEFAULT_AUTO_PLAY = False
+DEFAULT_AUTO_PLAY_MIN_FRAMES = 0
 DEFAULT_FALLBACK_SPAWN_POSITION = (0.0, 0.0, 0.8)
 DEFAULT_VFX_DT = 1.0 / 50.0
 _DEFAULT_DYNAMIC_PLAN_CONFIG = dynamic.DynamicPlanConfig()
@@ -101,6 +104,8 @@ class SimulationConfig:
     warmup_frames: int = DEFAULT_WARMUP_FRAMES
     camera_prim_path: str = DEFAULT_CAMERA_PRIM_PATH
     chase_camera: bool = DEFAULT_CHASE_CAMERA
+    auto_play: bool = DEFAULT_AUTO_PLAY
+    auto_play_min_frames: int = DEFAULT_AUTO_PLAY_MIN_FRAMES
     enable_dynamic_agents: bool = DEFAULT_ENABLE_DYNAMIC_AGENTS
     dynamic_agent_backend: str = DEFAULT_DYNAMIC_AGENT_BACKEND
     dynamic_max_pedestrian_actors: int = DEFAULT_DYNAMIC_MAX_PEDESTRIAN_ACTORS
@@ -244,6 +249,34 @@ def _map_keyboard_command(command):
     )
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None or str(value).strip() == "":
+        return bool(default)
+    normalized = str(value).strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return bool(default)
+
+
+def _preload_dynamic_agent_backend_runtime(context, config: SimulationConfig) -> None:
+    if not config.enable_dynamic_agents:
+        return
+    backend_name = str(config.dynamic_agent_backend or "").strip().lower()
+    if backend_name not in {"isaac_people", "isaac_people_sumo"}:
+        return
+
+    from .isaac_agents.backends.isaac_people import preload_isaac_people_runtime
+
+    preload_isaac_people_runtime(
+        context,
+        control_mode=os.environ.get("DYNAMIC_ISAAC_PEOPLE_CONTROL"),
+        debug_enabled=_env_bool("DYNAMIC_ISAAC_PEOPLE_DEBUG", False),
+    )
+
+
 def _normalize_gf_vec3(value, fallback):
     length = value.GetLength()
     if length > 1e-8:
@@ -299,6 +332,7 @@ def run(config: SimulationConfig | None = None):
             "sim_time": 0.0,
         }
         ctrl = controller.KeyboardVelocityController()
+        _preload_dynamic_agent_backend_runtime(context, config)
 
         sim_scene = scene.SimScene(config.usd_path)
         sim_world = world.SimWorld()
@@ -329,7 +363,6 @@ def run(config: SimulationConfig | None = None):
         )
         if config.enable_dynamic_agents:
             agent_manager.build_from_plan(sim_scene.dynamic_plan)
-            agent_manager.spawn(sim_scene.stage)
         else:
             print("[INFO] Dynamic agents disabled.")
 
@@ -342,10 +375,21 @@ def run(config: SimulationConfig | None = None):
             config.fallback_spawn_position,
         )
 
+        print(
+            "[INFO] Simulation control config: "
+            f"auto_play={config.auto_play} "
+            f"auto_play_min_frames={config.auto_play_min_frames}"
+        )
+        print("[INFO] Resetting world before runtime spawn...")
         sim_world.reset()
+        if config.enable_dynamic_agents:
+            print("[INFO] World reset complete; spawning dynamic agents...")
+            agent_manager.spawn(sim_scene.stage)
+        print("[INFO] Runtime dynamic agent spawn complete; spawning robot...")
 
         robot = robot_factory.create_robot(config.robot_type, config.robot_name)
         robot.spawn(position=spawn_position)
+        print("[INFO] Robot spawn complete; creating sensor rig...")
 
         sensor_rig = create_sensor_rig(
             config.sensor_profile,
@@ -433,9 +477,45 @@ def run(config: SimulationConfig | None = None):
                 print(f"[ERROR] robot.forward failed. Mark reinit required: {e}")
 
         sim_world.prepare(config.callback_name, simworld_callback)
-        sim_world.stop()
+        auto_play_min_frames = max(0, int(config.auto_play_min_frames or 0))
+        remaining_forced_frames = auto_play_min_frames if config.auto_play else 0
+        dynamic_debug_enabled = str(
+            os.environ.get("DYNAMIC_ISAAC_PEOPLE_DEBUG", "")
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        if dynamic_debug_enabled:
+            print(
+                "[DEBUG] Simulation auto-play loop setup: "
+                f"is_running={context.is_running()} "
+                f"forced_frames={remaining_forced_frames}"
+            )
+        loop_frame = 0
+        if config.auto_play:
+            print(
+                "[INFO] Auto-play enabled"
+                + (f" for at least {auto_play_min_frames} frame(s)." if auto_play_min_frames else ".")
+            )
+            sim_world.play()
+        else:
+            sim_world.stop()
 
-        while context.is_running():
+        while context.is_running() or remaining_forced_frames > 0:
+            loop_frame += 1
+            stage = context.omni_usd.get_context().get_stage()
+            if stage is None:
+                if dynamic_debug_enabled:
+                    print("[DEBUG] Simulation loop exits: stage is None")
+                break
+            if remaining_forced_frames > 0:
+                remaining_forced_frames -= 1
+            if dynamic_debug_enabled and loop_frame in {1, 60}:
+                print(
+                    "[DEBUG] Simulation loop frame: "
+                    f"frame={loop_frame} running={context.is_running()} "
+                    f"remaining_forced_frames={remaining_forced_frames} "
+                    f"world_stopped={sim_world.is_stopped()} "
+                    f"world_playing={sim_world.is_playing()}"
+                )
+
             state["base_command"] = _map_keyboard_command(ctrl.get_command())
 
             sim_scene.update()
@@ -469,9 +549,12 @@ def run(config: SimulationConfig | None = None):
             weather_lighting.update(DEFAULT_VFX_DT)
 
             if sim_world.is_stopped():
-                robot.mark_reinit_required()
-                agent_manager.reset()
-                continue
+                if config.auto_play:
+                    sim_world.play()
+                else:
+                    robot.mark_reinit_required()
+                    agent_manager.reset()
+                    continue
 
             world_reinitialized = sim_world.check_reinit()
 
@@ -480,12 +563,22 @@ def run(config: SimulationConfig | None = None):
                     sim_world.reset()
                 robot.initialize()
 
-            if sim_world.is_playing():
-                agent_manager.step(DEFAULT_VFX_DT)
+            is_simulating = sim_world.is_playing() or config.auto_play
+            if is_simulating:
+                if dynamic_debug_enabled and loop_frame in {1, 60}:
+                    print(f"[DEBUG] Simulation stepping dynamic agents: frame={loop_frame}")
+                try:
+                    agent_manager.step(DEFAULT_VFX_DT)
+                except BaseException as exc:
+                    if dynamic_debug_enabled:
+                        print(f"[ERROR] Dynamic agent step failed: {type(exc).__name__}: {exc}")
+                    raise
 
-            if sim_world.is_playing() and robot.initialized:
+            if is_simulating and robot.initialized:
                 robot.step(state["base_command"])
                 state["sim_time"] += DEFAULT_VFX_DT
+                sim_world.step(render=True)
+            elif config.auto_play:
                 sim_world.step(render=True)
 
     finally:

@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from . import spot_demo
+from . import noop
 
 
 class SimRobot(Protocol):
@@ -20,7 +20,8 @@ class SimRobot(Protocol):
 
 
 ROBOT_REGISTRY = {
-    "spot": spot_demo.SpotDemo,
+    "none": noop.NoOpRobot,
+    "spot": "spot_demo.SpotDemo",
 }
 
 
@@ -37,4 +38,8 @@ def create_robot(robot_type: str, name: str) -> SimRobot:
             f"Unsupported robot type: {robot_type}. Available robot types: {available}"
         ) from exc
 
+    if robot_cls == "spot_demo.SpotDemo":
+        from . import spot_demo
+
+        return spot_demo.SpotDemo(name)
     return robot_cls(name)
