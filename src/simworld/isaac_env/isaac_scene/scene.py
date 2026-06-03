@@ -6,9 +6,14 @@ from . import scene_tools as tools
 from . import scene_parser as parser
 from . import scene_generator as generator
 from . import scene_asset_allocator as asset_allocator
+from .scene_area_placement import (
+    AreaPlacementPrepareConfig,
+    apply_area_placement_layout,
+)
 
 from engine import placement
 from engine import dynamic
+from engine.area_placement_bridge import normalize_layout_backend
 
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[4]
@@ -76,6 +81,7 @@ class SimScene:
         dynamic_plan_config: dynamic.DynamicPlanConfig | None = None,
         build_dynamic_plan: bool = True,
         dynamic_placeholder_visibility: str = "hidden",
+        area_placement: AreaPlacementPrepareConfig | None = None,
     ):
         self.stats = parser.SceneStats()
         tools.deactivate_all_lights(self.stage)
@@ -102,6 +108,36 @@ class SimScene:
             visibility=dynamic_placeholder_visibility,
         )
 
+        area_placement = area_placement or AreaPlacementPrepareConfig()
+        layout_backend = normalize_layout_backend(area_placement.layout_backend)
+        self.generated_asset_prim_paths = []
+        self.asset_import_plans = []
+
+        if layout_backend == "area_placement_methods":
+            ap_result = apply_area_placement_layout(
+                stage=self.stage,
+                stats=self.stats,
+                library=self.library,
+                asset_allocator=self.asset_allocator,
+                area_config=area_placement,
+                verbose=verbose,
+            )
+            self.generated_asset_prim_paths.extend(ap_result.placement_prim_paths)
+            self.generated_asset_prim_paths.extend(ap_result.legacy_asset_prim_paths)
+            for warning in ap_result.warnings:
+                print(f"[WARN] {warning}")
+        else:
+            self.generated_asset_prim_paths.extend(
+                self._prepare_legacy_placeholder_assets(verbose=verbose)
+            )
+
+        # Generated/referenced assets can bring their own lights after the first
+        # cleanup pass. Keep lighting controlled by isaac_vfx.weather.
+        tools.deactivate_all_lights(self.stage)
+
+        return par_res
+
+    def _prepare_legacy_placeholder_assets(self, *, verbose: bool = False) -> list[str]:
         footprints: list[placement.Footprint3D] = []
         for ply in self.stats.placeholder_areas:
             res = generator.generate_plane_polygon_layout(ply)
@@ -119,14 +155,11 @@ class SimScene:
             for plan in self.asset_import_plans:
                 print(plan)
 
+        if not self.asset_import_plans:
+            return []
+
         allocation_result = self.asset_allocator.import_plans(self.asset_import_plans)
-        self.generated_asset_prim_paths = allocation_result.prim_paths
-
-        # Generated/referenced assets can bring their own lights after the first
-        # cleanup pass. Keep lighting controlled by isaac_vfx.weather.
-        tools.deactivate_all_lights(self.stage)
-
-        return par_res
+        return list(allocation_result.prim_paths)
 
     def update(self):
         iscctx.get_isaac_context().simulation_app.update()

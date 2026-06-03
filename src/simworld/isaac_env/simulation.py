@@ -27,8 +27,10 @@ from .isaac_vfx import (
     available_daytime_names as _available_daytime_names,
     available_weather_names as _available_weather_names,
 )
+from .isaac_scene.scene_area_placement import AreaPlacementPrepareConfig
 
 from dataclasses import dataclass
+from engine.area_placement_bridge import available_layout_backends
 import numpy as np
 import pathlib
 
@@ -80,6 +82,14 @@ DEFAULT_SENSOR_DIAGNOSTICS = False
 DEFAULT_SENSOR_DIAGNOSTICS_INTERVAL_S = 1.0
 DEFAULT_SENSOR_DEBUG_OUTPUT_DIR = None
 DEFAULT_SENSOR_DEBUG_INTERVAL_S = 1.0
+DEFAULT_LAYOUT_BACKEND = "legacy"
+DEFAULT_REGION_INPUT_JSON = None
+DEFAULT_PLACEMENT_PLAN_JSON = None
+DEFAULT_LAYOUT_OUTPUT_DIR = None
+DEFAULT_USE_DUMMY_PUBLIC_SPACE_ASSETS = True
+DEFAULT_PUBLIC_SPACE_DUMMY_SIZE_M = 0.5
+DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP = None
+DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS = True
 
 
 @dataclass
@@ -128,6 +138,14 @@ class SimulationConfig:
     sensor_diagnostics_interval_s: float = DEFAULT_SENSOR_DIAGNOSTICS_INTERVAL_S
     sensor_debug_output_dir: pathlib.Path | None = DEFAULT_SENSOR_DEBUG_OUTPUT_DIR
     sensor_debug_interval_s: float = DEFAULT_SENSOR_DEBUG_INTERVAL_S
+    layout_backend: str = DEFAULT_LAYOUT_BACKEND
+    region_input_json: pathlib.Path | None = DEFAULT_REGION_INPUT_JSON
+    placement_plan_json: pathlib.Path | None = DEFAULT_PLACEMENT_PLAN_JSON
+    layout_output_dir: pathlib.Path | None = DEFAULT_LAYOUT_OUTPUT_DIR
+    use_dummy_public_space_assets: bool = DEFAULT_USE_DUMMY_PUBLIC_SPACE_ASSETS
+    public_space_dummy_size_m: float = DEFAULT_PUBLIC_SPACE_DUMMY_SIZE_M
+    public_space_asset_name_map: pathlib.Path | None = DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP
+    skip_legacy_placeholder_areas: bool = DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS
 
 
 def available_robot_types() -> tuple[str, ...]:
@@ -148,6 +166,23 @@ def available_daytime_names() -> tuple[str, ...]:
 
 def available_sensor_profiles() -> tuple[str, ...]:
     return _available_sensor_profiles()
+
+
+def available_layout_backends_list() -> tuple[str, ...]:
+    return available_layout_backends()
+
+
+def _make_area_placement_config(config: SimulationConfig) -> AreaPlacementPrepareConfig:
+    return AreaPlacementPrepareConfig(
+        layout_backend=config.layout_backend,
+        region_input_path=config.region_input_json,
+        placement_plan_path=config.placement_plan_json,
+        layout_output_dir=config.layout_output_dir,
+        use_dummy_assets=config.use_dummy_public_space_assets,
+        dummy_size_m=float(config.public_space_dummy_size_m),
+        asset_name_map_path=config.public_space_asset_name_map,
+        skip_legacy_placeholder_areas=config.skip_legacy_placeholder_areas,
+    )
 
 
 def _make_dynamic_plan_config(config: SimulationConfig) -> dynamic.DynamicPlanConfig:
@@ -273,6 +308,7 @@ def run(config: SimulationConfig | None = None):
             dynamic_plan_config=dynamic_plan_config,
             build_dynamic_plan=config.enable_dynamic_agents,
             dynamic_placeholder_visibility=config.dynamic_placeholder_visibility,
+            area_placement=_make_area_placement_config(config),
         )
 
         weather_lighting = WeatherLightingManager.from_weather(

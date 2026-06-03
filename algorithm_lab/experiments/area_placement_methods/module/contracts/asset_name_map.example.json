@@ -1,0 +1,8 @@
+{
+  "schema_version": "simworld.asset_name_map.v1",
+  "assets": {
+    "bollard": "/absolute/path/to/assets/bollard.usd",
+    "seat_group": "/absolute/path/to/assets/seat_group.usd",
+    "vending_machine": "/absolute/path/to/assets/vending_machine.usd"
+  }
+}

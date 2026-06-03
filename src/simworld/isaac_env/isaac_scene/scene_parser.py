@@ -1,8 +1,9 @@
 from ..isaac_adaptor import isaac_context as iscctx
 
 from dataclasses import dataclass, field
-import re
 from typing import Any, Callable, Optional, Sequence
+
+from engine.scene_naming import PrimNameInfo, parse_prim_name
 
 
 @dataclass
@@ -20,6 +21,40 @@ class PlaceholderArea:
     raw_name: str = ""
     category: str = ""
     index: str = ""
+
+
+@dataclass
+class PlaceholderBoundarySegment:
+    vertices: list[list[float]] = field(default_factory=list)
+    prim_path: str = ""
+    raw_name: str = ""
+    index: str = ""
+    segment_id: int = 0
+    boundary_type: str = ""
+    parent_region_prim_path: str = ""
+
+
+@dataclass
+class PlaceholderAssetHasSet:
+    vertices: list[list[float]] = field(default_factory=list)
+    prim_path: str = ""
+    raw_name: str = ""
+    index: str = ""
+    asset_has_set_id: int = 0
+    asset_has_set_type: str = ""
+    parent_region_prim_path: str = ""
+
+
+@dataclass
+class PlaceholderPublicSpaceRegion:
+    boundary_vertices: list[list[float]] = field(default_factory=list)
+    prim_path: str = ""
+    raw_name: str = ""
+    index: str = ""
+    public_space_type: str = ""
+    ratio_dynamic_static: float = 0.36
+    segments: list[PlaceholderBoundarySegment] = field(default_factory=list)
+    asset_has_sets: list[PlaceholderAssetHasSet] = field(default_factory=list)
 
 
 @dataclass
@@ -48,6 +83,16 @@ class SceneStats:
 
     sidewalk_areas: list[PlaceholderArea] = field(default_factory=list)
     crosswalk_areas: list[PlaceholderArea] = field(default_factory=list)
+    public_space_regions: list[PlaceholderPublicSpaceRegion] = field(
+        default_factory=list
+    )
+    public_space_boundary_segments: list[PlaceholderBoundarySegment] = field(
+        default_factory=list
+    )
+    public_space_asset_has_sets: list[PlaceholderAssetHasSet] = field(
+        default_factory=list
+    )
+    public_space_parse_warnings: list[str] = field(default_factory=list)
     skipped_dynamic_placeholders: list[str] = field(default_factory=list)
 
     visited: int = 0
@@ -279,38 +324,6 @@ def try_make_placeholder_path(prim, info: "PrimNameInfo", stats: "SceneStats"):
 #     }
 
 
-@dataclass
-class PrimNameInfo:
-    raw_name: str
-    mobility: str
-    domain: str
-    category: str
-    index: str
-
-
-NAME_PATTERN = re.compile(
-    r"^(?P<mobility>[a-zA-Z]+)_"
-    r"(?P<domain>[a-zA-Z]+)_"
-    r"(?P<category>[a-zA-Z]+)_"
-    r"(?P<index>[0-9a-zA-Z]+)$"
-)
-
-
-def parse_prim_name(name: str) -> Optional[PrimNameInfo]:
-    match = NAME_PATTERN.match(name)
-
-    if not match:
-        return None
-
-    return PrimNameInfo(
-        raw_name=name,
-        mobility=match.group("mobility"),
-        domain=match.group("domain"),
-        category=match.group("category"),
-        index=match.group("index"),
-    )
-
-
 SceneAction = Callable[[Any, PrimNameInfo, SceneStats], None]
 
 
@@ -434,6 +447,139 @@ def record_crosswalk_area(prim, info: PrimNameInfo, stats: SceneStats):
         stats.crosswalk_areas.append(area)
 
 
+def record_public_space_region(prim, info: PrimNameInfo, stats: SceneStats):
+    from .scene_public_space import (
+        DEFAULT_RATIO_DYNAMIC_STATIC,
+        format_public_space_type_misexport_hint,
+        is_known_public_space_type,
+        looks_like_unset_simworld_property,
+        read_simworld_attribute,
+    )
+
+    area = try_make_placeholder_area(prim, info, stats)
+    if area is None:
+        return
+
+    public_space_type = read_simworld_attribute(prim, "public_space_type")
+    if not public_space_type:
+        stats.public_space_parse_warnings.append(
+            f"{prim.GetPath()}: missing simworld:public_space_type"
+        )
+        return
+
+    if looks_like_unset_simworld_property(public_space_type) or not is_known_public_space_type(
+        public_space_type
+    ):
+        stats.public_space_parse_warnings.append(
+            format_public_space_type_misexport_hint(prim.GetPath(), public_space_type)
+        )
+        return
+
+    ratio = read_simworld_attribute(
+        prim,
+        "ratio_dynamic_static",
+        DEFAULT_RATIO_DYNAMIC_STATIC,
+    )
+    try:
+        ratio_value = float(ratio)
+    except (TypeError, ValueError):
+        ratio_value = DEFAULT_RATIO_DYNAMIC_STATIC
+
+    region = PlaceholderPublicSpaceRegion(
+        boundary_vertices=list(area.vertices),
+        prim_path=area.prim_path,
+        raw_name=area.raw_name,
+        index=area.index,
+        public_space_type=str(public_space_type),
+        ratio_dynamic_static=ratio_value,
+    )
+    stats.public_space_regions.append(region)
+
+
+def record_public_space_boundary_segment(prim, info: PrimNameInfo, stats: SceneStats):
+    from .scene_public_space import (
+        find_parent_public_space_prim_path,
+        looks_like_unset_simworld_property,
+        read_simworld_attribute,
+    )
+
+    try:
+        mesh = extract_mesh_world_vertices_from_prim_or_child(prim)
+        vertices = mesh["world_vertices"]
+    except Exception as exc:
+        stats.public_space_parse_warnings.append(
+            f"{prim.GetPath()}: cannot read segment mesh ({exc})"
+        )
+        return
+
+    boundary_type = read_simworld_attribute(prim, "boundary_type")
+    if not boundary_type:
+        stats.public_space_parse_warnings.append(
+            f"{prim.GetPath()}: missing simworld:boundary_type"
+        )
+        return
+    if looks_like_unset_simworld_property(boundary_type):
+        stats.public_space_parse_warnings.append(
+            f"{prim.GetPath()}: simworld:boundary_type={boundary_type!r} looks like an "
+            "unset Blender custom property; set the value (e.g. block_boundary_primary)."
+        )
+        return
+
+    segment_id = read_simworld_attribute(prim, "segment_id", info.index)
+    try:
+        segment_id_value = int(segment_id)
+    except (TypeError, ValueError):
+        segment_id_value = 0
+
+    segment = PlaceholderBoundarySegment(
+        vertices=vertices,
+        prim_path=str(prim.GetPath()),
+        raw_name=info.raw_name,
+        index=info.index,
+        segment_id=segment_id_value,
+        boundary_type=str(boundary_type),
+        parent_region_prim_path=find_parent_public_space_prim_path(prim) or "",
+    )
+    stats.public_space_boundary_segments.append(segment)
+
+
+def record_public_space_asset_has_set(prim, info: PrimNameInfo, stats: SceneStats):
+    from .scene_public_space import find_parent_public_space_prim_path, read_simworld_attribute
+
+    try:
+        mesh = extract_mesh_world_vertices_from_prim_or_child(prim)
+        vertices = mesh["world_vertices"]
+    except Exception as exc:
+        stats.public_space_parse_warnings.append(
+            f"{prim.GetPath()}: cannot read asset-has-set mesh ({exc})"
+        )
+        return
+
+    asset_type = read_simworld_attribute(prim, "asset_has_set_type")
+    if not asset_type:
+        stats.public_space_parse_warnings.append(
+            f"{prim.GetPath()}: missing simworld:asset_has_set_type"
+        )
+        return
+
+    asset_id = read_simworld_attribute(prim, "asset_has_set_id", info.index)
+    try:
+        asset_id_value = int(asset_id)
+    except (TypeError, ValueError):
+        asset_id_value = 0
+
+    item = PlaceholderAssetHasSet(
+        vertices=vertices,
+        prim_path=str(prim.GetPath()),
+        raw_name=info.raw_name,
+        index=info.index,
+        asset_has_set_id=asset_id_value,
+        asset_has_set_type=str(asset_type),
+        parent_region_prim_path=find_parent_public_space_prim_path(prim) or "",
+    )
+    stats.public_space_asset_has_sets.append(item)
+
+
 PROCESSING_RULES = [
     ProcessingRule(
         name="static construction buildings",
@@ -554,6 +700,27 @@ PROCESSING_RULES = [
         category="crosswalk",
         actions=[record_crosswalk_area],
     ),
+    ProcessingRule(
+        name="placeholder public space region",
+        mobility="placeholder",
+        domain="area",
+        category="publicspace",
+        actions=[record_public_space_region],
+    ),
+    ProcessingRule(
+        name="placeholder public space boundary segment",
+        mobility="placeholder",
+        domain="segment",
+        category="edge",
+        actions=[record_public_space_boundary_segment],
+    ),
+    ProcessingRule(
+        name="placeholder public space asset has set",
+        mobility="placeholder",
+        domain="assetset",
+        category="line",
+        actions=[record_public_space_asset_has_set],
+    ),
 ]
 
 
@@ -598,6 +765,10 @@ def process_stage_by_naming_rules(
             stats.unmatched_named += 1
             print(f"[WARN] Named prim matched pattern but no rule: {prim.GetPath()}")
 
+    from .scene_public_space import attach_orphan_segments_to_regions
+
+    attach_orphan_segments_to_regions(stats)
+
     if print_summary:
         print_stage_processing_stats(stats)
 
@@ -631,6 +802,19 @@ def print_stage_processing_stats(stats: SceneStats):
                 print(f"  {label}: {count}")
         if stats.skipped_dynamic_placeholders:
             print(f"  Skipped dynamic placeholders: {len(stats.skipped_dynamic_placeholders)}")
+
+    if stats.public_space_regions:
+        print(f"\nPublic-space regions: {len(stats.public_space_regions)}")
+        for region in stats.public_space_regions:
+            print(
+                f"  {region.prim_path} type={region.public_space_type} "
+                f"segments={len(region.segments)} "
+                f"asset_has_set={len(region.asset_has_sets)}"
+            )
+    if stats.public_space_parse_warnings:
+        print(f"\nPublic-space parse warnings: {len(stats.public_space_parse_warnings)}")
+        for warning in stats.public_space_parse_warnings:
+            print(f"  [WARN] {warning}")
 
     print("\nProcessed by rule:")
     for rule_name, count in stats.processed.items():

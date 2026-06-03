@@ -1,0 +1,161 @@
+{
+  "schema_version": "simworld.placement_output.v1",
+  "region_id": "01_block_entrance_01",
+  "public_space_type": "block_entrance",
+  "layout_steps": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "placements": [
+    {
+      "placement_id": "asset_0001",
+      "asset_name": "bollard",
+      "position": [
+        1.2878547375517546,
+        8.602326840508553,
+        0.0
+      ],
+      "orientation": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "zone_type": "static",
+      "zone_id": 2,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            1.0378547375517546,
+            8.352326840508553,
+            0.0
+          ],
+          [
+            1.5378547375517546,
+            8.352326840508553,
+            0.0
+          ],
+          [
+            1.5378547375517546,
+            8.852326840508553,
+            0.0
+          ],
+          [
+            1.0378547375517546,
+            8.852326840508553,
+            0.0
+          ],
+          [
+            1.0378547375517546,
+            8.352326840508553,
+            0.0
+          ]
+        ]
+      },
+      "asset_url": "https://example.com/assets/bollard/ed0a1ab7c3.glb"
+    },
+    {
+      "placement_id": "asset_0002",
+      "asset_name": "traffic_light_vehicle",
+      "position": [
+        8.068217893672369,
+        0.9317821063276318,
+        0.0
+      ],
+      "orientation": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "zone_type": "static",
+      "zone_id": 3,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            7.818217893672369,
+            0.6817821063276318,
+            0.0
+          ],
+          [
+            8.318217893672369,
+            0.6817821063276318,
+            0.0
+          ],
+          [
+            8.318217893672369,
+            1.1817821063276317,
+            0.0
+          ],
+          [
+            7.818217893672369,
+            1.1817821063276317,
+            0.0
+          ],
+          [
+            7.818217893672369,
+            0.6817821063276318,
+            0.0
+          ]
+        ]
+      },
+      "asset_url": "https://example.com/assets/traffic_light_vehicle/b39ecda606.glb"
+    },
+    {
+      "placement_id": "asset_0003",
+      "asset_name": "traffic_light_pedestrian",
+      "position": [
+        8.068217893672369,
+        8.602326840508553,
+        0.0
+      ],
+      "orientation": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "zone_type": "static",
+      "zone_id": 4,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            7.818217893672369,
+            8.352326840508553,
+            0.0
+          ],
+          [
+            8.318217893672369,
+            8.352326840508553,
+            0.0
+          ],
+          [
+            8.318217893672369,
+            8.852326840508553,
+            0.0
+          ],
+          [
+            7.818217893672369,
+            8.852326840508553,
+            0.0
+          ],
+          [
+            7.818217893672369,
+            8.352326840508553,
+            0.0
+          ]
+        ]
+      },
+      "asset_url": "https://example.com/assets/traffic_light_pedestrian/d6704b5e77.glb"
+    }
+  ],
+  "warnings": [],
+  "debug": {
+    "source_files": [
+      "/home/fangzhou/projects/LC_01/algorithm_lab/experiments/area_placement_methods/proto/01_block_entrance_01.json"
+    ]
+  }
+}

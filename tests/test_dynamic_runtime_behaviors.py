@@ -252,11 +252,23 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             DEFAULT_SENSOR_DIAGNOSTICS_INTERVAL_S=1.0,
             DEFAULT_SENSOR_DEBUG_OUTPUT_DIR=None,
             DEFAULT_SENSOR_DEBUG_INTERVAL_S=1.0,
+            DEFAULT_LAYOUT_BACKEND="legacy",
+            DEFAULT_REGION_INPUT_JSON=None,
+            DEFAULT_PLACEMENT_PLAN_JSON=None,
+            DEFAULT_LAYOUT_OUTPUT_DIR=None,
+            DEFAULT_USE_DUMMY_PUBLIC_SPACE_ASSETS=True,
+            DEFAULT_PUBLIC_SPACE_DUMMY_SIZE_M=0.5,
+            DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP=None,
+            DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS=True,
             available_robot_types=lambda: ("spot",),
             available_dynamic_agent_backends=lambda: ("kinematic",),
             available_weather_names=lambda: ("clear",),
             available_daytime_names=lambda: ("day",),
             available_sensor_profiles=lambda: ("default",),
+            available_layout_backends_list=lambda: (
+                "area_placement_methods",
+                "legacy",
+            ),
         )
         fake_package = types.ModuleType("isaac_env")
         fake_package.simulation = fake_simulation

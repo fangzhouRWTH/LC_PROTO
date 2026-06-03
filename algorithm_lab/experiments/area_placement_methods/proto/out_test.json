@@ -1,0 +1,1509 @@
+{
+  "public_space_type": "block_entrance",
+  "public_space_geometry": {
+    "type": "LineString3D",
+    "coordinates": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        10.0,
+        0.0,
+        0.0
+      ],
+      [
+        10.0,
+        10.0,
+        0.0
+      ],
+      [
+        0.0,
+        10.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "public_space_segments": [
+    {
+      "segment_id": 1,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            10.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "block_boundary_primary",
+      "priority": 6,
+      "walkable": true
+    },
+    {
+      "segment_id": 2,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            0.0,
+            10.0,
+            0.0
+          ],
+          [
+            10.0,
+            10.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "street_boundary_primary",
+      "priority": 2,
+      "walkable": true
+    },
+    {
+      "segment_id": 3,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            10.0,
+            10.0,
+            0.0
+          ],
+          [
+            10.0,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "street_boundary_primary",
+      "priority": 2,
+      "walkable": true
+    },
+    {
+      "segment_id": 4,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            10.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "block_boundary_other",
+      "priority": 8,
+      "walkable": true
+    }
+  ],
+  "ratio_dynamic_static": 0.7,
+  "asset_candidates_list": [
+    {
+      "asset_candidates_name": "guangzhou_bus_stop",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_street_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 0.2,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "shared_bike_parking",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_street_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 0.5,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "tree_pool",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_street_roofless",
+        "city_yard_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 0.75,
+      "probability_by_type": {
+        "city_street_roofless": 0.5,
+        "city_yard_roofless": 0.75
+      },
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "flower_box",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_street_roofless",
+        "city_yard_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 0.5,
+      "probability_by_type": {
+        "city_street_roofless": 0.5,
+        "city_yard_roofless": 0.75
+      },
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "guard_rail",
+      "asset_geometry_size": [
+        5.0,
+        0.2
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -2.5,
+            -0.1,
+            0.0
+          ],
+          [
+            2.5,
+            -0.1,
+            0.0
+          ],
+          [
+            2.5,
+            0.1,
+            0.0
+          ],
+          [
+            -2.5,
+            0.1,
+            0.0
+          ],
+          [
+            -2.5,
+            -0.1,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_street_roofless",
+        "city_yard_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "street_light",
+      "asset_geometry_size": [
+        0.2,
+        0.2
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.1,
+            -0.1,
+            0.0
+          ],
+          [
+            0.1,
+            -0.1,
+            0.0
+          ],
+          [
+            0.1,
+            0.1,
+            0.0
+          ],
+          [
+            -0.1,
+            0.1,
+            0.0
+          ],
+          [
+            -0.1,
+            -0.1,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_street_roofless",
+        "city_yard_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "trash_bin",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_street_roofless",
+        "city_yard_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "fire_hydrant",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_street_roofless",
+        "city_yard_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "bollard",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "block_entrance"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "traffic_light_vehicle",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "block_entrance"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "traffic_light_pedestrian",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "block_entrance"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "metro_sign",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "block_entrance"
+      ],
+      "preferred_zone": "static",
+      "probability": 0.5,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "vending_machine",
+      "asset_geometry_size": [
+        1.0,
+        1.0
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.5,
+            -0.5,
+            0.0
+          ],
+          [
+            0.5,
+            -0.5,
+            0.0
+          ],
+          [
+            0.5,
+            0.5,
+            0.0
+          ],
+          [
+            -0.5,
+            0.5,
+            0.0
+          ],
+          [
+            -0.5,
+            -0.5,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "building_entrance",
+        "city_yard_roof"
+      ],
+      "preferred_zone": "static",
+      "probability": 0.5,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "smart_locker",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "building_entrance"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "entrance_canopy",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "building_entrance"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "long_bench",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_yard_roofless",
+        "city_yard_roof"
+      ],
+      "preferred_zone": "static",
+      "probability": 0.25,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "seat_group",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_yard_roofless",
+        "city_yard_roof"
+      ],
+      "preferred_zone": "static",
+      "probability": 0.75,
+      "probability_by_type": {
+        "city_yard_roofless": 0.75,
+        "city_yard_roof": 0.25
+      },
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "food_cart",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_yard_roofless",
+        "city_yard_roof"
+      ],
+      "preferred_zone": "dynamic",
+      "probability": 0.5,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "sculpture",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_yard_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 1.0,
+      "requires_central_static_zone": true,
+      "max_count": 1
+    },
+    {
+      "asset_candidates_name": "grass_patch",
+      "asset_geometry_size": [
+        0.5,
+        0.5
+      ],
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            -0.25,
+            0.0
+          ],
+          [
+            0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            0.25,
+            0.0
+          ],
+          [
+            -0.25,
+            -0.25,
+            0.0
+          ]
+        ]
+      },
+      "applicable_types": [
+        "city_yard_roofless"
+      ],
+      "preferred_zone": "static",
+      "probability": 0.5,
+      "max_count": 1
+    }
+  ],
+  "cover_geometry": null,
+  "asset_has_set": null,
+  "people_points": [
+    {
+      "location": [
+        0.0,
+        5.0,
+        0.0
+      ],
+      "segment_id": 1,
+      "priority": 6,
+      "source": "length_based"
+    },
+    {
+      "location": [
+        5.0,
+        10.0,
+        0.0
+      ],
+      "segment_id": 2,
+      "priority": 2,
+      "source": "length_based"
+    },
+    {
+      "location": [
+        10.0,
+        5.0,
+        0.0
+      ],
+      "segment_id": 3,
+      "priority": 2,
+      "source": "length_based"
+    },
+    {
+      "location": [
+        5.0,
+        0.0,
+        0.0
+      ],
+      "segment_id": 4,
+      "priority": 8,
+      "source": "length_based"
+    }
+  ],
+  "flow_pattern": "cross",
+  "walking_lines": [
+    {
+      "line_id": 1,
+      "line_role": "main",
+      "pattern": "cross",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            0.0,
+            5.0,
+            0.0
+          ],
+          [
+            10.0,
+            5.0,
+            0.0
+          ]
+        ]
+      },
+      "length": 10.0
+    },
+    {
+      "line_id": 2,
+      "line_role": "cross",
+      "pattern": "cross",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            5.0,
+            0.0,
+            0.0
+          ],
+          [
+            5.0,
+            10.0,
+            0.0
+          ]
+        ]
+      },
+      "length": 10.0
+    }
+  ],
+  "dynamic_zone_width": 3.5607263122412274,
+  "dynamic_area_target": 70.0,
+  "dynamic_area_estimated": 70.00000000000016,
+  "static_area_estimated": 29.999999999999837,
+  "dynamic_zones": [
+    {
+      "zone_id": 1,
+      "zone_type": "dynamic",
+      "width": 3.5607263122412274,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            0.0,
+            2.3294552658190795,
+            0.0
+          ],
+          [
+            10.0,
+            2.3294552658190795,
+            0.0
+          ],
+          [
+            10.0,
+            7.67054473418092,
+            0.0
+          ],
+          [
+            0.0,
+            7.67054473418092,
+            0.0
+          ],
+          [
+            0.0,
+            2.3294552658190795,
+            0.0
+          ]
+        ]
+      },
+      "area": 53.4108946836184
+    },
+    {
+      "zone_id": 2,
+      "zone_type": "dynamic",
+      "width": 3.5607263122412274,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.2196368438793863,
+            0.0,
+            0.0
+          ],
+          [
+            6.780363156120614,
+            0.0,
+            0.0
+          ],
+          [
+            6.780363156120614,
+            2.3294552658190795,
+            0.0
+          ],
+          [
+            3.2196368438793863,
+            2.3294552658190795,
+            0.0
+          ],
+          [
+            3.2196368438793863,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "area": 8.294552658190879
+    },
+    {
+      "zone_id": 3,
+      "zone_type": "dynamic",
+      "width": 3.5607263122412274,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.2196368438793863,
+            7.67054473418092,
+            0.0
+          ],
+          [
+            6.780363156120614,
+            7.67054473418092,
+            0.0
+          ],
+          [
+            6.780363156120614,
+            10.0,
+            0.0
+          ],
+          [
+            3.2196368438793863,
+            10.0,
+            0.0
+          ],
+          [
+            3.2196368438793863,
+            7.67054473418092,
+            0.0
+          ]
+        ]
+      },
+      "area": 8.29455265819088
+    }
+  ],
+  "static_zones": [
+    {
+      "zone_id": 1,
+      "zone_type": "static",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            3.2196368438793863,
+            0.0,
+            0.0
+          ],
+          [
+            3.2196368438793863,
+            2.3294552658190795,
+            0.0
+          ],
+          [
+            0.0,
+            2.3294552658190795,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "area": 7.499999999999958
+    },
+    {
+      "zone_id": 2,
+      "zone_type": "static",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            0.0,
+            7.67054473418092,
+            0.0
+          ],
+          [
+            3.2196368438793863,
+            7.67054473418092,
+            0.0
+          ],
+          [
+            3.2196368438793863,
+            10.0,
+            0.0
+          ],
+          [
+            0.0,
+            10.0,
+            0.0
+          ],
+          [
+            0.0,
+            7.67054473418092,
+            0.0
+          ]
+        ]
+      },
+      "area": 7.499999999999959
+    },
+    {
+      "zone_id": 3,
+      "zone_type": "static",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            6.780363156120614,
+            0.0,
+            0.0
+          ],
+          [
+            10.0,
+            0.0,
+            0.0
+          ],
+          [
+            10.0,
+            2.3294552658190795,
+            0.0
+          ],
+          [
+            6.780363156120614,
+            2.3294552658190795,
+            0.0
+          ],
+          [
+            6.780363156120614,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "area": 7.499999999999958
+    },
+    {
+      "zone_id": 4,
+      "zone_type": "static",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            6.780363156120614,
+            7.67054473418092,
+            0.0
+          ],
+          [
+            10.0,
+            7.67054473418092,
+            0.0
+          ],
+          [
+            10.0,
+            10.0,
+            0.0
+          ],
+          [
+            6.780363156120614,
+            10.0,
+            0.0
+          ],
+          [
+            6.780363156120614,
+            7.67054473418092,
+            0.0
+          ]
+        ]
+      },
+      "area": 7.499999999999959
+    }
+  ],
+  "asset_list": [
+    {
+      "asset_id": 1,
+      "asset_candidates_name": "bollard",
+      "asset_URL": "https://example.com/assets/bollard/ed0a1ab7c3.glb",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            1.0378547375517546,
+            8.352326840508551,
+            0.0
+          ],
+          [
+            1.5378547375517546,
+            8.352326840508551,
+            0.0
+          ],
+          [
+            1.5378547375517546,
+            8.852326840508551,
+            0.0
+          ],
+          [
+            1.0378547375517546,
+            8.852326840508551,
+            0.0
+          ],
+          [
+            1.0378547375517546,
+            8.352326840508551,
+            0.0
+          ]
+        ]
+      },
+      "asset_location": [
+        1.2878547375517546,
+        8.602326840508551,
+        0.0
+      ],
+      "asset_orientation": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "zone_type": "static",
+      "zone_id": 2
+    },
+    {
+      "asset_id": 2,
+      "asset_candidates_name": "traffic_light_vehicle",
+      "asset_URL": "https://example.com/assets/traffic_light_vehicle/b39ecda606.glb",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            7.818217893672369,
+            0.6817821063276318,
+            0.0
+          ],
+          [
+            8.318217893672369,
+            0.6817821063276318,
+            0.0
+          ],
+          [
+            8.318217893672369,
+            1.1817821063276317,
+            0.0
+          ],
+          [
+            7.818217893672369,
+            1.1817821063276317,
+            0.0
+          ],
+          [
+            7.818217893672369,
+            0.6817821063276318,
+            0.0
+          ]
+        ]
+      },
+      "asset_location": [
+        8.068217893672369,
+        0.9317821063276318,
+        0.0
+      ],
+      "asset_orientation": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "zone_type": "static",
+      "zone_id": 3
+    },
+    {
+      "asset_id": 3,
+      "asset_candidates_name": "traffic_light_pedestrian",
+      "asset_URL": "https://example.com/assets/traffic_light_pedestrian/d6704b5e77.glb",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            7.818217893672369,
+            8.352326840508551,
+            0.0
+          ],
+          [
+            8.318217893672369,
+            8.352326840508551,
+            0.0
+          ],
+          [
+            8.318217893672369,
+            8.852326840508551,
+            0.0
+          ],
+          [
+            7.818217893672369,
+            8.852326840508551,
+            0.0
+          ],
+          [
+            7.818217893672369,
+            8.352326840508551,
+            0.0
+          ]
+        ]
+      },
+      "asset_location": [
+        8.068217893672369,
+        8.602326840508551,
+        0.0
+      ],
+      "asset_orientation": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "zone_type": "static",
+      "zone_id": 4
+    }
+  ],
+  "walking_main_line": {
+    "type": "LineString3D",
+    "coordinates": [
+      [
+        0.0,
+        5.0,
+        0.0
+      ],
+      [
+        10.0,
+        5.0,
+        0.0
+      ]
+    ]
+  },
+  "status": "completed_partial"
+}

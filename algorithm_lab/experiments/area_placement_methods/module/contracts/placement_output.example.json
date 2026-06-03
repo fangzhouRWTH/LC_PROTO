@@ -1,0 +1,27 @@
+{
+  "schema_version": "simworld.placement_output.v1",
+  "region_id": "placeholder_area_publicspace_001",
+  "public_space_type": "block_entrance",
+  "layout_steps": [1, 2, 3, 4, 5],
+  "placements": [
+    {
+      "placement_id": "asset_0001",
+      "asset_name": "bollard",
+      "position": [1.2, 2.0, 0.0],
+      "orientation": [1.0, 0.0, 0.0],
+      "zone_type": "static",
+      "zone_id": 1,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": []
+      },
+      "asset_url": "https://example.com/assets/bollard/test.glb"
+    }
+  ],
+  "warnings": [],
+  "debug": {
+    "flow_pattern": "cross",
+    "dynamic_zone_count": 1,
+    "static_zone_count": 2
+  }
+}

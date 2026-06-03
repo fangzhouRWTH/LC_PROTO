@@ -656,7 +656,7 @@
         "/home/fangzhou/Nvidia/isaacsim-git/isaacsim/_build/linux-x86_64/release/kit/python/lib/python3.11/site-packages",
 ],
 
-    "python.languageServer": "Pylance",
+    "python.languageServer": "None",
     "python.defaultInterpreterPath": "/home/fangzhou/Nvidia/isaacsim-git/isaacsim/_build/linux-x86_64/release/kit/python/bin/python3",
     // python.pythonPath is deprecated
     // "python.pythonPath": "${workspaceFolder}//home/fangzhou/Nvidia/isaacsim-git/isaacsim/_build/linux-x86_64/release/kit/python/bin/python3",

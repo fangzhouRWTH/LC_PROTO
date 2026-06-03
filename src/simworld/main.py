@@ -231,6 +231,64 @@ def parse_args():
         default=simulation.DEFAULT_SENSOR_DEBUG_INTERVAL_S,
         help="Seconds between active sensor PNG preview writes.",
     )
+    parser.add_argument(
+        "--layout-backend",
+        default=simulation.DEFAULT_LAYOUT_BACKEND,
+        choices=simulation.available_layout_backends_list(),
+        help="Static layout backend: legacy grid footprints or area_placement_methods.",
+    )
+    parser.add_argument(
+        "--region-input-json",
+        type=pathlib.Path,
+        default=simulation.DEFAULT_REGION_INPUT_JSON,
+        help=(
+            "Region input JSON file or directory (proto / simworld.region_input.v1) "
+            "for area_placement_methods."
+        ),
+    )
+    parser.add_argument(
+        "--placement-plan-json",
+        type=pathlib.Path,
+        default=simulation.DEFAULT_PLACEMENT_PLAN_JSON,
+        help="Precomputed simworld.placement_output.v1 JSON; skips layout generation.",
+    )
+    parser.add_argument(
+        "--layout-output-dir",
+        type=pathlib.Path,
+        default=simulation.DEFAULT_LAYOUT_OUTPUT_DIR,
+        help="Optional directory to write placement_output.json during prepare.",
+    )
+    parser.add_argument(
+        "--use-dummy-public-space-assets",
+        nargs="?",
+        const=True,
+        type=parse_bool,
+        default=simulation.DEFAULT_USE_DUMMY_PUBLIC_SPACE_ASSETS,
+        help="Use UsdGeom cubes for public-space placements (debug).",
+    )
+    parser.add_argument(
+        "--public-space-dummy-size-m",
+        type=float,
+        default=simulation.DEFAULT_PUBLIC_SPACE_DUMMY_SIZE_M,
+        help="Edge length for dummy public-space placeholder cubes.",
+    )
+    parser.add_argument(
+        "--public-space-asset-name-map",
+        type=pathlib.Path,
+        default=simulation.DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP,
+        help="JSON map from asset_candidates_name to USD paths.",
+    )
+    parser.add_argument(
+        "--skip-legacy-placeholder-areas",
+        nargs="?",
+        const=True,
+        type=parse_bool,
+        default=simulation.DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS,
+        help=(
+            "When using area_placement_methods, skip legacy plaza grid placement "
+            "from placeholder_area_* prims."
+        ),
+    )
     args, _ = parser.parse_known_args()
     return args
 
@@ -277,5 +335,13 @@ if __name__ == "__main__":
             sensor_diagnostics_interval_s=args.sensor_diagnostics_interval_s,
             sensor_debug_output_dir=args.sensor_debug_output_dir,
             sensor_debug_interval_s=args.sensor_debug_interval_s,
+            layout_backend=args.layout_backend,
+            region_input_json=args.region_input_json,
+            placement_plan_json=args.placement_plan_json,
+            layout_output_dir=args.layout_output_dir,
+            use_dummy_public_space_assets=args.use_dummy_public_space_assets,
+            public_space_dummy_size_m=args.public_space_dummy_size_m,
+            public_space_asset_name_map=args.public_space_asset_name_map,
+            skip_legacy_placeholder_areas=args.skip_legacy_placeholder_areas,
         )
     )
