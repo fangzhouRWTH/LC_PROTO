@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -122,13 +125,141 @@ def load_asset_name_map(path: Path | None) -> dict[str, str]:
     return {str(key): str(value) for key, value in assets.items()}
 
 
-def build_combined_placement_plan_from_region_inputs(
+def layout_subprocess_enabled() -> bool:
+    return _layout_subprocess_enabled()
+
+
+def _layout_subprocess_enabled() -> bool:
+    """Subprocess layout is opt-in only (LC01_LAYOUT_IN_SUBPROCESS=1). Default: in-process."""
+    flag = os.environ.get("LC01_LAYOUT_IN_SUBPROCESS", "0").strip().lower()
+    if flag in {"0", "false", "no", "off"}:
+        return False
+    if flag in {"1", "true", "yes", "on"}:
+        return True
+    if flag == "auto":
+        return _running_under_isaac_sim()
+    return False
+
+
+def _running_under_isaac_sim() -> bool:
+    """True only when Kit/Omniverse modules are loaded in *this* interpreter."""
+    return any(
+        name.startswith("isaacsim")
+        or name.startswith("omni.")
+        or name == "carb"
+        for name in sys.modules
+    )
+
+
+def _is_isaac_python_executable(path: str) -> bool:
+    lowered = path.lower()
+    markers = (
+        "isaac",
+        "omniverse",
+        "omni.",
+        "/kit/",
+        "carb.sdk",
+        "nvidia/isaac",
+    )
+    return any(marker in lowered for marker in markers)
+
+
+def _layout_python_executable() -> str:
+    override = os.environ.get("LC01_LAYOUT_PYTHON", "").strip()
+    if override:
+        return override
+    for candidate in ("/usr/bin/python3", "/usr/local/bin/python3"):
+        if Path(candidate).is_file() and not _is_isaac_python_executable(candidate):
+            return candidate
+    found = shutil.which("python3")
+    if found and not _is_isaac_python_executable(found):
+        return found
+    return "/usr/bin/python3"
+
+
+_KIT_ENV_PREFIXES = (
+    "CARB_",
+    "ISAAC",
+    "OMNI_",
+    "KIT_",
+    "NV_",
+)
+
+
+def _layout_subprocess_env() -> dict[str, str]:
+    """Child must not inherit Kit env vars (they re-trigger nested subprocess layout)."""
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(_KIT_ENV_PREFIXES)
+    }
+    env["LC01_LAYOUT_IN_SUBPROCESS"] = "0"
+    return env
+
+
+def _layout_subprocess_script() -> Path:
+    return REPO_ROOT / "scripts" / "build_public_space_placement_plan.py"
+
+
+def build_combined_placement_plan_from_region_inputs_isolated(
     region_inputs: list[dict[str, Any]],
     *,
     steps: list[int] | None = None,
 ) -> dict[str, Any]:
+    """Run layout in a plain Python subprocess (avoids Kit segfaults during proto import)."""
     if not region_inputs:
         raise ValueError("region_inputs cannot be empty")
+
+    script = _layout_subprocess_script()
+    if not script.is_file():
+        raise FileNotFoundError(f"Layout subprocess script not found: {script}")
+
+    payload: dict[str, Any] = {"region_inputs": region_inputs}
+    if steps is not None:
+        payload["steps"] = [int(value) for value in steps]
+
+    executable = _layout_python_executable()
+    proc = subprocess.run(
+        [executable, str(script)],
+        input=json.dumps(payload, ensure_ascii=False),
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+        env=_layout_subprocess_env(),
+        check=False,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        if not detail:
+            detail = (
+                f"(no stderr; executable={executable!r}, "
+                f"script={script!r})"
+            )
+        raise RuntimeError(
+            f"Public-space layout subprocess failed (exit {proc.returncode}): {detail}"
+        )
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "Public-space layout subprocess returned invalid JSON"
+        ) from exc
+
+
+def build_combined_placement_plan_from_region_inputs(
+    region_inputs: list[dict[str, Any]],
+    *,
+    steps: list[int] | None = None,
+    force_in_process: bool = False,
+) -> dict[str, Any]:
+    if not region_inputs:
+        raise ValueError("region_inputs cannot be empty")
+
+    if not force_in_process and _layout_subprocess_enabled():
+        return build_combined_placement_plan_from_region_inputs_isolated(
+            region_inputs,
+            steps=steps,
+        )
 
     _ensure_module_path()
     from adapters.public_space_region import public_space_region_to_region_input

@@ -52,6 +52,7 @@ class PlaceholderPublicSpaceRegion:
     raw_name: str = ""
     index: str = ""
     public_space_type: str = ""
+    boundary_type_hint: str = ""
     ratio_dynamic_static: float = 0.36
     segments: list[PlaceholderBoundarySegment] = field(default_factory=list)
     asset_has_sets: list[PlaceholderAssetHasSet] = field(default_factory=list)
@@ -460,10 +461,13 @@ def record_public_space_region(prim, info: PrimNameInfo, stats: SceneStats):
     if area is None:
         return
 
-    public_space_type = read_simworld_attribute(prim, "public_space_type")
+    public_space_type = read_simworld_attribute(prim, "public_space_type") or ""
+    if not public_space_type and info.public_space_type:
+        public_space_type = info.public_space_type
     if not public_space_type:
         stats.public_space_parse_warnings.append(
-            f"{prim.GetPath()}: missing simworld:public_space_type"
+            f"{prim.GetPath()}: missing simworld:public_space_type "
+            "(set attribute or use placeholder_area_publicspace_<index>_<typecompact>)"
         )
         return
 
@@ -491,6 +495,7 @@ def record_public_space_region(prim, info: PrimNameInfo, stats: SceneStats):
         raw_name=area.raw_name,
         index=area.index,
         public_space_type=str(public_space_type),
+        boundary_type_hint=getattr(info, "boundary_type_hint", "") or "",
         ratio_dynamic_static=ratio_value,
     )
     stats.public_space_regions.append(region)

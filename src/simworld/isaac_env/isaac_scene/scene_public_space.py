@@ -147,6 +147,56 @@ def attach_orphan_segments_to_regions(stats: parser.SceneStats) -> None:
             continue
         region.asset_has_sets.append(asset_set)
 
+    infer_missing_boundary_segments(stats)
+
+
+def infer_missing_boundary_segments(stats: parser.SceneStats) -> None:
+    """Synthesize boundary segments from quad region meshes when USD children are absent."""
+    from engine.public_space_geometry import build_inferred_boundary_segment_records
+
+    for region in stats.public_space_regions:
+        if len(region.segments) >= 3:
+            continue
+        if not region.boundary_vertices:
+            stats.public_space_parse_warnings.append(
+                f"{region.prim_path}: no boundary segments and empty region mesh"
+            )
+            continue
+        if not region.public_space_type:
+            stats.public_space_parse_warnings.append(
+                f"{region.prim_path}: cannot synthesize segments without public_space_type"
+            )
+            continue
+        try:
+            inferred = build_inferred_boundary_segment_records(
+                region.prim_path,
+                region.boundary_vertices,
+                region.public_space_type,
+                boundary_type_hint=region.boundary_type_hint,
+            )
+        except ValueError as exc:
+            stats.public_space_parse_warnings.append(
+                f"{region.prim_path}: cannot infer quad edges ({exc})"
+            )
+            continue
+
+        for item in inferred:
+            region.segments.append(
+                parser.PlaceholderBoundarySegment(
+                    vertices=list(item["vertices"]),  # type: ignore[arg-type]
+                    prim_path=str(item["prim_path"]),
+                    raw_name=str(item["raw_name"]),
+                    index=str(item["index"]),
+                    segment_id=int(item["segment_id"]),
+                    boundary_type=str(item["boundary_type"]),
+                    parent_region_prim_path=str(item["parent_region_prim_path"]),
+                )
+            )
+        stats.public_space_parse_warnings.append(
+            f"{region.prim_path}: synthesized {len(inferred)} boundary segments "
+            f"(type={region.public_space_type!r}, hint={region.boundary_type_hint!r})"
+        )
+
 
 def _ensure_public_space_adapter() -> None:
     area_placement_bridge._ensure_module_path()

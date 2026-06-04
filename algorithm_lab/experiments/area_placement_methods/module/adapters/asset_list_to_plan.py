@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 PLACEMENT_OUTPUT_SCHEMA = "simworld.placement_output.v1"
@@ -12,10 +13,32 @@ DEFAULT_FALLBACK_ASSET_NAME = "isaac_builtin_placeholder"
 _TYPES_WITHOUT_FALLBACK = frozenset({"city_street_roof"})
 
 
-def _placement_id(asset_id: Any, index: int) -> str:
+def _region_slug(region_id: str) -> str:
+    name = str(region_id or "region").rstrip("/").split("/")[-1]
+    prefix = "placeholder_area_publicspace_"
+    if name.startswith(prefix):
+        name = name[len(prefix) :]
+    slug = re.sub(r"[^0-9a-zA-Z]+", "_", name).strip("_")
+    return slug[:48] or "region"
+
+
+def _usd_safe_placement_token(token: str) -> str:
+    """USD prim path elements must not start with a digit."""
+    cleaned = str(token or "").strip()
+    if cleaned and cleaned[0].isdigit():
+        return f"ps_{cleaned}"
+    return cleaned or "placement"
+
+
+def _placement_id(asset_id: Any, index: int, *, region_id: str = "") -> str:
     if asset_id is not None:
-        return f"asset_{asset_id:04d}" if isinstance(asset_id, int) else f"asset_{asset_id}"
-    return f"asset_{index:04d}"
+        base = f"asset_{asset_id:04d}" if isinstance(asset_id, int) else f"asset_{asset_id}"
+    else:
+        base = f"asset_{index:04d}"
+    slug = _region_slug(region_id)
+    if slug and slug != "region":
+        return _usd_safe_placement_token(f"{slug}_{base}")
+    return _usd_safe_placement_token(base)
 
 
 def _centroid_from_geometry(geometry: dict[str, Any] | None) -> list[float]:
@@ -43,10 +66,10 @@ def _centroid_from_geometry(geometry: dict[str, Any] | None) -> list[float]:
     ]
 
 
-def _fallback_placement(layout_result: dict[str, Any]) -> dict[str, Any]:
+def _fallback_placement(layout_result: dict[str, Any], *, region_id: str = "") -> dict[str, Any]:
     position = _centroid_from_geometry(layout_result.get("public_space_geometry"))
     return {
-        "placement_id": "fallback_0001",
+        "placement_id": _placement_id(None, 0, region_id=region_id) if region_id else "fallback_0001",
         "asset_name": DEFAULT_FALLBACK_ASSET_NAME,
         "position": position,
         "orientation": [1.0, 0.0, 0.0],
@@ -73,7 +96,11 @@ def layout_result_to_placement_output(
             continue
         placements.append(
             {
-                "placement_id": _placement_id(item.get("asset_id"), index),
+                "placement_id": _placement_id(
+                    item.get("asset_id"),
+                    index,
+                    region_id=region_id,
+                ),
                 "asset_name": item.get("asset_candidates_name", ""),
                 "position": list(item.get("asset_location") or []),
                 "orientation": list(item.get("asset_orientation") or []),
@@ -91,12 +118,12 @@ def layout_result_to_placement_output(
         and inject_fallback_when_empty
         and public_space_type not in _TYPES_WITHOUT_FALLBACK
     ):
-        placements.append(_fallback_placement(layout_result))
+        placements.append(_fallback_placement(layout_result, region_id=region_id))
         used_fallback_placement = True
         warnings.append(
             "asset_list was empty; injected "
             f"{DEFAULT_FALLBACK_ASSET_NAME} at public_space_geometry centroid "
-            "(executor renders UsdGeom.Cube when use_dummy_assets=true)."
+            "(executor renders varied debug geometry when assets are unmapped)."
         )
 
     return {

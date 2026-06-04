@@ -8,10 +8,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Sequence
 
+from engine.public_space_dummy_visual import dummy_visual_spec
+
 from ..isaac_adaptor import isaac_context as iscctx
 
 PLACEMENT_OUTPUT_SCHEMA = "simworld.placement_output.v1"
 DEFAULT_PUBLIC_SPACE_ASSET_ROOT = "/World/GeneratedAssets/PublicSpace"
+_DEBUG_GEOM_CHILD = "DebugGeom"
+_REFERENCE_CHILD = "Asset"
 
 
 @dataclass
@@ -63,7 +67,7 @@ class PublicSpacePlacementExecutor:
                 "Cannot apply public-space placements without an open USD stage."
             )
 
-        self.root_prim = root_prim.rstrip("/") or "/"
+        self.root_prim = self._resolve_root_prim(root_prim)
         self.use_dummy_assets = use_dummy_assets
         self.dummy_size_m = float(dummy_size_m)
         self.asset_name_map = dict(asset_name_map or {})
@@ -82,7 +86,7 @@ class PublicSpacePlacementExecutor:
             print("[INFO] Public-space placement plan is empty.")
             return result
 
-        self._ensure_xform_chain(self.root_prim)
+        self._ensure_xform_prim(self.root_prim)
 
         for item in placements:
             if not isinstance(item, dict):
@@ -114,9 +118,7 @@ class PublicSpacePlacementExecutor:
     def _apply_one(self, item: dict[str, Any], *, replace_existing: bool) -> str | None:
         asset_name = str(item.get("asset_name") or "unknown").strip()
         placement_id = str(item.get("placement_id") or asset_name).strip()
-        safe_name = "".join(
-            ch if ch.isalnum() or ch in ("_", "-") else "_" for ch in placement_id
-        )
+        safe_name = self._usd_safe_prim_name(placement_id)
         prim_path = f"{self.root_prim}/{safe_name}"
 
         position = item.get("position") or [0.0, 0.0, 0.0]
@@ -126,20 +128,28 @@ class PublicSpacePlacementExecutor:
         yaw_deg = _yaw_degrees_from_orientation(item.get("orientation") or [])
 
         usd_path = self.asset_name_map.get(asset_name)
-        if usd_path and not self.use_dummy_assets:
-            return self._place_reference(
+        use_reference = bool(usd_path) and not self.use_dummy_assets
+        if use_reference:
+            placed = self._place_reference(
                 prim_path,
                 Path(usd_path),
                 position,
                 yaw_deg,
                 replace_existing=replace_existing,
+                asset_name=asset_name,
+                placement_id=placement_id,
             )
+            if placed:
+                return placed
 
         return self._place_dummy(
             prim_path,
             position,
             yaw_deg,
             replace_existing=replace_existing,
+            asset_name=asset_name,
+            placement_id=placement_id,
+            missing_asset=not usd_path,
         )
 
     def _place_dummy(
@@ -149,29 +159,62 @@ class PublicSpacePlacementExecutor:
         yaw_deg: float,
         *,
         replace_existing: bool,
+        asset_name: str = "",
+        placement_id: str = "",
+        missing_asset: bool = False,
     ) -> str:
         UsdGeom = self.context.pxr_usd_geom
         Gf = self.context.pxr_gf
 
-        self._ensure_xform_chain(prim_path)
-        wrapper = self.stage.GetPrimAtPath(prim_path)
+        spec = dummy_visual_spec(placement_id or prim_path, asset_name)
+        size = float(spec.get("size") or self.dummy_size_m)
+
+        wrapper = self._ensure_xform_prim(prim_path)
         if replace_existing:
             for child in list(wrapper.GetChildren()):
                 self.stage.RemovePrim(child.GetPath())
 
-        cube_path = f"{prim_path}/DummyGeom"
-        cube = UsdGeom.Cube.Define(self.stage, cube_path)
-        size = self.dummy_size_m
-        cube.CreateSizeAttr(size)
+        geom_path = f"{prim_path}/{_DEBUG_GEOM_CHILD}"
+        self._define_debug_cube(UsdGeom, geom_path, size)
 
-        xform = UsdGeom.Xformable(wrapper)
+        self._set_world_pose(
+            UsdGeom,
+            Gf,
+            wrapper,
+            position,
+            yaw_deg,
+        )
+
+        return prim_path
+
+    def _define_debug_cube(self, UsdGeom, geom_path: str, size: float) -> None:
+        """UsdGeom.Cube only — mixed Cone/Cylinder + displayColor can crash Kit."""
+        parent_path = geom_path.rsplit("/", 1)[0]
+        if parent_path:
+            self._ensure_xform_prim(parent_path)
+        existing = self.stage.GetPrimAtPath(geom_path)
+        if existing.IsValid() and not existing.IsA(UsdGeom.Cube):
+            self.stage.RemovePrim(existing.GetPath())
+        cube = UsdGeom.Cube.Define(self.stage, geom_path)
+        cube.CreateSizeAttr(max(0.2, min(float(size), 1.2)))
+
+    def _set_world_pose(
+        self,
+        UsdGeom,
+        Gf,
+        prim,
+        position: Sequence[float],
+        yaw_deg: float,
+    ) -> None:
+        if not prim or not prim.IsValid() or not prim.IsA(UsdGeom.Xform):
+            path = str(prim.GetPath()) if prim and prim.IsValid() else "<invalid>"
+            raise RuntimeError(f"Cannot set world pose on non-Xform prim: {path}")
+        xform = UsdGeom.Xformable(prim)
         xform.ClearXformOpOrder()
         xform.AddTranslateOp().Set(
             Gf.Vec3d(float(position[0]), float(position[1]), float(position[2]))
         )
         xform.AddRotateZOp().Set(float(yaw_deg))
-
-        return prim_path
 
     def _place_reference(
         self,
@@ -181,6 +224,8 @@ class PublicSpacePlacementExecutor:
         yaw_deg: float,
         *,
         replace_existing: bool,
+        asset_name: str = "",
+        placement_id: str = "",
     ) -> str | None:
         if not asset_path.is_file():
             print(f"[WARN] Asset USD not found for reference: {asset_path}")
@@ -189,39 +234,93 @@ class PublicSpacePlacementExecutor:
                 position,
                 yaw_deg,
                 replace_existing=replace_existing,
+                asset_name=asset_name,
+                placement_id=placement_id,
+                missing_asset=True,
             )
 
         UsdGeom = self.context.pxr_usd_geom
         Gf = self.context.pxr_gf
 
-        self._ensure_xform_chain(prim_path)
-        wrapper = self.stage.GetPrimAtPath(prim_path)
+        wrapper = self._ensure_xform_prim(prim_path)
         if replace_existing:
             wrapper.GetReferences().ClearReferences()
 
-        ref_path = f"{prim_path}/Asset"
-        ref_prim = self._ensure_xform_chain(ref_path)
+        ref_path = f"{prim_path}/{_REFERENCE_CHILD}"
+        ref_prim = self._ensure_xform_prim(ref_path)
         ref_prim.GetReferences().AddReference(str(asset_path.resolve()))
 
-        xform = UsdGeom.Xformable(wrapper)
-        xform.ClearXformOpOrder()
-        xform.AddTranslateOp().Set(
-            Gf.Vec3d(float(position[0]), float(position[1]), float(position[2]))
+        self._set_world_pose(
+            UsdGeom,
+            Gf,
+            wrapper,
+            position,
+            yaw_deg,
         )
-        xform.AddRotateZOp().Set(float(yaw_deg))
         return prim_path
 
-    def _ensure_xform_chain(self, prim_path: str):
-        parts = prim_path.strip("/").split("/")
-        UsdGeom = self.context.pxr_usd_geom
+
+    @staticmethod
+    def _usd_safe_prim_name(name: str) -> str:
+        """Sanitize a single USD prim path element (no leading digit)."""
+        safe = "".join(
+            ch if ch.isalnum() or ch in ("_", "-") else "_" for ch in (name or "")
+        ).strip("_")
+        if not safe:
+            safe = "placement_unknown"
+        if safe[0].isdigit():
+            safe = f"ps_{safe}"
+        return safe
+
+    def _resolve_root_prim(self, root_prim: str) -> str:
+        """Use /root/... when the opened stage has no /World (e.g. demo_tencent_test.usd)."""
+        normalized = (root_prim or DEFAULT_PUBLIC_SPACE_ASSET_ROOT).rstrip("/") or "/"
+        if normalized != DEFAULT_PUBLIC_SPACE_ASSET_ROOT:
+            return normalized
+
+        stage_root = self.stage.GetPrimAtPath("/root")
+        world = self.stage.GetPrimAtPath("/World")
+        if stage_root.IsValid() and not world.IsValid():
+            return "/root/GeneratedAssets/PublicSpace"
+        return DEFAULT_PUBLIC_SPACE_ASSET_ROOT
+
+    def _normalize_prim_path(self, prim_path: str) -> str:
+        normalized = prim_path.rstrip("/") or "/"
+        if not normalized.startswith("/"):
+            raise ValueError(f"Prim path must be absolute: {prim_path}")
+        Sdf = self.context.pxr_Sdf
+        sdf_path = Sdf.Path(normalized)
+        if sdf_path.isEmpty or not sdf_path.IsAbsolutePath():
+            raise ValueError(f"Invalid USD prim path: {prim_path}")
+        return normalized
+
+    def _ensure_parent_xforms(self, prim_path: str) -> None:
+        parts = self._normalize_prim_path(prim_path).strip("/").split("/")[:-1]
         current = ""
-        last_prim = None
         for part in parts:
             current = f"{current}/{part}"
-            prim = self.stage.GetPrimAtPath(current)
-            if not prim.IsValid():
-                last_prim = UsdGeom.Xform.Define(self.stage, current).GetPrim()
-            else:
-                prim.SetActive(True)
-                last_prim = prim
-        return last_prim
+            self._ensure_xform_prim(current)
+
+    def _ensure_xform_prim(self, prim_path: str):
+        """
+        Ensure an Xform exists at ``prim_path``.
+
+        Unlike the old ``_ensure_xform_chain``, parents are created first (Kit-safe),
+        existing non-Xform prims are not passed to Xformable ops, and SetActive is
+        not forced on arbitrary stage prims (avoids pick/viewport crashes).
+        """
+        prim_path = self._normalize_prim_path(prim_path)
+        UsdGeom = self.context.pxr_usd_geom
+        prim = self.stage.GetPrimAtPath(prim_path)
+        if prim.IsValid():
+            if prim.IsA(UsdGeom.Xform):
+                return prim
+            raise RuntimeError(
+                f"Cannot place public-space asset at {prim_path}: "
+                f"existing prim type is {prim.GetTypeName()} (expected Xform)"
+            )
+
+        parent_path = prim_path.rsplit("/", 1)[0] if prim_path.count("/") > 1 else ""
+        if parent_path and parent_path != prim_path:
+            self._ensure_xform_prim(parent_path)
+        return UsdGeom.Xform.Define(self.stage, prim_path).GetPrim()

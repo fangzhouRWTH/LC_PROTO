@@ -77,9 +77,12 @@ def apply_area_placement_layout(
                 plan,
             )
         if verbose:
+            isolated = area_placement_bridge.layout_subprocess_enabled()
+            mode = "subprocess" if isolated else "in-process"
             print(
                 f"[INFO] Built placement plan from "
-                f"{len(stats.public_space_regions)} parsed public-space region(s)"
+                f"{len(stats.public_space_regions)} parsed public-space region(s) "
+                f"({mode})"
             )
     else:
         result.warnings.append(
@@ -105,10 +108,10 @@ def apply_area_placement_layout(
 
     if any("asset_list was empty" in warning for warning in plan.get("warnings") or []):
         print(
-            "[WARN] Public-space layout placed only the debug fallback cube "
-            "(asset_list was empty). Check USD simworld:public_space_type and "
-            "simworld:boundary_type values — Blender custom property *values* must "
-            "be block_entrance / block_boundary_primary, not the property names."
+            "[WARN] Public-space layout used centroid fallback "
+            "(asset_list was empty). A single debug primitive is placed at the "
+            "region center; mapped assets use varied debug geoms when the library "
+            "is not connected."
         )
     if stats.public_space_parse_warnings:
         print(

@@ -92,6 +92,46 @@ class AreaPlacementModuleTests(unittest.TestCase):
             item = plan["placements"][0]
             self.assertIn("asset_name", item)
             self.assertIn("position", item)
+            self.assertTrue(item["placement_id"].startswith("test_region_asset_"))
+
+    def test_placement_ids_are_unique_per_region_slug(self):
+        layout_a = {
+            "public_space_type": "block_entrance",
+            "asset_list": [
+                {
+                    "asset_id": 1,
+                    "asset_candidates_name": "bollard",
+                    "asset_location": [1.0, 1.0, 0.0],
+                    "asset_orientation": [1.0, 0.0, 0.0],
+                }
+            ],
+        }
+        layout_b = {
+            "public_space_type": "block_entrance",
+            "asset_list": [
+                {
+                    "asset_id": 1,
+                    "asset_candidates_name": "bollard",
+                    "asset_location": [2.0, 2.0, 0.0],
+                    "asset_orientation": [1.0, 0.0, 0.0],
+                }
+            ],
+        }
+        plan_a = layout_result_to_placement_output(
+            layout_a,
+            region_id="/World/placeholder_area_publicspace_009_blockentrance",
+        )
+        plan_b = layout_result_to_placement_output(
+            layout_b,
+            region_id="/World/placeholder_area_publicspace_008_blockentrance",
+        )
+        self.assertNotEqual(
+            plan_a["placements"][0]["placement_id"],
+            plan_b["placements"][0]["placement_id"],
+        )
+        self.assertTrue(
+            plan_a["placements"][0]["placement_id"].startswith("ps_009_blockentrance_asset_")
+        )
 
     def test_empty_asset_list_injects_builtin_placeholder(self):
         layout = {

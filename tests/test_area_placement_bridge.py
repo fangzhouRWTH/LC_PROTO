@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from engine import area_placement_bridge
 
@@ -60,6 +62,44 @@ class AreaPlacementBridgeTests(unittest.TestCase):
             [parsed],
             steps=[1, 2, 3, 4, 5],
         )
+        self.assertEqual(len(plan["placements"]), 3)
+
+    def test_subprocess_layout_disabled_by_default(self):
+        self.assertFalse(area_placement_bridge._layout_subprocess_enabled())
+
+    def test_kit_env_vars_do_not_enable_subprocess_by_default(self):
+        with mock.patch.dict(
+            os.environ,
+            {"CARB_APP_PATH": "/fake/kit", "ISAAC_PATH": "/fake"},
+            clear=False,
+        ):
+            self.assertFalse(area_placement_bridge._running_under_isaac_sim())
+            self.assertFalse(area_placement_bridge._layout_subprocess_enabled())
+
+    def test_subprocess_layout_opt_in_via_env(self):
+        with mock.patch.dict(
+            os.environ,
+            {"LC01_LAYOUT_IN_SUBPROCESS": "1"},
+            clear=False,
+        ):
+            self.assertTrue(area_placement_bridge._layout_subprocess_enabled())
+
+    def test_build_combined_placement_plan_isolated_subprocess(self):
+        with PROTO_SAMPLE.open(encoding="utf-8") as handle:
+            proto = json.load(handle)
+        region_input = {
+            "schema_version": "simworld.region_input.v1",
+            "region_id": "isolated_test",
+            "public_space_type": proto["public_space_type"],
+            "ratio_dynamic_static": proto["ratio_dynamic_static"],
+            "public_space_geometry": proto["public_space_geometry"],
+            "public_space_segments": proto["public_space_segments"],
+        }
+        plan = area_placement_bridge.build_combined_placement_plan_from_region_inputs_isolated(
+            [region_input],
+            steps=[1, 2, 3, 4, 5],
+        )
+        self.assertEqual(plan["schema_version"], "simworld.placement_output.v1")
         self.assertEqual(len(plan["placements"]), 3)
 
 

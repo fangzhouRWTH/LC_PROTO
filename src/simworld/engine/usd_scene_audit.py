@@ -345,9 +345,25 @@ def _assign_layout_role(info: PrimNameInfo | None, matched: Sequence[AuditRuleSp
 
 
 def _validate_public_space_region(record: PrimAuditRecord) -> None:
+    from engine.public_space_compact_naming import parse_public_space_region_name
+
+    name_info = parse_public_space_region_name(record.name)
     ptype = record.simworld_fields.get("public_space_type")
+    if ptype is None and name_info and name_info.public_space_type:
+        ptype = name_info.public_space_type
+        record.notes.append(
+            f"public_space_type from prim name: {name_info.public_space_type}"
+        )
+    if name_info and name_info.boundary_type_hint:
+        record.notes.append(
+            f"boundary_type hint from prim name: {name_info.boundary_type_hint}"
+        )
     if ptype is None:
-        record.issues.append("missing simworld:public_space_type (required for layout)")
+        record.issues.append(
+            "missing simworld:public_space_type (required for layout; "
+            "or encode compact type in "
+            "placeholder_area_publicspace_<index>_<typecompact>)"
+        )
     elif looks_like_unset_simworld_property(ptype):
         record.issues.append(format_public_space_type_misexport_hint(record.path, ptype))
     elif not is_known_public_space_type(ptype):
@@ -553,21 +569,52 @@ def _try_region_input_previews(records: Sequence[PrimAuditRecord]) -> list[dict[
     previews: list[dict[str, Any]] = []
     for region in regions:
         seg_records = segments_by_parent.get(region.path, [])
+        from engine.public_space_compact_naming import parse_public_space_region_name
+        from engine.public_space_geometry import build_inferred_boundary_segment_records
+
+        name_info = parse_public_space_region_name(region.name)
+        public_space_type = region.simworld_fields.get("public_space_type")
+        if not public_space_type and name_info is not None:
+            public_space_type = name_info.public_space_type
+        boundary_hint = name_info.boundary_type_hint if name_info else ""
+
+        segment_payloads = [
+            {
+                "segment_id": seg.simworld_fields.get("segment_id"),
+                "boundary_type": seg.simworld_fields.get("boundary_type"),
+                "vertices": seg.mesh_world_vertices,
+            }
+            for seg in seg_records
+        ]
+        synthesized = False
+        if len(segment_payloads) < 3 and region.mesh_world_vertices and public_space_type:
+            try:
+                synthetic = build_inferred_boundary_segment_records(
+                    region.path,
+                    region.mesh_world_vertices,
+                    str(public_space_type),
+                    boundary_type_hint=boundary_hint,
+                )
+                segment_payloads = [
+                    {
+                        "segment_id": item["segment_id"],
+                        "boundary_type": item["boundary_type"],
+                        "vertices": item["vertices"],
+                    }
+                    for item in synthetic
+                ]
+                synthesized = True
+            except ValueError:
+                pass
+
         payload = {
             "region_id": region.name,
             "prim_path": region.path,
             "raw_name": region.name,
-            "public_space_type": region.simworld_fields.get("public_space_type"),
+            "public_space_type": public_space_type,
             "ratio_dynamic_static": region.simworld_fields.get("ratio_dynamic_static", 0.36),
             "boundary_vertices": region.mesh_world_vertices,
-            "segments": [
-                {
-                    "segment_id": seg.simworld_fields.get("segment_id"),
-                    "boundary_type": seg.simworld_fields.get("boundary_type"),
-                    "vertices": seg.mesh_world_vertices,
-                }
-                for seg in seg_records
-            ],
+            "segments": segment_payloads,
             "asset_has_set": [],
         }
         try:
@@ -581,6 +628,7 @@ def _try_region_input_previews(records: Sequence[PrimAuditRecord]) -> list[dict[
                     "geometry_point_count": len(
                         (converted.get("public_space_geometry") or {}).get("coordinates") or []
                     ),
+                    "segments_synthesized": synthesized,
                 }
             )
         except Exception as exc:
