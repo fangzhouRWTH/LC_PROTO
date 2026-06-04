@@ -1,0 +1,218 @@
+{
+  "public_space_type": "city_yard_roof",
+  "public_space_geometry": {
+    "type": "LineString3D",
+    "coordinates": [
+      [
+        10.0,
+        90.0,
+        0.0
+      ],
+      [
+        70.0,
+        90.0,
+        0.0
+      ],
+      [
+        70.0,
+        110.0,
+        0.0
+      ],
+      [
+        10.0,
+        110.0,
+        0.0
+      ],
+      [
+        10.0,
+        90.0,
+        0.0
+      ]
+    ]
+  },
+  "public_space_segments": [
+    {
+      "segment_id": 1,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            10.0,
+            90.0,
+            0.0
+          ],
+          [
+            50.0,
+            90.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "building_wall"
+    },
+    {
+      "segment_id": 2,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            50.0,
+            90.0,
+            0.0
+          ],
+          [
+            60.0,
+            90.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "building_entrance_main"
+    },
+    {
+      "segment_id": 3,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            60.0,
+            90.0,
+            0.0
+          ],
+          [
+            70.0,
+            90.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "street_boundary_primary"
+    },
+    {
+      "segment_id": 4,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            70.0,
+            90.0,
+            0.0
+          ],
+          [
+            70.0,
+            110.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "yard_boundary"
+    },
+    {
+      "segment_id": 5,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            70.0,
+            110.0,
+            0.0
+          ],
+          [
+            60.0,
+            110.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "building_wall"
+    },
+    {
+      "segment_id": 6,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            60.0,
+            110.0,
+            0.0
+          ],
+          [
+            50.0,
+            110.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "building_entrance_main"
+    },
+    {
+      "segment_id": 7,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            50.0,
+            110.0,
+            0.0
+          ],
+          [
+            10.0,
+            110.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "building_wall"
+    },
+    {
+      "segment_id": 8,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            10.0,
+            110.0,
+            0.0
+          ],
+          [
+            10.0,
+            90.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "block_entrance"
+    }
+  ],
+  "ratio_dynamic_static": 0.36,
+  "cover_geometry": {
+    "type": "LineString3D",
+    "coordinates": [
+      [
+        10.0,
+        90.0,
+        4.5
+      ],
+      [
+        70.0,
+        90.0,
+        4.5
+      ],
+      [
+        70.0,
+        110.0,
+        4.5
+      ],
+      [
+        10.0,
+        110.0,
+        4.5
+      ],
+      [
+        10.0,
+        90.0,
+        4.5
+      ]
+    ]
+  }
+}

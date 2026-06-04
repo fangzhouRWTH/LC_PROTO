@@ -1,0 +1,112 @@
+{
+  "public_space_type": "city_street_roofless",
+  "public_space_geometry": {
+    "type": "LineString3D",
+    "coordinates": [
+      [
+        10.0,
+        0.0,
+        0.0
+      ],
+      [
+        70.0,
+        0.0,
+        0.0
+      ],
+      [
+        70.0,
+        4.0,
+        0.0
+      ],
+      [
+        10.0,
+        4.0,
+        0.0
+      ],
+      [
+        10.0,
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "public_space_segments": [
+    {
+      "segment_id": 1,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            10.0,
+            0.0,
+            0.0
+          ],
+          [
+            70.0,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "block_boundary_primary"
+    },
+    {
+      "segment_id": 2,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            70.0,
+            0.0,
+            0.0
+          ],
+          [
+            70.0,
+            4.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "yard_boundary"
+    },
+    {
+      "segment_id": 3,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            70.0,
+            4.0,
+            0.0
+          ],
+          [
+            10.0,
+            4.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "street_boundary_secondary"
+    },
+    {
+      "segment_id": 4,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            10.0,
+            4.0,
+            0.0
+          ],
+          [
+            10.0,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "block_entrance"
+    }
+  ],
+  "ratio_dynamic_static": 0.68
+}

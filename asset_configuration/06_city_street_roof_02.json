@@ -1,0 +1,824 @@
+{
+  "public_space_type": "city_street_roof",
+  "public_space_geometry": {
+    "type": "LineString3D",
+    "coordinates": [
+      [
+        4.0,
+        10.0,
+        0.0
+      ],
+      [
+        10.0,
+        10.0,
+        0.0
+      ],
+      [
+        10.0,
+        90.0,
+        0.0
+      ],
+      [
+        4.0,
+        90.0,
+        0.0
+      ],
+      [
+        4.0,
+        10.0,
+        0.0
+      ]
+    ]
+  },
+  "public_space_segments": [
+    {
+      "segment_id": 1,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            4.0,
+            10.0,
+            0.0
+          ],
+          [
+            10.0,
+            10.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "block_entrance"
+    },
+    {
+      "segment_id": 2,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            10.0,
+            10.0,
+            0.0
+          ],
+          [
+            10.0,
+            90.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "building_wall"
+    },
+    {
+      "segment_id": 3,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            10.0,
+            90.0,
+            0.0
+          ],
+          [
+            4.0,
+            90.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "block_entrance"
+    },
+    {
+      "segment_id": 4,
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            4.0,
+            90.0,
+            0.0
+          ],
+          [
+            4.0,
+            10.0,
+            0.0
+          ]
+        ]
+      },
+      "boundary_type": "street_boundary_secondary"
+    }
+  ],
+  "ratio_dynamic_static": 0.8,
+  "cover_geometry": {
+    "type": "LineString3D",
+    "coordinates": [
+      [
+        4.0,
+        10.0,
+        4.5
+      ],
+      [
+        10.0,
+        10.0,
+        4.5
+      ],
+      [
+        10.0,
+        90.0,
+        4.5
+      ],
+      [
+        4.0,
+        90.0,
+        4.5
+      ],
+      [
+        4.0,
+        10.0,
+        4.5
+      ]
+    ]
+  },
+  "Asset_has_set": [
+    {
+      "asset_has_set_id": 1,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            87.7,
+            0.0
+          ],
+          [
+            4.3,
+            87.7,
+            0.0
+          ],
+          [
+            4.3,
+            88.3,
+            0.0
+          ],
+          [
+            3.7,
+            88.3,
+            0.0
+          ],
+          [
+            3.7,
+            87.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 2,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            83.7,
+            0.0
+          ],
+          [
+            4.3,
+            83.7,
+            0.0
+          ],
+          [
+            4.3,
+            84.3,
+            0.0
+          ],
+          [
+            3.7,
+            84.3,
+            0.0
+          ],
+          [
+            3.7,
+            83.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 3,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            79.7,
+            0.0
+          ],
+          [
+            4.3,
+            79.7,
+            0.0
+          ],
+          [
+            4.3,
+            80.3,
+            0.0
+          ],
+          [
+            3.7,
+            80.3,
+            0.0
+          ],
+          [
+            3.7,
+            79.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 4,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            75.7,
+            0.0
+          ],
+          [
+            4.3,
+            75.7,
+            0.0
+          ],
+          [
+            4.3,
+            76.3,
+            0.0
+          ],
+          [
+            3.7,
+            76.3,
+            0.0
+          ],
+          [
+            3.7,
+            75.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 5,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            71.7,
+            0.0
+          ],
+          [
+            4.3,
+            71.7,
+            0.0
+          ],
+          [
+            4.3,
+            72.3,
+            0.0
+          ],
+          [
+            3.7,
+            72.3,
+            0.0
+          ],
+          [
+            3.7,
+            71.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 6,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            67.7,
+            0.0
+          ],
+          [
+            4.3,
+            67.7,
+            0.0
+          ],
+          [
+            4.3,
+            68.3,
+            0.0
+          ],
+          [
+            3.7,
+            68.3,
+            0.0
+          ],
+          [
+            3.7,
+            67.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 7,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            63.7,
+            0.0
+          ],
+          [
+            4.3,
+            63.7,
+            0.0
+          ],
+          [
+            4.3,
+            64.3,
+            0.0
+          ],
+          [
+            3.7,
+            64.3,
+            0.0
+          ],
+          [
+            3.7,
+            63.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 8,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            59.7,
+            0.0
+          ],
+          [
+            4.3,
+            59.7,
+            0.0
+          ],
+          [
+            4.3,
+            60.3,
+            0.0
+          ],
+          [
+            3.7,
+            60.3,
+            0.0
+          ],
+          [
+            3.7,
+            59.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 9,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            55.7,
+            0.0
+          ],
+          [
+            4.3,
+            55.7,
+            0.0
+          ],
+          [
+            4.3,
+            56.3,
+            0.0
+          ],
+          [
+            3.7,
+            56.3,
+            0.0
+          ],
+          [
+            3.7,
+            55.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 10,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            51.7,
+            0.0
+          ],
+          [
+            4.3,
+            51.7,
+            0.0
+          ],
+          [
+            4.3,
+            52.3,
+            0.0
+          ],
+          [
+            3.7,
+            52.3,
+            0.0
+          ],
+          [
+            3.7,
+            51.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 11,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            47.7,
+            0.0
+          ],
+          [
+            4.3,
+            47.7,
+            0.0
+          ],
+          [
+            4.3,
+            48.3,
+            0.0
+          ],
+          [
+            3.7,
+            48.3,
+            0.0
+          ],
+          [
+            3.7,
+            47.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 12,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            43.7,
+            0.0
+          ],
+          [
+            4.3,
+            43.7,
+            0.0
+          ],
+          [
+            4.3,
+            44.3,
+            0.0
+          ],
+          [
+            3.7,
+            44.3,
+            0.0
+          ],
+          [
+            3.7,
+            43.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 13,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            39.7,
+            0.0
+          ],
+          [
+            4.3,
+            39.7,
+            0.0
+          ],
+          [
+            4.3,
+            40.3,
+            0.0
+          ],
+          [
+            3.7,
+            40.3,
+            0.0
+          ],
+          [
+            3.7,
+            39.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 14,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            35.7,
+            0.0
+          ],
+          [
+            4.3,
+            35.7,
+            0.0
+          ],
+          [
+            4.3,
+            36.3,
+            0.0
+          ],
+          [
+            3.7,
+            36.3,
+            0.0
+          ],
+          [
+            3.7,
+            35.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 15,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            31.7,
+            0.0
+          ],
+          [
+            4.3,
+            31.7,
+            0.0
+          ],
+          [
+            4.3,
+            32.3,
+            0.0
+          ],
+          [
+            3.7,
+            32.3,
+            0.0
+          ],
+          [
+            3.7,
+            31.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 16,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            27.7,
+            0.0
+          ],
+          [
+            4.3,
+            27.7,
+            0.0
+          ],
+          [
+            4.3,
+            28.3,
+            0.0
+          ],
+          [
+            3.7,
+            28.3,
+            0.0
+          ],
+          [
+            3.7,
+            27.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 17,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            23.7,
+            0.0
+          ],
+          [
+            4.3,
+            23.7,
+            0.0
+          ],
+          [
+            4.3,
+            24.3,
+            0.0
+          ],
+          [
+            3.7,
+            24.3,
+            0.0
+          ],
+          [
+            3.7,
+            23.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 18,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            19.7,
+            0.0
+          ],
+          [
+            4.3,
+            19.7,
+            0.0
+          ],
+          [
+            4.3,
+            20.3,
+            0.0
+          ],
+          [
+            3.7,
+            20.3,
+            0.0
+          ],
+          [
+            3.7,
+            19.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 19,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            15.7,
+            0.0
+          ],
+          [
+            4.3,
+            15.7,
+            0.0
+          ],
+          [
+            4.3,
+            16.3,
+            0.0
+          ],
+          [
+            3.7,
+            16.3,
+            0.0
+          ],
+          [
+            3.7,
+            15.7,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "asset_has_set_id": 20,
+      "asset_has_set_type": "arcade_column",
+      "geometry": {
+        "type": "LineString3D",
+        "coordinates": [
+          [
+            3.7,
+            11.7,
+            0.0
+          ],
+          [
+            4.3,
+            11.7,
+            0.0
+          ],
+          [
+            4.3,
+            12.3,
+            0.0
+          ],
+          [
+            3.7,
+            12.3,
+            0.0
+          ],
+          [
+            3.7,
+            11.7,
+            0.0
+          ]
+        ]
+      }
+    }
+  ]
+}
