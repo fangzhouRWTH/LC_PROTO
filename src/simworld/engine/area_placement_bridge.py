@@ -104,13 +104,171 @@ def layout_result_to_placement_output(
     *,
     region_id: str,
     layout_steps: list[int] | None = None,
+    pedestrian_trip_min_length_m: float | None = None,
+    pedestrian_trip_target_length_m: float | None = None,
+    pedestrian_trip_max_length_m: float | None = None,
+    pedestrian_node_merge_tolerance_m: float | None = None,
+    max_pedestrian_trips_per_region: int | None = None,
 ) -> dict[str, Any]:
     plan_adapter = _load_adapters()
+    kwargs = _pedestrian_trip_kwargs(
+        pedestrian_trip_min_length_m=pedestrian_trip_min_length_m,
+        pedestrian_trip_target_length_m=pedestrian_trip_target_length_m,
+        pedestrian_trip_max_length_m=pedestrian_trip_max_length_m,
+        pedestrian_node_merge_tolerance_m=pedestrian_node_merge_tolerance_m,
+        max_pedestrian_trips_per_region=max_pedestrian_trips_per_region,
+    )
     return plan_adapter.layout_result_to_placement_output(
         layout_result,
         region_id=region_id,
         layout_steps=layout_steps,
+        **kwargs,
     )
+
+
+def _pedestrian_trip_kwargs(
+    *,
+    pedestrian_trip_min_length_m: float | None = None,
+    pedestrian_trip_target_length_m: float | None = None,
+    pedestrian_trip_max_length_m: float | None = None,
+    pedestrian_node_merge_tolerance_m: float | None = None,
+    max_pedestrian_trips_per_region: int | None = None,
+) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {}
+    if pedestrian_trip_min_length_m is not None:
+        kwargs["pedestrian_trip_min_length_m"] = pedestrian_trip_min_length_m
+    if pedestrian_trip_target_length_m is not None:
+        kwargs["pedestrian_trip_target_length_m"] = pedestrian_trip_target_length_m
+    if pedestrian_trip_max_length_m is not None:
+        kwargs["pedestrian_trip_max_length_m"] = pedestrian_trip_max_length_m
+    if pedestrian_node_merge_tolerance_m is not None:
+        kwargs["pedestrian_node_merge_tolerance_m"] = pedestrian_node_merge_tolerance_m
+    if max_pedestrian_trips_per_region is not None:
+        kwargs["max_pedestrian_trips_per_region"] = max_pedestrian_trips_per_region
+    return kwargs
+
+
+def _combined_pedestrian_route_debug(
+    route_debugs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "walkable_line_count": sum(
+            int(item.get("walkable_line_count") or 0) for item in route_debugs
+        ),
+        "generated_trip_count": sum(
+            int(item.get("generated_trip_count") or 0) for item in route_debugs
+        ),
+        "graph_node_count": sum(
+            int(item.get("graph_node_count") or 0) for item in route_debugs
+        ),
+        "graph_edge_count": sum(
+            int(item.get("graph_edge_count") or 0) for item in route_debugs
+        ),
+        "component_count": sum(
+            int(item.get("component_count") or 0) for item in route_debugs
+        ),
+        "skipped_short_component_count": sum(
+            int(item.get("skipped_short_component_count") or 0)
+            for item in route_debugs
+        ),
+        "regions": route_debugs,
+    }
+
+
+def _path_under_root(path: Path, root: Path) -> Path | None:
+    try:
+        return path.resolve(strict=False).relative_to(root.resolve(strict=False))
+    except ValueError:
+        return None
+
+
+def _relocate_under_root(
+    path: Path,
+    *,
+    old_root: Path | None,
+    current_root: Path,
+) -> Path | None:
+    if old_root is None:
+        return None
+    relative = _path_under_root(path, old_root)
+    if relative is None:
+        return None
+    return current_root / relative
+
+
+def _resolve_existing_asset_path(
+    candidate: Path,
+    *,
+    old_root: Path | None,
+    current_root: Path,
+    depth: int = 0,
+) -> Path | None:
+    if candidate.is_symlink() and depth < 4:
+        target_text = os.readlink(candidate)
+        target = Path(target_text).expanduser()
+        if target.is_absolute():
+            target = _relocate_under_root(
+                target,
+                old_root=old_root,
+                current_root=current_root,
+            ) or target
+        else:
+            target = candidate.parent / target
+        resolved = _resolve_existing_asset_path(
+            target,
+            old_root=old_root,
+            current_root=current_root,
+            depth=depth + 1,
+        )
+        if resolved is not None:
+            return resolved
+
+    if candidate.exists():
+        return candidate.resolve()
+    return None
+
+
+def _relocatable_asset_path(
+    raw_value: Any,
+    *,
+    map_path: Path,
+    old_library_root: Any,
+) -> str:
+    raw_text = str(raw_value)
+    raw_path = Path(raw_text).expanduser()
+    current_root = map_path.parent.resolve()
+    old_root = None
+    if isinstance(old_library_root, str) and old_library_root.strip():
+        old_root = Path(old_library_root).expanduser()
+
+    candidates: list[Path] = []
+    if raw_path.is_absolute():
+        candidates.append(raw_path)
+    else:
+        candidates.append(current_root / raw_path)
+
+    relocated = _relocate_under_root(
+        raw_path,
+        old_root=old_root,
+        current_root=current_root,
+    )
+    if relocated is not None and relocated not in candidates:
+        candidates.append(relocated)
+
+    for candidate in candidates:
+        resolved = _resolve_existing_asset_path(
+            candidate,
+            old_root=old_root,
+            current_root=current_root,
+        )
+        if resolved is not None:
+            return str(resolved)
+
+    if relocated is not None:
+        return str(relocated.resolve(strict=False))
+    if raw_path.is_absolute():
+        return raw_text
+    return str((current_root / raw_path).resolve(strict=False))
 
 
 def load_asset_name_map(path: Path | None) -> dict[str, str]:
@@ -122,7 +280,15 @@ def load_asset_name_map(path: Path | None) -> dict[str, str]:
     assets = data.get("assets")
     if not isinstance(assets, dict):
         raise ValueError(f"asset name map must contain 'assets' object: {path}")
-    return {str(key): str(value) for key, value in assets.items()}
+    library_root = data.get("library_root")
+    return {
+        str(key): _relocatable_asset_path(
+            value,
+            map_path=path,
+            old_library_root=library_root,
+        )
+        for key, value in assets.items()
+    }
 
 
 def layout_subprocess_enabled() -> bool:
@@ -205,6 +371,11 @@ def build_combined_placement_plan_from_region_inputs_isolated(
     region_inputs: list[dict[str, Any]],
     *,
     steps: list[int] | None = None,
+    pedestrian_trip_min_length_m: float | None = None,
+    pedestrian_trip_target_length_m: float | None = None,
+    pedestrian_trip_max_length_m: float | None = None,
+    pedestrian_node_merge_tolerance_m: float | None = None,
+    max_pedestrian_trips_per_region: int | None = None,
 ) -> dict[str, Any]:
     """Run layout in a plain Python subprocess (avoids Kit segfaults during proto import)."""
     if not region_inputs:
@@ -217,6 +388,15 @@ def build_combined_placement_plan_from_region_inputs_isolated(
     payload: dict[str, Any] = {"region_inputs": region_inputs}
     if steps is not None:
         payload["steps"] = [int(value) for value in steps]
+    trip_kwargs = _pedestrian_trip_kwargs(
+        pedestrian_trip_min_length_m=pedestrian_trip_min_length_m,
+        pedestrian_trip_target_length_m=pedestrian_trip_target_length_m,
+        pedestrian_trip_max_length_m=pedestrian_trip_max_length_m,
+        pedestrian_node_merge_tolerance_m=pedestrian_node_merge_tolerance_m,
+        max_pedestrian_trips_per_region=max_pedestrian_trips_per_region,
+    )
+    if trip_kwargs:
+        payload["pedestrian_trip_config"] = trip_kwargs
 
     executable = _layout_python_executable()
     proc = subprocess.run(
@@ -251,6 +431,11 @@ def build_combined_placement_plan_from_region_inputs(
     *,
     steps: list[int] | None = None,
     force_in_process: bool = False,
+    pedestrian_trip_min_length_m: float | None = None,
+    pedestrian_trip_target_length_m: float | None = None,
+    pedestrian_trip_max_length_m: float | None = None,
+    pedestrian_node_merge_tolerance_m: float | None = None,
+    max_pedestrian_trips_per_region: int | None = None,
 ) -> dict[str, Any]:
     if not region_inputs:
         raise ValueError("region_inputs cannot be empty")
@@ -259,12 +444,22 @@ def build_combined_placement_plan_from_region_inputs(
         return build_combined_placement_plan_from_region_inputs_isolated(
             region_inputs,
             steps=steps,
+            pedestrian_trip_min_length_m=pedestrian_trip_min_length_m,
+            pedestrian_trip_target_length_m=pedestrian_trip_target_length_m,
+            pedestrian_trip_max_length_m=pedestrian_trip_max_length_m,
+            pedestrian_node_merge_tolerance_m=pedestrian_node_merge_tolerance_m,
+            max_pedestrian_trips_per_region=max_pedestrian_trips_per_region,
         )
 
     _ensure_module_path()
     from adapters.public_space_region import public_space_region_to_region_input
 
     combined_placements: list[dict[str, Any]] = []
+    combined_pedestrian_walkable_lines: list[dict[str, Any]] = []
+    combined_pedestrian_routes: list[dict[str, Any]] = []
+    combined_pedestrian_route_debugs: list[dict[str, Any]] = []
+    combined_dynamic_zones: list[dict[str, Any]] = []
+    combined_static_zones: list[dict[str, Any]] = []
     warnings: list[str] = []
     public_space_type = ""
     layout_steps = steps or [1, 2, 3, 4, 5]
@@ -279,9 +474,24 @@ def build_combined_placement_plan_from_region_inputs(
             layout,
             region_id=str(region_input.get("region_id", "region")),
             layout_steps=layout_steps,
+            pedestrian_trip_min_length_m=pedestrian_trip_min_length_m,
+            pedestrian_trip_target_length_m=pedestrian_trip_target_length_m,
+            pedestrian_trip_max_length_m=pedestrian_trip_max_length_m,
+            pedestrian_node_merge_tolerance_m=pedestrian_node_merge_tolerance_m,
+            max_pedestrian_trips_per_region=max_pedestrian_trips_per_region,
         )
         public_space_type = plan.get("public_space_type") or public_space_type
         combined_placements.extend(plan.get("placements") or [])
+        combined_pedestrian_walkable_lines.extend(
+            plan.get("pedestrian_walkable_lines") or []
+        )
+        combined_pedestrian_routes.extend(plan.get("pedestrian_routes") or [])
+        if isinstance(plan.get("pedestrian_route_debug"), dict):
+            region_debug = dict(plan["pedestrian_route_debug"])
+            region_debug["region_id"] = plan.get("region_id")
+            combined_pedestrian_route_debugs.append(region_debug)
+        combined_dynamic_zones.extend(plan.get("dynamic_zones") or [])
+        combined_static_zones.extend(plan.get("static_zones") or [])
         warnings.extend(plan.get("warnings") or [])
         if plan.get("debug", {}).get("used_fallback_placement"):
             region_id = region_input.get("region_id", "region")
@@ -296,9 +506,24 @@ def build_combined_placement_plan_from_region_inputs(
         "public_space_type": public_space_type,
         "layout_steps": layout_steps,
         "placements": combined_placements,
+        "pedestrian_walkable_lines": combined_pedestrian_walkable_lines,
+        "pedestrian_routes": combined_pedestrian_routes,
+        "pedestrian_route_debug": _combined_pedestrian_route_debug(
+            combined_pedestrian_route_debugs
+        ),
+        "dynamic_zones": combined_dynamic_zones,
+        "static_zones": combined_static_zones,
         "warnings": warnings,
         "debug": {
             "source": "scene_stats.public_space_regions",
+            "pedestrian_walkable_line_count": len(combined_pedestrian_walkable_lines),
+            "pedestrian_route_count": len(combined_pedestrian_routes),
+            "pedestrian_route_skipped_short_component_count": sum(
+                int(item.get("skipped_short_component_count") or 0)
+                for item in combined_pedestrian_route_debugs
+            ),
+            "dynamic_zone_count": len(combined_dynamic_zones),
+            "static_zone_count": len(combined_static_zones),
             "used_fallback_placement": any(
                 "asset_list was empty" in w for w in warnings
             ),
@@ -310,6 +535,11 @@ def build_combined_placement_plan(
     region_input_path: Path,
     *,
     steps: list[int] | None = None,
+    pedestrian_trip_min_length_m: float | None = None,
+    pedestrian_trip_target_length_m: float | None = None,
+    pedestrian_trip_max_length_m: float | None = None,
+    pedestrian_node_merge_tolerance_m: float | None = None,
+    max_pedestrian_trips_per_region: int | None = None,
 ) -> dict[str, Any]:
     """Run layout for one file or merge all JSON files in a directory."""
     paths = collect_region_input_paths(region_input_path)
@@ -317,6 +547,11 @@ def build_combined_placement_plan(
         raise ValueError(f"No region input JSON files under {region_input_path}")
 
     combined_placements: list[dict[str, Any]] = []
+    combined_pedestrian_walkable_lines: list[dict[str, Any]] = []
+    combined_pedestrian_routes: list[dict[str, Any]] = []
+    combined_pedestrian_route_debugs: list[dict[str, Any]] = []
+    combined_dynamic_zones: list[dict[str, Any]] = []
+    combined_static_zones: list[dict[str, Any]] = []
     warnings: list[str] = []
     public_space_type = ""
     layout_steps = steps or [1, 2, 3, 4, 5]
@@ -327,9 +562,24 @@ def build_combined_placement_plan(
             layout,
             region_id=region_path.stem,
             layout_steps=layout_steps,
+            pedestrian_trip_min_length_m=pedestrian_trip_min_length_m,
+            pedestrian_trip_target_length_m=pedestrian_trip_target_length_m,
+            pedestrian_trip_max_length_m=pedestrian_trip_max_length_m,
+            pedestrian_node_merge_tolerance_m=pedestrian_node_merge_tolerance_m,
+            max_pedestrian_trips_per_region=max_pedestrian_trips_per_region,
         )
         public_space_type = plan.get("public_space_type") or public_space_type
         combined_placements.extend(plan.get("placements") or [])
+        combined_pedestrian_walkable_lines.extend(
+            plan.get("pedestrian_walkable_lines") or []
+        )
+        combined_pedestrian_routes.extend(plan.get("pedestrian_routes") or [])
+        if isinstance(plan.get("pedestrian_route_debug"), dict):
+            region_debug = dict(plan["pedestrian_route_debug"])
+            region_debug["region_id"] = plan.get("region_id")
+            combined_pedestrian_route_debugs.append(region_debug)
+        combined_dynamic_zones.extend(plan.get("dynamic_zones") or [])
+        combined_static_zones.extend(plan.get("static_zones") or [])
         warnings.extend(plan.get("warnings") or [])
 
     return {
@@ -338,8 +588,25 @@ def build_combined_placement_plan(
         "public_space_type": public_space_type,
         "layout_steps": layout_steps,
         "placements": combined_placements,
+        "pedestrian_walkable_lines": combined_pedestrian_walkable_lines,
+        "pedestrian_routes": combined_pedestrian_routes,
+        "pedestrian_route_debug": _combined_pedestrian_route_debug(
+            combined_pedestrian_route_debugs
+        ),
+        "dynamic_zones": combined_dynamic_zones,
+        "static_zones": combined_static_zones,
         "warnings": warnings,
-        "debug": {"source_files": [str(p) for p in paths]},
+        "debug": {
+            "source_files": [str(p) for p in paths],
+            "pedestrian_walkable_line_count": len(combined_pedestrian_walkable_lines),
+            "pedestrian_route_count": len(combined_pedestrian_routes),
+            "pedestrian_route_skipped_short_component_count": sum(
+                int(item.get("skipped_short_component_count") or 0)
+                for item in combined_pedestrian_route_debugs
+            ),
+            "dynamic_zone_count": len(combined_dynamic_zones),
+            "static_zone_count": len(combined_static_zones),
+        },
     }
 
 

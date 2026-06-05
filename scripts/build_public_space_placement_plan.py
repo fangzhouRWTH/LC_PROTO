@@ -28,10 +28,14 @@ def main() -> int:
     steps = payload.get("steps")
     if steps is not None:
         steps = [int(value) for value in steps]
+    trip_config = payload.get("pedestrian_trip_config")
+    if not isinstance(trip_config, dict):
+        trip_config = {}
     plan = area_placement_bridge.build_combined_placement_plan_from_region_inputs(
         region_inputs,
         steps=steps,
         force_in_process=True,
+        **trip_config,
     )
     json.dump(plan, sys.stdout, ensure_ascii=False)
     return 0

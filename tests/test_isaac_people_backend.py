@@ -1,5 +1,7 @@
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
 from engine.dynamic import (
@@ -315,6 +317,28 @@ class IsaacPeopleBackendTest(unittest.TestCase):
 
         self.assertFalse(backend._should_hide_actor_at_distance(actor, 0.99))
         self.assertTrue(backend._should_hide_actor_at_distance(actor, 1.0))
+
+    def test_route_control_once_hide_transition_logs_once_in_debug_mode(self):
+        backend = IsaacPeopleDynamicAgentBackend(control_mode="route", debug_enabled=True)
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor("pedestrian_001", "pedestrian", [(0, 0, 0), (1, 0, 0)]),
+                ]
+            )
+        )
+        actor = backend.actors[0]
+
+        output = io.StringIO()
+        with redirect_stdout(output):
+            backend._set_actor_visible(actor, False)
+            backend._set_actor_visible(actor, False)
+
+        self.assertTrue(actor.hidden)
+        self.assertEqual(
+            output.getvalue().count("Isaac People actor hidden at route end"),
+            1,
+        )
 
     def test_route_control_preserves_existing_orient_op_quat_type(self):
         double_op = _FakeOrientOp(_FakeGf.Quatd())

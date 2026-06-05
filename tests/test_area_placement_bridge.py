@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -15,6 +16,7 @@ PROTO_SAMPLE = (
     REPO_ROOT
     / "algorithm_lab/experiments/area_placement_methods/proto/01_block_entrance_01.json"
 )
+LOCAL_ASSET_CONFIGURATION = REPO_ROOT / "asset_configuration"
 
 
 class AreaPlacementBridgeTests(unittest.TestCase):
@@ -29,9 +31,37 @@ class AreaPlacementBridgeTests(unittest.TestCase):
         )
 
     def test_build_combined_placement_plan_from_file(self):
-        plan = area_placement_bridge.build_combined_placement_plan(PROTO_SAMPLE)
+        plan = area_placement_bridge.build_combined_placement_plan(
+            PROTO_SAMPLE,
+            pedestrian_trip_min_length_m=1.0,
+            pedestrian_trip_target_length_m=5.0,
+            pedestrian_trip_max_length_m=10.0,
+        )
         self.assertEqual(plan["schema_version"], "simworld.placement_output.v1")
         self.assertGreater(len(plan["placements"]), 0)
+        self.assertGreater(len(plan["pedestrian_walkable_lines"]), 0)
+        self.assertGreater(len(plan["pedestrian_routes"]), 0)
+        self.assertEqual(
+            plan["debug"]["pedestrian_walkable_line_count"],
+            len(plan["pedestrian_walkable_lines"]),
+        )
+        self.assertEqual(
+            plan["debug"]["pedestrian_route_count"],
+            len(plan["pedestrian_routes"]),
+        )
+        self.assertTrue(
+            all(
+                route["metadata"]["source"] == "public_space_trip_generator"
+                for route in plan["pedestrian_routes"]
+            )
+        )
+        self.assertTrue(
+            all(
+                route["metadata"]["length"] >= 1.0
+                for route in plan["pedestrian_routes"]
+            )
+        )
+        self.assertIn("dynamic_zones", plan)
 
     def test_run_layout_from_region_file(self):
         layout = area_placement_bridge.run_layout_from_region_file(
@@ -61,8 +91,79 @@ class AreaPlacementBridgeTests(unittest.TestCase):
         plan = area_placement_bridge.build_combined_placement_plan_from_region_inputs(
             [parsed],
             steps=[1, 2, 3, 4, 5],
+            pedestrian_trip_min_length_m=1.0,
+            pedestrian_trip_target_length_m=5.0,
+            pedestrian_trip_max_length_m=10.0,
         )
         self.assertEqual(len(plan["placements"]), 3)
+        self.assertGreater(len(plan["pedestrian_walkable_lines"]), 0)
+        self.assertGreater(len(plan["pedestrian_routes"]), 0)
+        self.assertGreater(plan["debug"]["pedestrian_route_count"], 0)
+        self.assertEqual(
+            plan["pedestrian_route_debug"]["generated_trip_count"],
+            len(plan["pedestrian_routes"]),
+        )
+        self.assertTrue(
+            all(
+                route["metadata"]["length"] >= 1.0
+                for route in plan["pedestrian_routes"]
+            )
+        )
+
+    @unittest.skipUnless(
+        LOCAL_ASSET_CONFIGURATION.is_dir(),
+        "local asset_configuration directory is not available",
+    )
+    def test_local_asset_configuration_generates_default_runtime_trips(self):
+        plan = area_placement_bridge.build_combined_placement_plan(
+            LOCAL_ASSET_CONFIGURATION,
+        )
+        lengths = [
+            float(route["metadata"]["length"])
+            for route in plan["pedestrian_routes"]
+        ]
+
+        self.assertGreater(len(plan["placements"]), 0)
+        self.assertGreater(len(plan["pedestrian_walkable_lines"]), 0)
+        self.assertGreater(len(plan["pedestrian_routes"]), 0)
+        self.assertTrue(all(length >= 15.0 for length in lengths))
+        self.assertTrue(all(length <= 40.0 for length in lengths))
+        self.assertEqual(
+            plan["pedestrian_route_debug"]["generated_trip_count"],
+            len(plan["pedestrian_routes"]),
+        )
+
+    def test_load_asset_name_map_relocates_old_root_and_public_space_symlink(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            current_root = Path(tmpdir) / "lcstd_assets_library" / "static"
+            actual_usd = current_root / "usd" / "traffic_infrastructure" / "trafficcone_01.usd"
+            public_space_dir = current_root / "public_space" / "trafficcone"
+            actual_usd.parent.mkdir(parents=True)
+            public_space_dir.mkdir(parents=True)
+            actual_usd.write_text("#usda 1.0\n", encoding="utf-8")
+
+            old_root = "/home/fangzhou/projects/LC_01/assets/lcstd_assets_library/static"
+            symlink_path = public_space_dir / "default.usd"
+            symlink_path.symlink_to(
+                f"{old_root}/usd/traffic_infrastructure/trafficcone_01.usd"
+            )
+            map_path = current_root / "asset_name_map.json"
+            map_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "lcstd.asset_name_map.v1",
+                        "library_root": old_root,
+                        "assets": {
+                            "trafficcone": f"{old_root}/public_space/trafficcone/default.usd",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            loaded = area_placement_bridge.load_asset_name_map(map_path)
+
+        self.assertEqual(loaded["trafficcone"], str(actual_usd.resolve()))
 
     def test_subprocess_layout_disabled_by_default(self):
         self.assertFalse(area_placement_bridge._layout_subprocess_enabled())
@@ -98,9 +199,15 @@ class AreaPlacementBridgeTests(unittest.TestCase):
         plan = area_placement_bridge.build_combined_placement_plan_from_region_inputs_isolated(
             [region_input],
             steps=[1, 2, 3, 4, 5],
+            pedestrian_trip_min_length_m=1.0,
+            pedestrian_trip_target_length_m=5.0,
+            pedestrian_trip_max_length_m=10.0,
         )
         self.assertEqual(plan["schema_version"], "simworld.placement_output.v1")
         self.assertEqual(len(plan["placements"]), 3)
+        self.assertGreater(len(plan["pedestrian_walkable_lines"]), 0)
+        self.assertGreater(len(plan["pedestrian_routes"]), 0)
+        self.assertGreater(plan["pedestrian_route_debug"]["generated_trip_count"], 0)
 
 
 if __name__ == "__main__":

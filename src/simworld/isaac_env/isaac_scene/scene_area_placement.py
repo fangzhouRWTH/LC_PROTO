@@ -34,7 +34,32 @@ class AreaPlacementPrepareConfig:
 class AreaPlacementPrepareResult:
     placement_prim_paths: list[str] = field(default_factory=list)
     legacy_asset_prim_paths: list[str] = field(default_factory=list)
+    generated_pedestrian_routes: list[dict] = field(default_factory=list)
+    dynamic_zones: list[dict] = field(default_factory=list)
+    static_zones: list[dict] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+
+
+def _inject_public_space_flow_records(
+    *,
+    stats: parser.SceneStats,
+    plan: dict,
+    result: AreaPlacementPrepareResult,
+) -> None:
+    routes = [
+        route
+        for route in plan.get("pedestrian_routes") or []
+        if isinstance(route, dict)
+    ]
+    if routes:
+        stats.pedestrian_routes.extend(routes)
+        result.generated_pedestrian_routes.extend(routes)
+    result.dynamic_zones.extend(
+        zone for zone in plan.get("dynamic_zones") or [] if isinstance(zone, dict)
+    )
+    result.static_zones.extend(
+        zone for zone in plan.get("static_zones") or [] if isinstance(zone, dict)
+    )
 
 
 def apply_area_placement_layout(
@@ -91,6 +116,12 @@ def apply_area_placement_layout(
             "skipping public-space placement."
         )
         return result
+
+    _inject_public_space_flow_records(
+        stats=stats,
+        plan=plan,
+        result=result,
+    )
 
     asset_map = area_placement_bridge.load_asset_name_map(
         area_config.asset_name_map_path

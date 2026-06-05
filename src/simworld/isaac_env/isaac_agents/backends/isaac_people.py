@@ -83,6 +83,7 @@ class IsaacPeopleActorRuntime:
     handle_attempts: int = 0
     animation_warning_printed: bool = False
     animation_update_printed: bool = False
+    hidden_at_route_end_printed: bool = False
     debug_frame_count: int = 0
     debug_start_position: tuple[float, float, float] | None = None
     hidden: bool = False
@@ -660,7 +661,21 @@ class IsaacPeopleDynamicAgentBackend:
         set_orient_op_yaw(actor.orient_op, Gf, yaw, self.route_yaw_offset_degrees)
 
     def _set_actor_visible(self, actor: IsaacPeopleActorRuntime, visible: bool):
+        was_hidden = actor.hidden
         actor.hidden = not visible
+        if (
+            self.debug_enabled
+            and actor.hidden
+            and not was_hidden
+            and not actor.hidden_at_route_end_printed
+            and _is_stop_at_end_mode(actor.route_mode)
+        ):
+            actor.hidden_at_route_end_printed = True
+            print(
+                "[OK] Isaac People actor hidden at route end: "
+                f"name={actor.character_name} route_mode={actor.route_mode} "
+                f"total_length_m={actor.total_length:.3f}"
+            )
         if self.stage is None or not actor.character_root_path:
             return
         prim = self.stage.GetPrimAtPath(actor.character_root_path)
