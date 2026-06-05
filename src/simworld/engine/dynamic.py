@@ -269,6 +269,9 @@ def _route_id_for_placeholder(
     actor_type: str,
     route_placeholder: Any,
 ) -> str:
+    explicit = _get_field(route_placeholder, "route_id", "")
+    if explicit:
+        return str(explicit)
     index = _placeholder_index(route_placeholder)
     if index:
         return f"{actor_type}_route_{index}"
@@ -276,13 +279,15 @@ def _route_id_for_placeholder(
 
 
 def _route_metadata_for_placeholder(route_placeholder: Any) -> dict[str, Any]:
-    metadata = {"source": "route_placeholder"}
+    raw_metadata = _get_field(route_placeholder, "metadata", {})
+    metadata = dict(raw_metadata) if isinstance(raw_metadata, dict) else {}
+    metadata.setdefault("source", "route_placeholder")
     index = _placeholder_index(route_placeholder)
     if index:
-        metadata["placeholder_index"] = index
+        metadata.setdefault("placeholder_index", index)
     raw_name = _get_field(route_placeholder, "raw_name", "")
     if raw_name:
-        metadata["raw_name"] = str(raw_name)
+        metadata.setdefault("raw_name", str(raw_name))
     return metadata
 
 

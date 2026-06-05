@@ -94,15 +94,6 @@ class SimScene:
             verbose=verbose,
         )
 
-        if build_dynamic_plan:
-            self.dynamic_plan = dynamic.build_dynamic_actor_plan(
-                self.stats,
-                config=dynamic_plan_config,
-            )
-            print_dynamic_plan_summary(self.dynamic_plan)
-        else:
-            self.dynamic_plan = dynamic.DynamicScenePlan()
-
         area_placement = area_placement or AreaPlacementPrepareConfig()
         layout_backend = normalize_layout_backend(area_placement.layout_backend)
         self.generated_asset_prim_paths = []
@@ -125,6 +116,15 @@ class SimScene:
             self.generated_asset_prim_paths.extend(
                 self._prepare_legacy_placeholder_assets(verbose=verbose)
             )
+
+        if build_dynamic_plan:
+            self.dynamic_plan = dynamic.build_dynamic_actor_plan(
+                self.stats,
+                config=dynamic_plan_config,
+            )
+            print_dynamic_plan_summary(self.dynamic_plan)
+        else:
+            self.dynamic_plan = dynamic.DynamicScenePlan()
 
         # Generated/referenced assets can bring their own lights after the first
         # cleanup pass. Keep lighting controlled by isaac_vfx.weather.

@@ -193,6 +193,40 @@ class DynamicContractTest(unittest.TestCase):
             ["/World/ped_route", "/World/ped_spawn", "/World/ped_goal"],
         )
 
+    def test_public_space_generated_trip_dict_uses_explicit_id_and_metadata(self):
+        stats = make_stats(
+            pedestrian_routes=[
+                {
+                    "route_id": "pedestrian_trip_region_a_001",
+                    "vertices": [[0.0, 0.0, 0.0], [15.0, 0.0, 0.0], [25.0, 0.0, 0.0]],
+                    "raw_name": "pedestrian_trip_region_a_001",
+                    "index": "001",
+                    "metadata": {
+                        "source": "public_space_trip_generator",
+                        "source_region_id": "region_a",
+                        "route_generation": "walkable_graph_trip",
+                        "line_role": "trip",
+                        "length": 25.0,
+                    },
+                }
+            ],
+        )
+
+        plan = build_dynamic_actor_plan(
+            stats,
+            DynamicPlanConfig(max_pedestrian_actors=1, max_vehicle_actors=0),
+        )
+        actor = plan.actors[0]
+
+        self.assertEqual(actor.route_id, "pedestrian_trip_region_a_001")
+        self.assertEqual(actor.route_plan.route_id, "pedestrian_trip_region_a_001")
+        self.assertEqual(actor.metadata["source"], "public_space_trip_generator")
+        self.assertEqual(actor.route_plan.metadata["source_region_id"], "region_a")
+        self.assertEqual(actor.route_plan.metadata["route_generation"], "walkable_graph_trip")
+        self.assertEqual(actor.route_plan.metadata["line_role"], "trip")
+        self.assertEqual(actor.route_plan.metadata["length"], 25.0)
+        self.assertEqual(actor.route_plan.metadata["placeholder_index"], "001")
+
     def test_spawn_goal_pairs_by_placeholder_index_not_traversal_order(self):
         stats = make_stats(
             pedestrian_spawn_points=[
