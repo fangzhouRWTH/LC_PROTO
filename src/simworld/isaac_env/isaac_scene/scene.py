@@ -81,6 +81,7 @@ class SimScene:
         dynamic_plan_config: dynamic.DynamicPlanConfig | None = None,
         build_dynamic_plan: bool = True,
         dynamic_placeholder_visibility: str = "hidden",
+        placeholder_disposition: str | None = None,
         area_placement: AreaPlacementPrepareConfig | None = None,
     ):
         self.stats = parser.SceneStats()
@@ -101,12 +102,6 @@ class SimScene:
             print_dynamic_plan_summary(self.dynamic_plan)
         else:
             self.dynamic_plan = dynamic.DynamicScenePlan()
-
-        tools.apply_dynamic_placeholder_visibility(
-            self.stage,
-            self.stats,
-            visibility=dynamic_placeholder_visibility,
-        )
 
         area_placement = area_placement or AreaPlacementPrepareConfig()
         layout_backend = normalize_layout_backend(area_placement.layout_backend)
@@ -134,6 +129,13 @@ class SimScene:
         # Generated/referenced assets can bring their own lights after the first
         # cleanup pass. Keep lighting controlled by isaac_vfx.weather.
         tools.deactivate_all_lights(self.stage)
+
+        disposition = placeholder_disposition or dynamic_placeholder_visibility
+        tools.apply_placeholder_disposition(
+            self.stage,
+            self.stats,
+            disposition=disposition,
+        )
 
         return par_res
 

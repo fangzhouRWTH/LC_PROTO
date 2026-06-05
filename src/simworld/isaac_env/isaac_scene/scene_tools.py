@@ -1,3 +1,8 @@
+from engine.scene_placeholder import (
+    collect_placeholder_prim_paths,
+    normalize_placeholder_disposition,
+)
+
 from ..isaac_adaptor import isaac_context as iscctx
 
 
@@ -117,60 +122,70 @@ def extract_prim_position(prim):
 
 
 def normalize_dynamic_placeholder_visibility(value):
-    normalized = str(value or "hidden").strip().lower()
-    if normalized in {"hidden", "hide", "off", "false", "0"}:
-        return "hidden"
-    if normalized in {"visible", "show", "on", "true", "1"}:
-        return "visible"
-    raise ValueError(
-        "dynamic_placeholder_visibility must be 'hidden' or 'visible', "
-        f"got {value!r}"
-    )
+    """Backward-compatible alias for hidden/visible only."""
+    disposition = normalize_placeholder_disposition(value)
+    if disposition == "remove":
+        raise ValueError(
+            "dynamic_placeholder_visibility does not support 'remove'; "
+            "use --placeholder-disposition remove"
+        )
+    return disposition
 
 
-def apply_dynamic_placeholder_visibility(stage, stats, visibility="hidden"):
-    normalized = normalize_dynamic_placeholder_visibility(visibility)
-    visible = normalized == "visible"
-    paths = _dynamic_placeholder_paths(stats)
+def _set_imageable_visibility(prim, *, visible: bool) -> None:
+    UsdGeom = iscctx.get_isaac_context().pxr_usd_geom
+    if not prim or not prim.IsValid():
+        return
+    if not prim.IsA(UsdGeom.Imageable):
+        for child in prim.GetChildren():
+            _set_imageable_visibility(child, visible=visible)
+        return
+    imageable = UsdGeom.Imageable(prim)
+    if visible:
+        imageable.MakeVisible()
+    else:
+        imageable.MakeInvisible()
+
+
+def apply_placeholder_disposition(stage, stats, disposition="hidden"):
+    """
+    Hide, show, or remove all placeholder prims after parse/preprocess.
+
+    ``hidden`` turns off rendering via UsdGeom.Imageable invisibility (incl. subtree).
+    ``remove`` deletes placeholder prims from the stage (deepest paths first).
+    """
+    mode = normalize_placeholder_disposition(disposition)
+    paths = collect_placeholder_prim_paths(stats)
     if not paths:
+        print("[INFO] No placeholder prims to update.")
         return []
 
-    UsdGeom = iscctx.get_isaac_context().pxr_usd_geom
-    updated = []
+    updated: list[str] = []
+    if mode == "remove":
+        for prim_path in paths:
+            prim = stage.GetPrimAtPath(prim_path)
+            if not prim or not prim.IsValid():
+                continue
+            stage.RemovePrim(prim.GetPath())
+            updated.append(str(prim_path))
+        print(f"[INFO] Removed {len(updated)} placeholder prim(s) from stage.")
+        return updated
+
+    visible = mode == "visible"
     for prim_path in paths:
         prim = stage.GetPrimAtPath(prim_path)
         if not prim or not prim.IsValid():
             continue
-        imageable = UsdGeom.Imageable(prim)
-        if visible:
-            imageable.MakeVisible()
-        else:
-            imageable.MakeInvisible()
+        _set_imageable_visibility(prim, visible=visible)
         updated.append(str(prim_path))
 
     print(
-        f"[INFO] Dynamic placeholders {normalized}: "
-        f"{len(updated)} prim(s)."
+        f"[INFO] Placeholder prims {mode}: {len(updated)} prim(s) "
+        f"(rendering {'on' if visible else 'off'})."
     )
     return updated
 
 
-def _dynamic_placeholder_paths(stats):
-    paths = []
-    field_names = (
-        "pedestrian_spawn_points",
-        "pedestrian_goal_points",
-        "pedestrian_routes",
-        "vehicle_spawn_points",
-        "vehicle_goal_points",
-        "vehicle_routes",
-        "vehicle_lanes",
-        "sidewalk_areas",
-        "crosswalk_areas",
-    )
-    for field_name in field_names:
-        for placeholder in getattr(stats, field_name, []) or []:
-            prim_path = getattr(placeholder, "prim_path", "")
-            if prim_path and prim_path not in paths:
-                paths.append(prim_path)
-    return paths
+def apply_dynamic_placeholder_visibility(stage, stats, visibility="hidden"):
+    """Backward-compatible wrapper; prefer ``apply_placeholder_disposition``."""
+    return apply_placeholder_disposition(stage, stats, disposition=visibility)

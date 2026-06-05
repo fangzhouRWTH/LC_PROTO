@@ -65,6 +65,7 @@ DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS = _DEFAULT_DYNAMIC_PLAN_CONFIG.vehicle_speed_m
 DEFAULT_DYNAMIC_SPAWN_TIME_S = _DEFAULT_DYNAMIC_PLAN_CONFIG.default_spawn_time_s
 DEFAULT_DYNAMIC_ROUTE_MODE = _DEFAULT_DYNAMIC_PLAN_CONFIG.default_route_mode
 DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY = "hidden"
+DEFAULT_PLACEHOLDER_DISPOSITION = None
 DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL = "proxy"
 DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_PATH = ""
 DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_SCALE = 1.0
@@ -115,6 +116,7 @@ class SimulationConfig:
     dynamic_spawn_time_s: float = DEFAULT_DYNAMIC_SPAWN_TIME_S
     dynamic_route_mode: str = DEFAULT_DYNAMIC_ROUTE_MODE
     dynamic_placeholder_visibility: str = DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY
+    placeholder_disposition: str | None = None
     dynamic_pedestrian_visual: str = DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL
     dynamic_pedestrian_asset_path: str = DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_PATH
     dynamic_pedestrian_asset_scale: float = DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_SCALE
@@ -342,6 +344,7 @@ def run(config: SimulationConfig | None = None):
             dynamic_plan_config=dynamic_plan_config,
             build_dynamic_plan=config.enable_dynamic_agents,
             dynamic_placeholder_visibility=config.dynamic_placeholder_visibility,
+            placeholder_disposition=config.placeholder_disposition,
             area_placement=_make_area_placement_config(config),
         )
 

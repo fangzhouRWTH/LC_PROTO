@@ -95,6 +95,7 @@ class SceneStats:
     )
     public_space_parse_warnings: list[str] = field(default_factory=list)
     skipped_dynamic_placeholders: list[str] = field(default_factory=list)
+    placeholder_prim_paths: list[str] = field(default_factory=list)
 
     visited: int = 0
     matched: int = 0
@@ -210,6 +211,12 @@ def make_placeholder_path(prim, info: "PrimNameInfo"):
         category=info.category,
         index=info.index,
     )
+
+
+def record_placeholder_prim(stats: SceneStats, prim) -> None:
+    prim_path = str(prim.GetPath())
+    if prim_path and prim_path not in stats.placeholder_prim_paths:
+        stats.placeholder_prim_paths.append(prim_path)
 
 
 def record_dynamic_placeholder_skip(
@@ -753,6 +760,9 @@ def process_stage_by_naming_rules(
         if info is None:
             stats.invalid_name += 1
             continue
+
+        if info.mobility == "placeholder":
+            record_placeholder_prim(stats, prim)
 
         matched_any = False
 

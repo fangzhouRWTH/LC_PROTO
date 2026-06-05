@@ -111,6 +111,16 @@ def parse_args():
         "--dynamic-placeholder-visibility",
         default=simulation.DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY,
         choices=("hidden", "visible"),
+        help="Legacy alias for --placeholder-disposition (hidden|visible only).",
+    )
+    parser.add_argument(
+        "--placeholder-disposition",
+        default=None,
+        choices=("hidden", "visible", "remove"),
+        help=(
+            "After preprocess: hide all placeholder prims (default), keep visible, "
+            "or remove them from the stage."
+        ),
     )
     parser.add_argument(
         "--dynamic-pedestrian-visual",
@@ -328,6 +338,7 @@ if __name__ == "__main__":
             dynamic_spawn_time_s=args.dynamic_spawn_time_s,
             dynamic_route_mode=args.dynamic_route_mode,
             dynamic_placeholder_visibility=args.dynamic_placeholder_visibility,
+            placeholder_disposition=args.placeholder_disposition,
             dynamic_pedestrian_visual=args.dynamic_pedestrian_visual,
             dynamic_pedestrian_asset_path=args.dynamic_pedestrian_asset_path,
             dynamic_pedestrian_asset_scale=args.dynamic_pedestrian_asset_scale,
