@@ -1,0 +1,104 @@
+{
+  "base_placement_plan_json": "outputs/area_placement/demo_tencent_scene_regions/placement_output.json",
+  "demo_people_config": "configs/demo_people/tencent_dynamic_people_scenarios.json",
+  "output_dir": "configs/demo_people/generated",
+  "preset_prefix": "tencent",
+  "scenarios": [
+    {
+      "scenario": "people_1",
+      "output_path": "configs/demo_people/generated/tencent_people_1_placement_plan.json",
+      "placement_count": 87,
+      "pedestrian_route_count": 6,
+      "walkable_line_count": 32,
+      "collision_rehearsal": {
+        "enabled": true,
+        "unresolved_conflict_count": 0,
+        "inserted_detour_count": 1,
+        "delayed_route_count": 0,
+        "max_applied_delay_s": 0.0,
+        "min_separation_m": 0.42
+      },
+      "warnings": []
+    },
+    {
+      "scenario": "people_2",
+      "output_path": "configs/demo_people/generated/tencent_people_2_placement_plan.json",
+      "placement_count": 87,
+      "pedestrian_route_count": 10,
+      "walkable_line_count": 32,
+      "collision_rehearsal": {
+        "enabled": true,
+        "unresolved_conflict_count": 3,
+        "inserted_detour_count": 2,
+        "delayed_route_count": 1,
+        "max_applied_delay_s": 8.0,
+        "min_separation_m": 0.24
+      },
+      "warnings": []
+    },
+    {
+      "scenario": "people_3",
+      "output_path": "configs/demo_people/generated/tencent_people_3_placement_plan.json",
+      "placement_count": 87,
+      "pedestrian_route_count": 16,
+      "walkable_line_count": 32,
+      "collision_rehearsal": {
+        "enabled": true,
+        "unresolved_conflict_count": 2,
+        "inserted_detour_count": 7,
+        "delayed_route_count": 1,
+        "max_applied_delay_s": 8.0,
+        "min_separation_m": 0.28
+      },
+      "warnings": []
+    },
+    {
+      "scenario": "people_4",
+      "output_path": "configs/demo_people/generated/tencent_people_4_placement_plan.json",
+      "placement_count": 87,
+      "pedestrian_route_count": 22,
+      "walkable_line_count": 32,
+      "collision_rehearsal": {
+        "enabled": true,
+        "unresolved_conflict_count": 0,
+        "inserted_detour_count": 12,
+        "delayed_route_count": 1,
+        "max_applied_delay_s": 2.4,
+        "min_separation_m": 0.2
+      },
+      "warnings": []
+    },
+    {
+      "scenario": "people_5",
+      "output_path": "configs/demo_people/generated/tencent_people_5_placement_plan.json",
+      "placement_count": 87,
+      "pedestrian_route_count": 30,
+      "walkable_line_count": 32,
+      "collision_rehearsal": {
+        "enabled": true,
+        "unresolved_conflict_count": 0,
+        "inserted_detour_count": 10,
+        "delayed_route_count": 1,
+        "max_applied_delay_s": 0.3,
+        "min_separation_m": 0.16
+      },
+      "warnings": []
+    },
+    {
+      "scenario": "people_6",
+      "output_path": "configs/demo_people/generated/tencent_people_6_placement_plan.json",
+      "placement_count": 87,
+      "pedestrian_route_count": 40,
+      "walkable_line_count": 32,
+      "collision_rehearsal": {
+        "enabled": true,
+        "unresolved_conflict_count": 3,
+        "inserted_detour_count": 12,
+        "delayed_route_count": 5,
+        "max_applied_delay_s": 8.0,
+        "min_separation_m": 0.14
+      },
+      "warnings": []
+    }
+  ]
+}

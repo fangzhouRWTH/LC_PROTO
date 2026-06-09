@@ -26,6 +26,51 @@ The generated preview and placement plan are local outputs and can be regenerate
 | Correct USD-scene-derived plan | `outputs/area_placement/demo_tencent_scene_regions/placement_output.json` |
 | Correct route preview HTML | `outputs/public_space_routes/demo_tencent_scene_region_trips.html` |
 
+## Isaac People Runtime Requirements
+
+Dynamic pedestrian animation is not fully self-contained in this repository. The demo uses Isaac Sim People runtime for character assets, animation graphs, and walk clips.
+
+Each machine must have an Isaac Sim Python launcher available. Set one of these if the launcher is not in the script default search paths:
+
+```bash
+export ISAAC_PYTHON=/path/to/IsaacSim/_build/linux-x86_64/release/python.sh
+# or
+export ISAACSIM_ROOT=/path/to/IsaacSim/_build/linux-x86_64/release
+```
+
+Each machine must also have the Isaac People asset pack installed locally. Set `ISAAC_ASSET_ROOT` to the asset root, not to the `Isaac/People` subdirectory:
+
+```bash
+export ISAAC_ASSET_ROOT=/path/to/isaacsim_assets/Assets/Isaac/5.1
+```
+
+The following files are the minimum smoke-check targets:
+
+```text
+$ISAAC_ASSET_ROOT/Isaac/People/Characters/Biped_Setup.usd
+$ISAAC_ASSET_ROOT/Isaac/People/Characters/F_Business_02/F_Business_02.usd
+$ISAAC_ASSET_ROOT/Isaac/People/Animations/stand_walk_loop_in_place.skelanim.usd
+```
+
+On this workstation the working paths are:
+
+```text
+ISAAC_PYTHON=/home/sstormw/IsaacSim/_build/linux-x86_64/release/python.sh
+ISAAC_ASSET_ROOT=/home/sstormw/isaacsim_assets/Assets/Isaac/5.1
+```
+
+The runtime enables Isaac People and animation extensions in code, including `omni.anim.people`, `omni.anim.graph.*`, `omni.anim.navigation.*`, and `isaacsim.replicator.agent.core`. If these extensions are missing from a coworker Isaac install, characters may fail to load even if the LC_PROTO Python code is present.
+
+Expected successful log signs:
+
+- `Isaac People asset root: .../isaacsim_assets/Assets/Isaac/5.1`
+- `Isaac People control mode: route`
+- `Isaac People navigation mode: direct route`
+- `Spawned N Isaac People animated pedestrian actor(s).`
+- With `DYNAMIC_ISAAC_PEOPLE_DEBUG=true`, route frame logs should show nonzero movement.
+
+If the log says no character USD was found, or if `Spawned 0 Isaac People animated pedestrian actor(s).` appears, first check `ISAAC_ASSET_ROOT` and the files listed above. `dynamic_people_commands.txt` under `/tmp/lc_proto_dynamic_people/` is not the main dependency in route-control mode; it is intentionally empty for the current direct-route demo path.
+
 ## Correct Tencent Flow
 
 The expected data flow is:
@@ -42,6 +87,85 @@ demo_tencent_test_simplified.usdc
 ```
 
 Use `DYNAMIC_ROUTE_MODE=once` when the desired behavior is that a pedestrian disappears at the end of a trip. Use `loop` only for continuous route inspection.
+
+## Tencent Demo People Scenarios
+
+For the short-term Tencent pedestrian demo, use the explicit demo scenario config:
+
+```text
+configs/demo_people/tencent_dynamic_people_scenarios.json
+```
+
+The scenario names are literal visible-person counts:
+
+| Scenario | Visible pedestrians | Notes |
+| --- | ---: | --- |
+| `people_1` | 6 | sparse, easiest visual sanity check |
+| `people_2` | 10 | light foot traffic |
+| `people_3` | 16 | default demo density |
+| `people_4` | 22 | busy but still readable |
+| `people_5` | 30 | dense demo crowd |
+| `people_6` | 40 | maximum current crowd preset |
+
+These presets are demo-only. For the short-term demo, the six final route sets are precomputed and checked in under:
+
+```text
+configs/demo_people/generated/tencent_people_1_placement_plan.json
+configs/demo_people/generated/tencent_people_2_placement_plan.json
+configs/demo_people/generated/tencent_people_3_placement_plan.json
+configs/demo_people/generated/tencent_people_4_placement_plan.json
+configs/demo_people/generated/tencent_people_5_placement_plan.json
+configs/demo_people/generated/tencent_people_6_placement_plan.json
+```
+
+The static plans include fixed-asset placements plus the final demo `pedestrian_routes`. Runtime does not rerun route generation, collision rehearsal, or local detour insertion when `scripts/run_demo_tencent_dynamic_people.sh` is used with its defaults. It only chooses the precomputed plan matching `DEMO_PEOPLE_SCENARIO`.
+
+The offline generator that produced these plans keeps the main public-space output intact, then postprocesses `pedestrian_walkable_lines` into longer demo routes. Each actor has deterministic values for:
+
+- `offset_m`: lateral route offset, using uneven left/right candidates instead of one fixed lane width
+- `start_offset_m`: distance trimmed from the route start, so actors can spawn along the route body instead of only at graph endpoints
+- `speed_mps`: per-actor walking speed
+- `spawn_time_s`: staggered spawn time
+- `collision_rehearsal_detours`: optional local bend points inserted around near-collision locations
+
+Run Isaac with the wrapper script:
+
+```bash
+DEMO_PEOPLE_SCENARIO=people_6 \
+DYNAMIC_ISAAC_PEOPLE_DEBUG=true \
+scripts/run_demo_tencent_dynamic_people.sh
+```
+
+The wrapper defaults to `DEMO_PEOPLE_SCENARIO=people_3`, `DEMO_PEOPLE_USE_STATIC_PLAN=true`, `DYNAMIC_ROUTE_MODE=once`, and `DYNAMIC_MAX_PEDESTRIAN_ACTORS=40`. It does not pass external `asset_configuration/` and does not pass `--demo-people-config` unless `DEMO_PEOPLE_USE_STATIC_PLAN=false` is explicitly set.
+
+Render the same demo-selected routes without launching Isaac:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src/simworld \
+scripts/visualize_public_space_routes.py \
+  --placement-plan-json configs/demo_people/generated/tencent_people_6_placement_plan.json \
+  --output outputs/public_space_routes/fixed/demo_tencent_people_6_static.html \
+  --show-walkable-lines \
+  --show-zones \
+  --color-by status \
+  --labels region
+```
+
+Latest fixed-plan previews generated all six requested counts with no scenario warnings: `6 / 10 / 16 / 22 / 30 / 40`. The fixed plans also record the offline collision-rehearsal summary in `demo_people_scenario_debug.collision_rehearsal`. The rehearsal inserts local bend points and small spawn delays where possible, but the current Tencent demo presets can still contain a few residual close passes in dense street segments.
+
+To regenerate fixed presets for a different parcel, first produce a clean/main placement plan for that parcel. For USD-scene-derived regions this is typically the `placement_output.json` produced by area placement before applying demo people presets. Then run:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 \
+scripts/build_demo_people_static_presets.py \
+  --base-placement-plan-json outputs/area_placement/<new_parcel_base>/placement_output.json \
+  --demo-people-config configs/demo_people/tencent_dynamic_people_scenarios.json \
+  --output-dir configs/demo_people/generated \
+  --preset-prefix tencent \
+  --summary-json configs/demo_people/generated/tencent_static_preset_summary.json
+```
+
+The command writes six fixed placement plans. After that, runtime still only chooses by `DEMO_PEOPLE_SCENARIO`; it does not rerun the rehearsal. If the new parcel should keep both old and new presets, use a different `--preset-prefix` and set `DEMO_PEOPLE_PLACEMENT_PLAN` or `DEMO_PEOPLE_PRESET_DIR` in the wrapper script environment.
 
 ## HTML Preview
 

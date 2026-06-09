@@ -315,8 +315,46 @@ class IsaacPeopleBackendTest(unittest.TestCase):
         )
         actor = backend.actors[0]
 
-        self.assertFalse(backend._should_hide_actor_at_distance(actor, 0.99))
-        self.assertTrue(backend._should_hide_actor_at_distance(actor, 1.0))
+        self.assertFalse(backend._should_hide_actor_at_distance(actor, 0.94))
+        self.assertTrue(backend._should_hide_actor_at_distance(actor, 0.95))
+
+    def test_route_control_once_hides_with_epsilon_before_exact_end(self):
+        backend = IsaacPeopleDynamicAgentBackend(control_mode="route")
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor("pedestrian_001", "pedestrian", [(0, 0, 0), (1, 0, 0)]),
+                ]
+            )
+        )
+        actor = backend.actors[0]
+
+        self.assertFalse(backend._should_hide_actor_at_distance(actor, 0.94))
+        self.assertTrue(backend._should_hide_actor_at_distance(actor, 0.95))
+
+    def test_route_control_hidden_actor_skips_pose_and_animation_update(self):
+        backend = IsaacPeopleDynamicAgentBackend(control_mode="route")
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor("pedestrian_001", "pedestrian", [(0, 0, 0), (1, 0, 0)]),
+                ]
+            )
+        )
+        actor = backend.actors[0]
+        actor.loaded = True
+        actor.translate_op = object()
+        actor.orient_op = object()
+        calls = []
+        backend._advance_people_timeline_frame = lambda _dt: None
+        backend._ensure_actor_transform_ops = lambda _actor: None
+        backend._apply_actor_pose = lambda *_args: calls.append("pose")
+        backend._set_walk_animation = lambda *_args, **_kwargs: calls.append("anim")
+        backend._set_actor_visible = lambda _actor, visible: calls.append(("visible", visible))
+
+        backend.step(1.0)
+
+        self.assertEqual(calls, [("visible", False)])
 
     def test_route_control_once_hide_transition_logs_once_in_debug_mode(self):
         backend = IsaacPeopleDynamicAgentBackend(control_mode="route", debug_enabled=True)

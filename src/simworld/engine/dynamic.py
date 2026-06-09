@@ -291,6 +291,23 @@ def _route_metadata_for_placeholder(route_placeholder: Any) -> dict[str, Any]:
     return metadata
 
 
+def _metadata_float(metadata: dict[str, Any], key: str, fallback: float) -> float:
+    try:
+        value = metadata.get(key)
+        if value is None or str(value).strip() == "":
+            return float(fallback)
+        return float(value)
+    except (TypeError, ValueError):
+        return float(fallback)
+
+
+def _metadata_string(metadata: dict[str, Any], key: str, fallback: str) -> str:
+    value = metadata.get(key)
+    if value is None or str(value).strip() == "":
+        return str(fallback)
+    return str(value)
+
+
 def _distance_between(a: Vec3, b: Vec3) -> float:
     return (
         (b[0] - a[0]) ** 2
@@ -533,14 +550,17 @@ def _append_route_actor(
     )
     route_id = _route_id_for_placeholder(actor_id, actor_type, route_placeholder)
     metadata = _route_metadata_for_placeholder(route_placeholder)
+    actor_speed_mps = _metadata_float(metadata, "speed_mps", speed_mps)
+    actor_spawn_time_s = _metadata_float(metadata, "spawn_time_s", spawn_time_s)
+    actor_route_mode = _metadata_string(metadata, "route_mode", route_mode)
 
     plan.actors.append(
         DynamicActorPlan(
             actor_id=actor_id,
             actor_type=actor_type,
             route=route,
-            speed_mps=float(speed_mps),
-            spawn_time_s=float(spawn_time_s),
+            speed_mps=float(actor_speed_mps),
+            spawn_time_s=float(actor_spawn_time_s),
             source_prim_paths=source_prim_paths,
             despawn_time_s=None,
             spawn_pose=DynamicPose(position=route[0]),
@@ -551,10 +571,10 @@ def _append_route_actor(
                 source_prim_paths,
                 metadata=metadata,
                 lane_ids=lane_ids,
-                route_mode=route_mode,
+                route_mode=actor_route_mode,
             ),
             route_id=route_id,
-            speed_profile=_make_speed_profile(speed_mps),
+            speed_profile=_make_speed_profile(actor_speed_mps),
             shape=_copy_actor_shape(shape),
             asset_category=actor_type,
             metadata=metadata,
