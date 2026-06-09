@@ -313,6 +313,17 @@ def parse_args():
             "from placeholder_area_* prims."
         ),
     )
+    parser.add_argument(
+        "--demo-people-config",
+        type=pathlib.Path,
+        default=simulation.DEFAULT_DEMO_PEOPLE_CONFIG,
+        help="Optional demo-only people scenario config JSON.",
+    )
+    parser.add_argument(
+        "--demo-people-scenario",
+        default=simulation.DEFAULT_DEMO_PEOPLE_SCENARIO,
+        help="Scenario name from --demo-people-config, e.g. people_1, people_3, people_6.",
+    )
     args, _ = parser.parse_known_args()
     return args
 
@@ -370,5 +381,7 @@ if __name__ == "__main__":
             public_space_dummy_size_m=args.public_space_dummy_size_m,
             public_space_asset_name_map=args.public_space_asset_name_map,
             skip_legacy_placeholder_areas=args.skip_legacy_placeholder_areas,
+            demo_people_config=args.demo_people_config,
+            demo_people_scenario=args.demo_people_scenario,
         )
     )

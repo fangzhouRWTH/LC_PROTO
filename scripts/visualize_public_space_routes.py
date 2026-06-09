@@ -16,6 +16,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src" / "simworld"))
 
 from engine import area_placement_bridge  # noqa: E402
+from engine.demo_pedestrian_scenarios import apply_demo_people_scenario_from_file  # noqa: E402
 
 DEFAULT_OUTPUT = REPO_ROOT / "outputs" / "public_space_routes" / "pedestrian_routes.html"
 DEFAULT_STEPS = [1, 2, 3, 4, 5]
@@ -60,6 +61,8 @@ class RouteRecord:
     length_m: float
     vertices: list[tuple[float, float, float]]
     status: str
+    offset_m: float | None = None
+    scenario: str = ""
 
 
 @dataclass(frozen=True)
@@ -114,6 +117,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=None,
         help="Optional path to save the generated/loaded placement plan JSON.",
+    )
+    parser.add_argument(
+        "--demo-people-config",
+        type=Path,
+        default=None,
+        help="Optional demo-only people scenario config JSON to postprocess routes.",
+    )
+    parser.add_argument(
+        "--demo-people-scenario",
+        default=None,
+        help="Scenario name from --demo-people-config, e.g. people_1, people_3, people_6.",
     )
     parser.add_argument(
         "--steps",
@@ -175,18 +189,26 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def load_plan_from_args(args: argparse.Namespace) -> dict[str, Any]:
     if args.placement_plan_json is not None:
         with args.placement_plan_json.expanduser().open(encoding="utf-8") as handle:
-            return json.load(handle)
+            plan = json.load(handle)
+    else:
+        steps = parse_steps(args.steps)
+        plan = area_placement_bridge.build_combined_placement_plan(
+            args.region_input_json,
+            steps=steps,
+            pedestrian_trip_min_length_m=float(args.min_trip_length),
+            pedestrian_trip_target_length_m=float(args.target_trip_length),
+            pedestrian_trip_max_length_m=float(args.max_trip_length),
+            pedestrian_node_merge_tolerance_m=float(args.node_merge_tolerance),
+            max_pedestrian_trips_per_region=int(args.max_trips_per_region),
+        )
 
-    steps = parse_steps(args.steps)
-    return area_placement_bridge.build_combined_placement_plan(
-        args.region_input_json,
-        steps=steps,
-        pedestrian_trip_min_length_m=float(args.min_trip_length),
-        pedestrian_trip_target_length_m=float(args.target_trip_length),
-        pedestrian_trip_max_length_m=float(args.max_trip_length),
-        pedestrian_node_merge_tolerance_m=float(args.node_merge_tolerance),
-        max_pedestrian_trips_per_region=int(args.max_trips_per_region),
-    )
+    if args.demo_people_config is not None:
+        plan = apply_demo_people_scenario_from_file(
+            plan,
+            args.demo_people_config.expanduser(),
+            scenario_name=args.demo_people_scenario,
+        )
+    return plan
 
 
 def parse_steps(value: str | None) -> list[int]:
@@ -251,6 +273,8 @@ def route_records_from_plan(
                 length_m=length_m,
                 vertices=vertices,
                 status=route_status(length_m, config),
+                offset_m=_metadata_float_or_none(metadata.get("offset_m")),
+                scenario=str(metadata.get("scenario") or ""),
             )
         )
         if max_routes > 0 and len(records) >= max_routes:
@@ -347,6 +371,15 @@ def route_length(vertices: list[tuple[float, float, float]]) -> float:
             + (b[2] - a[2]) ** 2
         )
     return length
+
+
+def _metadata_float_or_none(value: Any) -> float | None:
+    try:
+        if value is None or str(value).strip() == "":
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def route_status(length_m: float, config: dict[str, float]) -> str:
@@ -609,6 +642,7 @@ def render_route_group(
     title = html.escape(
         f"{route.route_id}\nregion: {route.region_id}\nstatus: {route.status}"
         f"\nrole: {route.line_role}\nlength: {route.length_m:.2f} m"
+        f"\nscenario: {route.scenario or '-'}\noffset: {_format_offset(route.offset_m)}"
     )
     start = points[0]
     end = points[-1]
@@ -880,6 +914,7 @@ def build_html(
             <th>region</th>
             <th>status</th>
             <th>m</th>
+            <th>offset</th>
           </tr>
         </thead>
         <tbody>
@@ -893,6 +928,12 @@ def build_html(
 """
 
 
+def _format_offset(offset_m: float | None) -> str:
+    if offset_m is None:
+        return "-"
+    return f"{offset_m:.2f}m"
+
+
 def render_route_row(index: int, route: RouteRecord) -> str:
     return (
         f'<tr class="status-{html.escape(route.status)}">'
@@ -901,6 +942,7 @@ def render_route_row(index: int, route: RouteRecord) -> str:
         f"<td>{html.escape(route.region_id)}</td>"
         f"<td>{html.escape(route.status)}</td>"
         f"<td>{route.length_m:.1f}</td>"
+        f"<td>{html.escape(_format_offset(route.offset_m))}</td>"
         "</tr>"
     )
 

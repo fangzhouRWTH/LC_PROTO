@@ -42,6 +42,7 @@ ISAAC_PEOPLE_DEBUG_ENV = "DYNAMIC_ISAAC_PEOPLE_DEBUG"
 DEFAULT_ISAAC_PEOPLE_NAVMESH_ENABLED = False
 DEFAULT_ISAAC_PEOPLE_CONTROL_MODE = "route"
 DEFAULT_ROUTE_ANIM_HANDLE_WARMUP_FRAMES = 180
+ROUTE_END_HIDE_EPSILON_M = 0.05
 PEOPLE_EXTENSIONS = (
     "omni.kit.scripting",
     "omni.anim.timeline",
@@ -267,17 +268,21 @@ class IsaacPeopleDynamicAgentBackend:
             travel_time_s = max(0.0, actor.elapsed_s - actor.plan.spawn_time_s)
             raw_distance = travel_time_s * max(0.0, float(actor.plan.speed_mps))
             distance = self._distance_along_route(raw_distance, actor.total_length, actor.route_mode)
-            position, yaw = self._pose_at_distance(actor, distance)
             hidden = self._should_hide_actor_at_distance(actor, raw_distance)
+            if hidden:
+                self._set_actor_visible(actor, False)
+                continue
+
+            position, yaw = self._pose_at_distance(actor, distance)
             moving = _route_walk_animation_should_move(
                 actor,
                 raw_distance=raw_distance,
                 travel_time_s=travel_time_s,
-                hidden=hidden,
+                hidden=False,
             )
 
             self._apply_actor_pose(actor, position, yaw)
-            self._set_actor_visible(actor, not hidden)
+            self._set_actor_visible(actor, True)
             self._debug_route_progress(actor, position)
             if not actor.walk_clip_bound:
                 self._set_walk_animation(actor, moving=moving, position=position, distance=distance)
@@ -719,7 +724,8 @@ class IsaacPeopleDynamicAgentBackend:
         return raw_distance % total_length
 
     def _should_hide_actor_at_distance(self, actor: IsaacPeopleActorRuntime, raw_distance: float) -> bool:
-        return _is_stop_at_end_mode(actor.route_mode) and raw_distance >= actor.total_length
+        threshold = max(0.0, actor.total_length - ROUTE_END_HIDE_EPSILON_M)
+        return _is_stop_at_end_mode(actor.route_mode) and raw_distance >= threshold
 
     def _set_walk_animation(
         self,

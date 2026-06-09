@@ -94,6 +94,8 @@ DEFAULT_USE_DUMMY_PUBLIC_SPACE_ASSETS = True
 DEFAULT_PUBLIC_SPACE_DUMMY_SIZE_M = 0.5
 DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP = None
 DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS = True
+DEFAULT_DEMO_PEOPLE_CONFIG = None
+DEFAULT_DEMO_PEOPLE_SCENARIO = None
 
 
 @dataclass
@@ -153,6 +155,8 @@ class SimulationConfig:
     public_space_dummy_size_m: float = DEFAULT_PUBLIC_SPACE_DUMMY_SIZE_M
     public_space_asset_name_map: pathlib.Path | None = DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP
     skip_legacy_placeholder_areas: bool = DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS
+    demo_people_config: pathlib.Path | None = DEFAULT_DEMO_PEOPLE_CONFIG
+    demo_people_scenario: str | None = DEFAULT_DEMO_PEOPLE_SCENARIO
 
 
 def available_robot_types() -> tuple[str, ...]:
@@ -189,6 +193,8 @@ def _make_area_placement_config(config: SimulationConfig) -> AreaPlacementPrepar
         dummy_size_m=float(config.public_space_dummy_size_m),
         asset_name_map_path=config.public_space_asset_name_map,
         skip_legacy_placeholder_areas=config.skip_legacy_placeholder_areas,
+        demo_people_config_path=config.demo_people_config,
+        demo_people_scenario=config.demo_people_scenario,
     )
 
 

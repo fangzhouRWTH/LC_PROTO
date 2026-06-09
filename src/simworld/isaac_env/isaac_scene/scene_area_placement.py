@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 
 from engine import area_placement_bridge, placement
 from engine.area_placement_bridge import normalize_layout_backend
+from engine.demo_pedestrian_scenarios import apply_demo_people_scenario_from_file
 
 from . import scene_generator as generator
 from . import scene_parser as parser
@@ -28,6 +29,8 @@ class AreaPlacementPrepareConfig:
     dummy_size_m: float = 0.5
     asset_name_map_path: pathlib.Path | None = None
     skip_legacy_placeholder_areas: bool = True
+    demo_people_config_path: pathlib.Path | None = None
+    demo_people_scenario: str | None = None
 
 
 @dataclass
@@ -77,6 +80,7 @@ def apply_area_placement_layout(
 
     result = AreaPlacementPrepareResult()
     steps = [int(value) for value in area_config.layout_steps]
+    should_write_plan = area_config.layout_output_dir is not None
 
     if area_config.placement_plan_path is not None:
         plan = load_placement_output_json(area_config.placement_plan_path)
@@ -85,22 +89,12 @@ def apply_area_placement_layout(
             area_config.region_input_path,
             steps=steps,
         )
-        if area_config.layout_output_dir is not None:
-            area_placement_bridge.write_json(
-                area_config.layout_output_dir / "placement_output.json",
-                plan,
-            )
     elif stats.public_space_regions:
         try:
             plan = build_placement_plan_from_parsed_regions(stats, steps=steps)
         except ValueError as exc:
             result.warnings.append(str(exc))
             return result
-        if area_config.layout_output_dir is not None:
-            area_placement_bridge.write_json(
-                area_config.layout_output_dir / "placement_output.json",
-                plan,
-            )
         if verbose:
             isolated = area_placement_bridge.layout_subprocess_enabled()
             mode = "subprocess" if isolated else "in-process"
@@ -116,6 +110,19 @@ def apply_area_placement_layout(
             "skipping public-space placement."
         )
         return result
+
+    if area_config.demo_people_config_path is not None:
+        plan = apply_demo_people_scenario_from_file(
+            plan,
+            area_config.demo_people_config_path,
+            scenario_name=area_config.demo_people_scenario,
+        )
+
+    if should_write_plan:
+        area_placement_bridge.write_json(
+            area_config.layout_output_dir / "placement_output.json",
+            plan,
+        )
 
     _inject_public_space_flow_records(
         stats=stats,

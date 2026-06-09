@@ -227,6 +227,39 @@ class DynamicContractTest(unittest.TestCase):
         self.assertEqual(actor.route_plan.metadata["length"], 25.0)
         self.assertEqual(actor.route_plan.metadata["placeholder_index"], "001")
 
+    def test_route_metadata_can_override_speed_spawn_and_mode(self):
+        stats = make_stats(
+            pedestrian_routes=[
+                {
+                    "route_id": "demo_people_busy_001",
+                    "vertices": [[0.0, 0.0, 0.0], [10.0, 0.0, 0.0]],
+                    "metadata": {
+                        "source": "demo_people_scenario",
+                        "speed_mps": 1.25,
+                        "spawn_time_s": 0.75,
+                        "route_mode": "once",
+                    },
+                }
+            ],
+        )
+
+        plan = build_dynamic_actor_plan(
+            stats,
+            DynamicPlanConfig(
+                max_pedestrian_actors=1,
+                max_vehicle_actors=0,
+                pedestrian_speed_mps=0.8,
+                default_spawn_time_s=3.0,
+                default_route_mode="loop",
+            ),
+        )
+        actor = plan.actors[0]
+
+        self.assertEqual(actor.speed_mps, 1.25)
+        self.assertEqual(actor.spawn_time_s, 0.75)
+        self.assertEqual(actor.speed_profile.target_speed_mps, 1.25)
+        self.assertEqual(actor.route_plan.route_mode, "once")
+
     def test_spawn_goal_pairs_by_placeholder_index_not_traversal_order(self):
         stats = make_stats(
             pedestrian_spawn_points=[
