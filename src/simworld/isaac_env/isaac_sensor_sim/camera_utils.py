@@ -18,6 +18,16 @@ def get_active_viewport():
         return None
 
 
+def get_active_viewport_camera_prim_path() -> str | None:
+    viewport = get_active_viewport()
+    if viewport is None:
+        return None
+    camera_prim_path = getattr(viewport, "camera_path", None)
+    if not camera_prim_path:
+        return None
+    return str(camera_prim_path)
+
+
 def set_active_viewport_camera(camera_prim_path: str) -> bool:
     try:
         from isaacsim.core.utils.viewports import set_active_viewport_camera
@@ -275,6 +285,85 @@ def set_camera_look_at(
         return True
     except Exception:
         return False
+
+
+def get_viewport_camera_pose(
+    camera_prim_path: str,
+) -> tuple[np.ndarray, np.ndarray] | None:
+    viewport = get_active_viewport()
+    if viewport is None:
+        return None
+
+    try:
+        from omni.kit.viewport.utility.camera_state import ViewportCameraState
+
+        camera_state = ViewportCameraState(camera_prim_path, viewport)
+        eye = camera_state.position_world
+        target = camera_state.target_world
+        return (
+            np.asarray([float(eye[0]), float(eye[1]), float(eye[2])], dtype=np.double),
+            np.asarray([float(target[0]), float(target[1]), float(target[2])], dtype=np.double),
+        )
+    except Exception:
+        return None
+
+
+def set_camera_position_world(
+    *,
+    position: tuple[float, float, float] | list[float] | np.ndarray,
+    camera_prim_path: str,
+) -> bool:
+    """Move the viewport camera without changing its current orientation."""
+    viewport = get_active_viewport()
+    if viewport is None:
+        return False
+
+    try:
+        from omni.kit.viewport.utility.camera_state import ViewportCameraState
+
+        from ..isaac_adaptor import isaac_context as iscctx
+
+        Gf = iscctx.get_isaac_context().pxr_gf
+        camera_state = ViewportCameraState(camera_prim_path, viewport)
+        point = np.asarray(position, dtype=np.double)
+        camera_state.set_position_world(
+            Gf.Vec3d(float(point[0]), float(point[1]), float(point[2])),
+            True,
+        )
+        return True
+    except Exception:
+        return False
+
+
+def set_camera_position_preserve_orientation(
+    *,
+    position: tuple[float, float, float] | list[float] | np.ndarray,
+    camera_prim_path: str,
+) -> bool:
+    """Move the viewport camera while preserving its current look direction."""
+    pose = get_viewport_camera_pose(camera_prim_path)
+    if pose is None:
+        return set_camera_position_world(
+            position=position,
+            camera_prim_path=camera_prim_path,
+        )
+
+    current_eye, current_target = pose
+    look_offset = current_target - current_eye
+    offset_length = float(np.linalg.norm(look_offset))
+    if offset_length < 1e-8:
+        return set_camera_position_world(
+            position=position,
+            camera_prim_path=camera_prim_path,
+        )
+
+    new_eye = np.asarray(position, dtype=np.double)
+    new_target = new_eye + look_offset
+    return set_camera_look_at(
+        eye=new_eye,
+        target=new_target,
+        camera_prim_path=camera_prim_path,
+    )
 
 
 def ensure_xform_path(stage, prim_path: str, UsdGeom) -> None:

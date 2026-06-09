@@ -76,6 +76,7 @@ class SceneStats:
     pedestrian_goal_points: list[PlaceholderPoint] = field(default_factory=list)
     pedestrian_routes: list[PlaceholderPath] = field(default_factory=list)
     pedestrian_zones: list[PlaceholderArea] = field(default_factory=list)
+    camera_paths: list[PlaceholderPath] = field(default_factory=list)
 
     vehicle_spawn_points: list[PlaceholderPoint] = field(default_factory=list)
     vehicle_goal_points: list[PlaceholderPoint] = field(default_factory=list)
@@ -413,6 +414,12 @@ def record_pedestrian_route(prim, info: PrimNameInfo, stats: SceneStats):
         stats.pedestrian_routes.append(path)
 
 
+def record_camera_path(prim, info: PrimNameInfo, stats: SceneStats):
+    path = try_make_placeholder_path(prim, info, stats)
+    if path is not None:
+        stats.camera_paths.append(path)
+
+
 def record_pedestrian_zone(prim, info: PrimNameInfo, stats: SceneStats):
     area = try_make_placeholder_area(prim, info, stats)
     if area is not None:
@@ -664,6 +671,13 @@ PROCESSING_RULES = [
         actions=[record_pedestrian_route],
     ),
     ProcessingRule(
+        name="placeholder camera path",
+        mobility="placeholder",
+        domain="path",
+        category="camera",
+        actions=[record_camera_path],
+    ),
+    ProcessingRule(
         name="placeholder pedestrian zone",
         mobility="placeholder",
         domain="pedestrian",
@@ -803,6 +817,7 @@ def print_stage_processing_stats(stats: SceneStats):
         "Pedestrian goals": len(stats.pedestrian_goal_points),
         "Pedestrian routes": len(stats.pedestrian_routes),
         "Pedestrian zones": len(stats.pedestrian_zones),
+        "Camera paths": len(stats.camera_paths),
         "Vehicle spawns": len(stats.vehicle_spawn_points),
         "Vehicle goals": len(stats.vehicle_goal_points),
         "Vehicle routes": len(stats.vehicle_routes),

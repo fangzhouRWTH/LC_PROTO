@@ -294,8 +294,8 @@ class IsaacPeopleDynamicAgentBackend:
             self.context = iscctx.get_isaac_context()
         return self.context
 
-    def _ensure_people_timeline_playing(self):
-        if self.timeline_started:
+    def _ensure_people_timeline_playing(self, *, start_playback: bool = False):
+        if self.timeline_started and not start_playback:
             return
         try:
             import omni.timeline
@@ -315,7 +315,7 @@ class IsaacPeopleDynamicAgentBackend:
                 timeline.set_auto_update(True)
             if self.timeline_time_s <= 0.0 and hasattr(timeline, "set_current_time"):
                 timeline.set_current_time(0.0)
-            if not timeline.is_playing():
+            if start_playback and not timeline.is_playing():
                 timeline.play()
             if self.debug_enabled:
                 current_time = _safe_call(timeline, "get_current_time")
@@ -335,7 +335,7 @@ class IsaacPeopleDynamicAgentBackend:
 
             timeline = omni.timeline.get_timeline_interface()
             if not timeline.is_playing():
-                timeline.play()
+                return
             self.timeline_time_s += max(0.0, float(dt))
             if hasattr(timeline, "set_current_time"):
                 timeline.set_current_time(self.timeline_time_s)
@@ -620,7 +620,7 @@ class IsaacPeopleDynamicAgentBackend:
         if not pending:
             return
 
-        self._ensure_people_timeline_playing()
+        self._ensure_people_timeline_playing(start_playback=True)
         report_frames = {1, 30, 60, 120, DEFAULT_ROUTE_ANIM_HANDLE_WARMUP_FRAMES}
         for frame in range(1, DEFAULT_ROUTE_ANIM_HANDLE_WARMUP_FRAMES + 1):
             self._update_people_runtime(frames=1)

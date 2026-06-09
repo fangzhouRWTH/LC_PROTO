@@ -36,6 +36,7 @@ def collect_placeholder_prim_paths(stats) -> list[str]:
         "pedestrian_goal_points",
         "pedestrian_routes",
         "pedestrian_zones",
+        "camera_paths",
         "vehicle_spawn_points",
         "vehicle_goal_points",
         "vehicle_routes",

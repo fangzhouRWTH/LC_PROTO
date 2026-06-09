@@ -11,15 +11,30 @@ if [[ -d "${LOCAL_ISAAC_ASSET_ROOT}/Isaac/People" ]]; then
   export ISAAC_ASSET_ROOT="${ISAAC_ASSET_ROOT:-${LOCAL_ISAAC_ASSET_ROOT}}"
 fi
 
-DEFAULT_SCENE_USD="${PROJECT_ROOT}/assets/blocks/demo_tencent_test_simplified.usdc"
-DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP="${PROJECT_ROOT}/assets/lcstd_assets_library./lcstd_assets_library/static/asset_name_map.json"
-DEFAULT_DEMO_PEOPLE_CONFIG="${PROJECT_ROOT}/configs/demo_people/tencent_dynamic_people_scenarios.json"
-DEFAULT_DEMO_PEOPLE_PRESET_DIR="${PROJECT_ROOT}/configs/demo_people/generated"
+#DEFAULT_SCENE_USD="${PROJECT_ROOT}/assets/blocks/demo_tencent_test_simplified.usdc"
+DEFAULT_SCENE_USD="${PROJECT_ROOT}/assets/blocks/demo_all_simplified.usd"
+
+# LCSTD public-space USD library (see assets/lcstd_assets_library/static/).
+resolve_public_space_asset_name_map() {
+  local candidate
+  for candidate in \
+    "${PUBLIC_SPACE_ASSET_NAME_MAP:-}" \
+    "${PROJECT_ROOT}/assets/lcstd_assets_library/static/asset_name_map.json" \
+    "${PROJECT_ROOT}/assets/lcstd_assets_library./lcstd_assets_library/static/asset_name_map.json"
+  do
+    if [[ -n "${candidate}" && -f "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
 
 export SCENE_USD="${SCENE_USD:-${DEFAULT_SCENE_USD}}"
 export ROBOT_TYPE="${ROBOT_TYPE:-none}"
 export SENSOR_PROFILE="${SENSOR_PROFILE:-none}"
 export AUTO_PLAY="${AUTO_PLAY:-true}"
+# Keep the Kit window alive for N frames; does not re-start play after the user stops.
 export AUTO_PLAY_MIN_FRAMES="${AUTO_PLAY_MIN_FRAMES:-2400}"
 export ENABLE_DYNAMIC_AGENTS="${ENABLE_DYNAMIC_AGENTS:-true}"
 export DYNAMIC_AGENT_BACKEND="${DYNAMIC_AGENT_BACKEND:-isaac_people_sumo}"
@@ -34,12 +49,7 @@ export DYNAMIC_ISAAC_PEOPLE_DEBUG="${DYNAMIC_ISAAC_PEOPLE_DEBUG:-false}"
 
 LAYOUT_OUTPUT_DIR="${LAYOUT_OUTPUT_DIR:-${PROJECT_ROOT}/outputs/area_placement/demo_tencent_dynamic_people}"
 USE_DUMMY_PUBLIC_SPACE_ASSETS="${USE_DUMMY_PUBLIC_SPACE_ASSETS:-false}"
-PUBLIC_SPACE_ASSET_NAME_MAP="${PUBLIC_SPACE_ASSET_NAME_MAP:-${DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP}}"
-DEMO_PEOPLE_CONFIG="${DEMO_PEOPLE_CONFIG:-${DEFAULT_DEMO_PEOPLE_CONFIG}}"
-DEMO_PEOPLE_SCENARIO="${DEMO_PEOPLE_SCENARIO:-people_3}"
-DEMO_PEOPLE_USE_STATIC_PLAN="${DEMO_PEOPLE_USE_STATIC_PLAN:-true}"
-DEMO_PEOPLE_PRESET_DIR="${DEMO_PEOPLE_PRESET_DIR:-${DEFAULT_DEMO_PEOPLE_PRESET_DIR}}"
-DEMO_PEOPLE_PLACEMENT_PLAN="${DEMO_PEOPLE_PLACEMENT_PLAN:-${DEMO_PEOPLE_PRESET_DIR}/tencent_${DEMO_PEOPLE_SCENARIO}_placement_plan.json}"
+PUBLIC_SPACE_ASSET_NAME_MAP="$(resolve_public_space_asset_name_map || true)"
 
 args=(
   --layout-backend area_placement_methods
@@ -66,8 +76,10 @@ fi
 
 if [[ -n "${PUBLIC_SPACE_ASSET_NAME_MAP}" && -f "${PUBLIC_SPACE_ASSET_NAME_MAP}" ]]; then
   args+=(--public-space-asset-name-map "${PUBLIC_SPACE_ASSET_NAME_MAP}")
+  echo "[INFO] Public-space asset map: ${PUBLIC_SPACE_ASSET_NAME_MAP}"
 elif [[ "${USE_DUMMY_PUBLIC_SPACE_ASSETS}" != "true" ]]; then
-  echo "[WARN] Public-space asset map not found: ${PUBLIC_SPACE_ASSET_NAME_MAP}" >&2
+  echo "[WARN] Public-space asset map not found." >&2
+  echo "       Expected: ${PROJECT_ROOT}/assets/lcstd_assets_library/static/asset_name_map.json" >&2
   echo "       Set PUBLIC_SPACE_ASSET_NAME_MAP=... or USE_DUMMY_PUBLIC_SPACE_ASSETS=true." >&2
 fi
 

@@ -133,6 +133,11 @@ def apply_area_placement_layout(
     asset_map = area_placement_bridge.load_asset_name_map(
         area_config.asset_name_map_path
     )
+    if not area_config.use_dummy_assets and not asset_map:
+        print(
+            "[WARN] use_dummy_public_space_assets=false but no asset name map was "
+            "loaded; placements without a mapped asset_name will use debug cubes."
+        )
     executor = PublicSpacePlacementExecutor(
         stage=stage,
         use_dummy_assets=area_config.use_dummy_assets,

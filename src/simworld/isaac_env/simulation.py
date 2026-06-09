@@ -12,6 +12,9 @@ from .isaac_sensor_sim import (
     create_sensor_rig,
 )
 from engine import dynamic
+from engine import camera_path
+
+from .isaac_camera.path_camera_controller import PathCameraController
 
 from .isaac_vfx.particle import (
     CameraView,
@@ -90,12 +93,16 @@ DEFAULT_LAYOUT_BACKEND = "legacy"
 DEFAULT_REGION_INPUT_JSON = None
 DEFAULT_PLACEMENT_PLAN_JSON = None
 DEFAULT_LAYOUT_OUTPUT_DIR = None
-DEFAULT_USE_DUMMY_PUBLIC_SPACE_ASSETS = True
+DEFAULT_USE_DUMMY_PUBLIC_SPACE_ASSETS = False
 DEFAULT_PUBLIC_SPACE_DUMMY_SIZE_M = 0.5
 DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP = None
 DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS = True
 DEFAULT_DEMO_PEOPLE_CONFIG = None
 DEFAULT_DEMO_PEOPLE_SCENARIO = None
+DEFAULT_ENABLE_PATH_CAMERAS = True
+DEFAULT_PATH_CAMERA_SPEED_MPS = 2.0
+DEFAULT_PATH_CAMERA_ROUTE_MODE = "loop"
+DEFAULT_PATH_CAMERA_INDEX = 0
 
 
 @dataclass
@@ -157,6 +164,10 @@ class SimulationConfig:
     skip_legacy_placeholder_areas: bool = DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS
     demo_people_config: pathlib.Path | None = DEFAULT_DEMO_PEOPLE_CONFIG
     demo_people_scenario: str | None = DEFAULT_DEMO_PEOPLE_SCENARIO
+    enable_path_cameras: bool = DEFAULT_ENABLE_PATH_CAMERAS
+    path_camera_speed_mps: float = DEFAULT_PATH_CAMERA_SPEED_MPS
+    path_camera_route_mode: str = DEFAULT_PATH_CAMERA_ROUTE_MODE
+    path_camera_index: int = DEFAULT_PATH_CAMERA_INDEX
 
 
 def available_robot_types() -> tuple[str, ...]:
@@ -206,6 +217,13 @@ def _make_dynamic_plan_config(config: SimulationConfig) -> dynamic.DynamicPlanCo
         vehicle_speed_mps=max(0.0, float(config.dynamic_vehicle_speed_mps)),
         default_spawn_time_s=max(0.0, float(config.dynamic_spawn_time_s)),
         default_route_mode=str(config.dynamic_route_mode or DEFAULT_DYNAMIC_ROUTE_MODE),
+    )
+
+
+def _make_camera_path_plan_config(config: SimulationConfig) -> camera_path.CameraPathPlanConfig:
+    return camera_path.CameraPathPlanConfig(
+        speed_mps=max(0.0, float(config.path_camera_speed_mps)),
+        route_mode=str(config.path_camera_route_mode or DEFAULT_PATH_CAMERA_ROUTE_MODE),
     )
 
 
@@ -301,6 +319,9 @@ def _get_camera_look_at(camera_prim_path: str):
 
     prim = stage.GetPrimAtPath(camera_prim_path)
     if not prim.IsValid():
+        fallback = DEFAULT_CAMERA_PRIM_PATH
+        if fallback and fallback != camera_prim_path:
+            return _get_camera_look_at(fallback)
         raise RuntimeError(f"Invalid camera prim path: {camera_prim_path}")
 
     Gf = context.pxr_gf
@@ -349,6 +370,7 @@ def run(config: SimulationConfig | None = None):
         scene_stats = sim_scene.prepare(
             dynamic_plan_config=dynamic_plan_config,
             build_dynamic_plan=config.enable_dynamic_agents,
+            camera_path_plan_config=_make_camera_path_plan_config(config),
             dynamic_placeholder_visibility=config.dynamic_placeholder_visibility,
             placeholder_disposition=config.placeholder_disposition,
             area_placement=_make_area_placement_config(config),
@@ -396,6 +418,33 @@ def run(config: SimulationConfig | None = None):
             agent_manager.spawn(sim_scene.stage)
         print("[INFO] Runtime dynamic agent spawn complete; spawning robot...")
 
+        path_camera_controller = None
+        use_path_camera = (
+            config.enable_path_cameras
+            and not config.chase_camera
+            and bool(sim_scene.camera_path_plan.paths)
+        )
+        if use_path_camera:
+            path_camera_controller = PathCameraController.from_plan(
+                sim_scene.camera_path_plan,
+                active_index=config.path_camera_index,
+            )
+            try:
+                spawned_cameras = path_camera_controller.spawn(sim_scene.stage)
+                print(
+                    "[INFO] Path camera spawn complete: "
+                    f"count={len(spawned_cameras)} "
+                    f"initial_index={config.path_camera_index}"
+                )
+                for prim_path in spawned_cameras:
+                    print(f"  [INFO] Path camera prim: {prim_path}")
+                print(
+                    "[INFO] Switch path cameras from the viewport camera menu in the editor."
+                )
+            except Exception as exc:
+                print(f"[WARN] Path camera spawn failed: {type(exc).__name__}: {exc}")
+                path_camera_controller = None
+
         robot = robot_factory.create_robot(config.robot_type, config.robot_name)
         robot.spawn(position=spawn_position)
         print("[INFO] Robot spawn complete; creating sensor rig...")
@@ -407,6 +456,10 @@ def run(config: SimulationConfig | None = None):
             active_sensor_id=config.active_sensor_id,
         )
         active_camera_prim_path = config.camera_prim_path
+        if path_camera_controller is not None:
+            activated = path_camera_controller.activate_viewport()
+            if activated is not None:
+                active_camera_prim_path = activated
         if sensor_rig is not None:
             sensor_rig.initialize()
             sensor_camera_path = sensor_rig.active_viewport_camera_prim_path
@@ -530,6 +583,10 @@ def run(config: SimulationConfig | None = None):
             sim_scene.update()
             sim_world.update_state()
 
+            is_simulating = sim_world.is_playing()
+            if path_camera_controller is not None and is_simulating:
+                path_camera_controller.step(DEFAULT_VFX_DT)
+
             if sensor_rig is not None:
                 sensor_frames = sensor_rig.update(state["sim_time"], DEFAULT_VFX_DT)
                 sensor_diagnostics.maybe_print(
@@ -545,6 +602,10 @@ def run(config: SimulationConfig | None = None):
                 sensor_camera_path = sensor_rig.active_viewport_camera_prim_path
                 if sensor_camera_path is not None:
                     active_camera_prim_path = sensor_camera_path
+            elif path_camera_controller is not None:
+                path_camera_path = path_camera_controller.active_viewport_camera_prim_path()
+                if path_camera_path is not None:
+                    active_camera_prim_path = path_camera_path
 
             eye, target, camera_up = _get_camera_look_at(active_camera_prim_path)
             camera = CameraView.from_look_at(
@@ -558,12 +619,9 @@ def run(config: SimulationConfig | None = None):
             weather_lighting.update(DEFAULT_VFX_DT)
 
             if sim_world.is_stopped():
-                if config.auto_play:
-                    sim_world.play()
-                else:
-                    robot.mark_reinit_required()
-                    agent_manager.reset()
-                    continue
+                robot.mark_reinit_required()
+                agent_manager.reset()
+                continue
 
             world_reinitialized = sim_world.check_reinit()
 
@@ -572,7 +630,6 @@ def run(config: SimulationConfig | None = None):
                     sim_world.reset()
                 robot.initialize()
 
-            is_simulating = sim_world.is_playing() or config.auto_play
             if is_simulating:
                 if dynamic_debug_enabled and loop_frame in {1, 60}:
                     print(f"[DEBUG] Simulation stepping dynamic agents: frame={loop_frame}")
@@ -587,7 +644,7 @@ def run(config: SimulationConfig | None = None):
                 robot.step(state["base_command"])
                 state["sim_time"] += DEFAULT_VFX_DT
                 sim_world.step(render=True)
-            elif config.auto_play:
+            elif is_simulating:
                 sim_world.step(render=True)
 
     finally:

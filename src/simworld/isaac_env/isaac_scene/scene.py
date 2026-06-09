@@ -13,6 +13,7 @@ from .scene_area_placement import (
 
 from engine import placement
 from engine import dynamic
+from engine import camera_path
 from engine.area_placement_bridge import normalize_layout_backend
 
 
@@ -40,6 +41,24 @@ def print_dynamic_plan_summary(plan: dynamic.DynamicScenePlan):
     print("========================================\n")
 
 
+def print_camera_path_plan_summary(plan: camera_path.CameraPathScenePlan):
+    if not plan.paths and not plan.warnings:
+        return
+
+    print("\n========== Camera Path Plan ==========")
+    print(f"Paths:    {len(plan.paths)}")
+    for item in plan.paths:
+        print(
+            f"  {item.path_id} waypoints={len(item.waypoints)} "
+            f"source={item.source_prim_path or 'unknown'}"
+        )
+    if plan.warnings:
+        print(f"Warnings: {len(plan.warnings)}")
+        for warning in plan.warnings:
+            print(f"  [WARN] {warning}")
+    print("======================================\n")
+
+
 class SimScene:
     def __init__(
         self,
@@ -55,6 +74,7 @@ class SimScene:
         self.context = iscctx.get_isaac_context().omni_usd.get_context()
         self.stats = parser.SceneStats()
         self.dynamic_plan = dynamic.DynamicScenePlan()
+        self.camera_path_plan = camera_path.CameraPathScenePlan()
         self.asset_import_plans: list[placement.AssetImportPlan] = []
         self.generated_asset_prim_paths: list[str] = []
 
@@ -80,6 +100,7 @@ class SimScene:
         verbose: bool = False,
         dynamic_plan_config: dynamic.DynamicPlanConfig | None = None,
         build_dynamic_plan: bool = True,
+        camera_path_plan_config: camera_path.CameraPathPlanConfig | None = None,
         dynamic_placeholder_visibility: str = "hidden",
         placeholder_disposition: str | None = None,
         area_placement: AreaPlacementPrepareConfig | None = None,
@@ -125,6 +146,12 @@ class SimScene:
             print_dynamic_plan_summary(self.dynamic_plan)
         else:
             self.dynamic_plan = dynamic.DynamicScenePlan()
+
+        self.camera_path_plan = camera_path.build_camera_path_plan(
+            self.stats,
+            config=camera_path_plan_config,
+        )
+        print_camera_path_plan_summary(self.camera_path_plan)
 
         # Generated/referenced assets can bring their own lights after the first
         # cleanup pass. Keep lighting controlled by isaac_vfx.weather.

@@ -165,6 +165,38 @@ def parse_args():
         default=simulation.DEFAULT_DYNAMIC_VEHICLE_ASSET_SCALE,
     )
     parser.add_argument(
+        "--enable-path-cameras",
+        nargs="?",
+        const=True,
+        type=parse_bool,
+        default=simulation.DEFAULT_ENABLE_PATH_CAMERAS,
+        help=(
+            "Spawn and animate viewport cameras from placeholder_path_camera_* "
+            "prims when present."
+        ),
+    )
+    parser.add_argument(
+        "--path-camera-speed-mps",
+        type=float,
+        default=simulation.DEFAULT_PATH_CAMERA_SPEED_MPS,
+        help="Travel speed for path-following viewport cameras.",
+    )
+    parser.add_argument(
+        "--path-camera-route-mode",
+        default=simulation.DEFAULT_PATH_CAMERA_ROUTE_MODE,
+        choices=("loop", "once", "stop_at_end", "stop-at-end", "ping_pong"),
+        help="Route traversal mode for path-following viewport cameras.",
+    )
+    parser.add_argument(
+        "--path-camera-index",
+        type=int,
+        default=simulation.DEFAULT_PATH_CAMERA_INDEX,
+        help=(
+            "Zero-based index of the path camera to activate on startup. "
+            "All parsed path cameras are spawned; switch between them in the editor."
+        ),
+    )
+    parser.add_argument(
         "--weather",
         default=simulation.DEFAULT_WEATHER,
         choices=simulation.available_weather_names(),
@@ -359,6 +391,10 @@ if __name__ == "__main__":
             dynamic_vehicle_visual=args.dynamic_vehicle_visual,
             dynamic_vehicle_asset_path=args.dynamic_vehicle_asset_path,
             dynamic_vehicle_asset_scale=args.dynamic_vehicle_asset_scale,
+            enable_path_cameras=args.enable_path_cameras,
+            path_camera_speed_mps=args.path_camera_speed_mps,
+            path_camera_route_mode=args.path_camera_route_mode,
+            path_camera_index=args.path_camera_index,
             weather=args.weather,
             daytime=args.daytime,
             sky_texture_path=args.sky_texture,
