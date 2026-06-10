@@ -1,5 +1,9 @@
 from pathlib import Path
+import json
 import importlib.util
+import os
+import subprocess
+import tempfile
 import sys
 import types
 import unittest
@@ -54,7 +58,13 @@ class _Op:
         self.values.append(tuple(value))
 
 
-def _actor(actor_type="pedestrian", route_mode="once", route=None, speed=1.0):
+def _actor(
+    actor_type="pedestrian",
+    route_mode="once",
+    route=None,
+    speed=1.0,
+    spawn_time_s=0.0,
+):
     route = route or [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)]
     shape = (
         DynamicActorShape(length_m=4.5, width_m=1.8, height_m=1.6)
@@ -66,6 +76,7 @@ def _actor(actor_type="pedestrian", route_mode="once", route=None, speed=1.0):
         actor_type=actor_type,
         route=route,
         speed_mps=speed,
+        spawn_time_s=spawn_time_s,
         spawn_pose=DynamicPose(position=route[0]),
         goal_pose=DynamicPose(position=route[-1]),
         route_id=f"{actor_type}_route_001",
@@ -166,6 +177,32 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
 
         self.assertFalse(agent.finished)
 
+    def test_sumo_future_spawn_vehicle_stays_hidden_until_spawn_time(self):
+        backend = SumoVehicleDynamicAgentBackend()
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor(
+                        actor_type="vehicle",
+                        speed=1.0,
+                        route_mode="once",
+                        spawn_time_s=2.0,
+                    )
+                ]
+            )
+        )
+        _attach_fake_ops(backend)
+
+        runtime = backend.actors[0]
+        backend.reset()
+        self.assertTrue(runtime.hidden)
+
+        backend.step(1.0)
+        self.assertTrue(runtime.hidden)
+
+        backend.step(1.0)
+        self.assertFalse(runtime.hidden)
+
     def test_sumo_loop_state_does_not_finish_and_wraps(self):
         agent = VehicleAgentState(
             actor_id="vehicle_001",
@@ -233,8 +270,11 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             DEFAULT_DYNAMIC_MAX_VEHICLE_ACTORS=1,
             DEFAULT_DYNAMIC_PEDESTRIAN_SPEED_MPS=1.2,
             DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS=4.0,
+            DEFAULT_DYNAMIC_VEHICLES_PER_LINE=1,
+            DEFAULT_DYNAMIC_VEHICLE_SPAWN_INTERVAL_S=0.0,
             DEFAULT_DYNAMIC_SPAWN_TIME_S=0.0,
             DEFAULT_DYNAMIC_ROUTE_MODE="loop",
+            DEFAULT_DYNAMIC_ROUTES_JSON=None,
             DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY="hidden",
             DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL="proxy",
             DEFAULT_DYNAMIC_PEDESTRIAN_ASSET_PATH="",
@@ -261,6 +301,8 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             DEFAULT_USE_DUMMY_PUBLIC_SPACE_ASSETS=False,
             DEFAULT_PUBLIC_SPACE_DUMMY_SIZE_M=0.5,
             DEFAULT_PUBLIC_SPACE_ASSET_NAME_MAP=None,
+            DEFAULT_DEMO_PEOPLE_CONFIG=None,
+            DEFAULT_DEMO_PEOPLE_SCENARIO=None,
             DEFAULT_SKIP_LEGACY_PLACEHOLDER_AREAS=True,
             DEFAULT_ENABLE_PATH_CAMERAS=True,
             DEFAULT_PATH_CAMERA_SPEED_MPS=2.0,
@@ -302,6 +344,12 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
                     "120",
                     "--dynamic-route-mode",
                     "once",
+                    "--dynamic-vehicles-per-line",
+                    "3",
+                    "--dynamic-vehicle-spawn-interval-s",
+                    "4.5",
+                    "--dynamic-routes-json",
+                    "/tmp/routes.json",
                     "--dynamic-placeholder-visibility",
                     "visible",
                     "--dynamic-pedestrian-visual",
@@ -329,6 +377,9 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
         self.assertTrue(args.auto_play)
         self.assertEqual(args.auto_play_min_frames, 120)
         self.assertEqual(args.dynamic_route_mode, "once")
+        self.assertEqual(str(args.dynamic_routes_json), "/tmp/routes.json")
+        self.assertEqual(args.dynamic_vehicles_per_line, 3)
+        self.assertAlmostEqual(args.dynamic_vehicle_spawn_interval_s, 4.5)
         self.assertEqual(args.dynamic_placeholder_visibility, "visible")
         self.assertEqual(args.dynamic_pedestrian_visual, "asset")
         self.assertEqual(args.dynamic_pedestrian_asset_path, "/tmp/people")
@@ -353,6 +404,8 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
         self.assertIn('DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH="${DYNAMIC_PEDESTRIAN_ANIMATION_CLIP_PATH:-}"', sim_defaults)
         self.assertIn('DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE="${DYNAMIC_PEDESTRIAN_ANIMATION_TIME_SCALE:-}"', sim_defaults)
         self.assertIn('DYNAMIC_VEHICLE_VISUAL="${DYNAMIC_VEHICLE_VISUAL:-}"', sim_defaults)
+        self.assertIn('DYNAMIC_VEHICLES_PER_LINE="${DYNAMIC_VEHICLES_PER_LINE:-}"', sim_defaults)
+        self.assertIn('DYNAMIC_VEHICLE_SPAWN_INTERVAL_S="${DYNAMIC_VEHICLE_SPAWN_INTERVAL_S:-}"', sim_defaults)
         self.assertIn('DYNAMIC_VEHICLE_ASSET_PATH="${DYNAMIC_VEHICLE_ASSET_PATH:-}"', sim_defaults)
         self.assertIn('DYNAMIC_VEHICLE_ASSET_SCALE="${DYNAMIC_VEHICLE_ASSET_SCALE:-}"', sim_defaults)
         self.assertIn('SENSOR_PROFILE="${SENSOR_PROFILE:-}"', sim_defaults)
@@ -402,6 +455,18 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             sim_defaults,
         )
         self.assertIn(
+            'append_sim_arg_if_set "--dynamic-vehicles-per-line" "${DYNAMIC_VEHICLES_PER_LINE}"',
+            sim_defaults,
+        )
+        self.assertIn(
+            'append_sim_arg_if_set "--dynamic-vehicle-spawn-interval-s" "${DYNAMIC_VEHICLE_SPAWN_INTERVAL_S}"',
+            sim_defaults,
+        )
+        self.assertIn(
+            'append_sim_arg_if_set "--dynamic-routes-json" "${DYNAMIC_ROUTES_JSON}"',
+            sim_defaults,
+        )
+        self.assertIn(
             'append_sim_arg_if_set "--dynamic-vehicle-asset-path" "${DYNAMIC_VEHICLE_ASSET_PATH}"',
             sim_defaults,
         )
@@ -417,6 +482,85 @@ class DynamicRuntimeBehaviorTest(unittest.TestCase):
             'append_sim_arg_if_set "--active-sensor" "${ACTIVE_SENSOR}"',
             sim_defaults,
         )
+
+    def test_demo_people_wrapper_defaults_are_relative_and_smoke_run(self):
+        wrapper = ROOT / "scripts/run_demo_tencent_dynamic_people.sh"
+        text = wrapper.read_text()
+
+        expected_scenario = 'DEMO_PEOPLE_SCENARIO="${DEMO_PEOPLE_SCENARIO:-people_3}"'
+        expected_static_plan = 'DEMO_PEOPLE_USE_STATIC_PLAN="${DEMO_PEOPLE_USE_STATIC_PLAN:-false}"'
+        self.assertIn(expected_scenario, text)
+        self.assertIn(expected_static_plan, text)
+        self.assertIn(
+            'DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME="${DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME:-true}"',
+            text,
+        )
+        self.assertIn("DYNAMIC_ROUTES_JSON", text)
+        self.assertNotIn("--demo-people-config", text)
+        self.assertNotIn("/home/sstormw/LeapsCora/LC_PROTO/configs/demo_people", text)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            routes_json = Path(temp_dir) / "routes.json"
+            routes_json.write_text(
+                json.dumps({"schema_version": "simworld.dynamic_routes.v1"}),
+                encoding="utf-8",
+            )
+            env = {
+                "HOME": str(Path.home()),
+                "PATH": os.environ.get("PATH", ""),
+                "ISAAC_PYTHON": "/bin/true",
+                "DYNAMIC_ROUTES_JSON": str(routes_json),
+            }
+            result = subprocess.run(
+                [str(wrapper)],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_demo_dynamic_agents_wrapper_wires_vehicle_flow_defaults(self):
+        wrapper = ROOT / "scripts/run_demo_tencent_dynamic_agents.sh"
+        text = wrapper.read_text()
+
+        self.assertIn("demo_tencent_test_simplified.usdc", text)
+        self.assertIn('DYNAMIC_MAX_VEHICLE_ACTORS="${DYNAMIC_MAX_VEHICLE_ACTORS:-6}"', text)
+        self.assertIn('DYNAMIC_VEHICLES_PER_LINE="${DYNAMIC_VEHICLES_PER_LINE:-3}"', text)
+        self.assertIn('DYNAMIC_VEHICLE_SPEED_MPS="${DYNAMIC_VEHICLE_SPEED_MPS:-9.0}"', text)
+        self.assertIn(
+            'DYNAMIC_VEHICLE_SPAWN_INTERVAL_S="${DYNAMIC_VEHICLE_SPAWN_INTERVAL_S:-4.0}"',
+            text,
+        )
+        self.assertIn("isaac_vehicle_4w/main.usda", text)
+        self.assertIn("omniverse-content-production.s3-us-west-2.amazonaws.com", text)
+        self.assertIn("LEGACY_DEMO_VEHICLE_ASSET", text)
+        self.assertIn("run_demo_tencent_dynamic_people.sh", text)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            routes_json = Path(temp_dir) / "routes.json"
+            routes_json.write_text(
+                json.dumps({"schema_version": "simworld.dynamic_routes.v1"}),
+                encoding="utf-8",
+            )
+            env = {
+                "HOME": str(Path.home()),
+                "PATH": os.environ.get("PATH", ""),
+                "ISAAC_PYTHON": "/bin/true",
+                "DYNAMIC_ROUTES_JSON": str(routes_json),
+            }
+            result = subprocess.run(
+                [str(wrapper)],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

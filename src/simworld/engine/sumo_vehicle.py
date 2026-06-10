@@ -75,7 +75,7 @@ def validate_vehicle_actor(
         if lane_ids and any(lane_id not in known_lane_ids for lane_id in lane_ids):
             missing.append("known route_plan.lane_ids")
         waypoints = actor.route_plan.waypoints or actor.route
-        if len(waypoints) < 2:
+        if len(waypoints) < 2 and not lane_ids:
             missing.append("route_plan.waypoints")
 
     if not actor.route_id:
@@ -104,14 +104,17 @@ def _lane_records(lanes: list[DynamicLanePlan]) -> dict[str, LaneRecord]:
 
 
 def _path_for_actor(actor: DynamicActorPlan, lanes: dict[str, LaneRecord]) -> list[Vec3]:
+    if actor.route_plan is not None and len(actor.route_plan.waypoints) >= 2:
+        return list(actor.route_plan.waypoints)
+    if len(actor.route) >= 2:
+        return list(actor.route)
+
     if actor.route_plan is not None and actor.route_plan.lane_ids:
         lane = lanes.get(actor.route_plan.lane_ids[0])
         if lane is not None and len(lane.centerline) >= 2:
             return list(lane.centerline)
 
-    if actor.route_plan is not None and actor.route_plan.waypoints:
-        return list(actor.route_plan.waypoints)
-    return list(actor.route)
+    return []
 
 
 def smooth_vehicle_path(

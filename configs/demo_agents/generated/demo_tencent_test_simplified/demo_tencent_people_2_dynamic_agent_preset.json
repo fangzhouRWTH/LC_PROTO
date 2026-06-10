@@ -1,0 +1,38 @@
+{
+  "schema_version": "simworld.demo_dynamic_agent_runtime_preset.v1",
+  "scenario": "people_2",
+  "scene_usd": "assets/blocks/demo_tencent_test_simplified.usdc",
+  "base_placement_plan_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_base_placement_plan.json",
+  "placement_plan_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_2_placement_plan.json",
+  "dynamic_routes_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_2_dynamic_routes.json",
+  "people": {
+    "scenario": "people_2",
+    "visible_actor_count": 10,
+    "max_runtime_actors": 40,
+    "ignore_spawn_time": true
+  },
+  "vehicles": {
+    "max_vehicle_actors": 2,
+    "vehicles_per_line": 1,
+    "speed_mps": 8.0,
+    "spawn_interval_s": 7.0,
+    "visual": "asset"
+  },
+  "environment": {
+    "DYNAMIC_AGENT_BACKEND": "isaac_people_sumo",
+    "DYNAMIC_ROUTE_MODE": "once",
+    "DYNAMIC_MAX_PEDESTRIAN_ACTORS": "40",
+    "DYNAMIC_PEDESTRIAN_SPEED_MPS": "0.8",
+    "DYNAMIC_MAX_VEHICLE_ACTORS": "2",
+    "DYNAMIC_VEHICLES_PER_LINE": "1",
+    "DYNAMIC_VEHICLE_SPEED_MPS": "8.0",
+    "DYNAMIC_VEHICLE_SPAWN_INTERVAL_S": "7.0",
+    "DYNAMIC_VEHICLE_VISUAL": "asset",
+    "DYNAMIC_VEHICLE_ASSET_SCALE": "1.0",
+    "DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME": "true",
+    "SCENE_USD": "assets/blocks/demo_tencent_test_simplified.usdc",
+    "DEMO_PEOPLE_SCENARIO": "people_2",
+    "DYNAMIC_ROUTES_JSON": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_2_dynamic_routes.json"
+  },
+  "run_command": "scripts/run_demo_dynamic_agent_preset.py --preset-json configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_2_dynamic_agent_preset.json"
+}

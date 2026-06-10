@@ -89,7 +89,7 @@ class _FakeCharacterHandle:
         self.variables.append((name, value))
 
 
-def _actor(actor_id, actor_type, route, route_mode="once"):
+def _actor(actor_id, actor_type, route, route_mode="once", spawn_time_s=0.0):
     shape = (
         DynamicActorShape(length_m=4.5, width_m=1.8, height_m=1.6)
         if actor_type == "vehicle"
@@ -100,6 +100,7 @@ def _actor(actor_id, actor_type, route, route_mode="once"):
         actor_type=actor_type,
         route=route,
         speed_mps=1.0,
+        spawn_time_s=float(spawn_time_s),
         spawn_pose=DynamicPose(position=route[0]),
         goal_pose=DynamicPose(position=route[-1]),
         route_id=f"{actor_type}_route",
@@ -350,11 +351,155 @@ class IsaacPeopleBackendTest(unittest.TestCase):
         backend._ensure_actor_transform_ops = lambda _actor: None
         backend._apply_actor_pose = lambda *_args: calls.append("pose")
         backend._set_walk_animation = lambda *_args, **_kwargs: calls.append("anim")
-        backend._set_actor_visible = lambda _actor, visible: calls.append(("visible", visible))
+        backend._set_actor_visible = lambda _actor, visible, **_kwargs: calls.append(("visible", visible))
 
         backend.step(1.0)
 
         self.assertEqual(calls, [("visible", False)])
+
+    def test_route_spawn_visibility_is_applied_after_route_setup(self):
+        backend = IsaacPeopleDynamicAgentBackend(control_mode="route")
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor("pedestrian_001", "pedestrian", [(0, 0, 0), (5, 0, 0)]),
+                    _actor(
+                        "pedestrian_002",
+                        "pedestrian",
+                        [(0, 1, 0), (5, 1, 0)],
+                        spawn_time_s=2.0,
+                    ),
+                ]
+            )
+        )
+        calls = []
+        for actor in backend.actors:
+            actor.loaded = True
+        backend._ensure_actor_transform_ops = lambda _actor: None
+        backend._apply_actor_pose = lambda *_args: calls.append("pose")
+        backend._set_actor_visible = lambda _actor, visible, **_kwargs: calls.append(("visible", visible))
+
+        backend._apply_route_spawn_visibility()
+
+        self.assertEqual(
+            calls,
+            ["pose", ("visible", True), "pose", ("visible", False)],
+        )
+
+    def test_route_spawn_visibility_can_ignore_staggered_spawn_times(self):
+        backend = IsaacPeopleDynamicAgentBackend(control_mode="route")
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor(
+                        "pedestrian_001",
+                        "pedestrian",
+                        [(0, 0, 0), (5, 0, 0)],
+                        spawn_time_s=2.0,
+                    ),
+                ]
+            )
+        )
+        actor = backend.actors[0]
+        actor.loaded = True
+        backend.ignore_spawn_time = True
+        calls = []
+        backend._ensure_actor_transform_ops = lambda _actor: None
+        backend._apply_actor_pose = lambda *_args: calls.append("pose")
+        backend._set_actor_visible = lambda _actor, visible, **_kwargs: calls.append(("visible", visible))
+
+        backend._apply_route_spawn_visibility()
+
+        self.assertEqual(calls, ["pose", ("visible", True)])
+
+    def test_route_control_reset_hides_future_spawn_actor(self):
+        backend = IsaacPeopleDynamicAgentBackend(control_mode="route")
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor(
+                        "pedestrian_001",
+                        "pedestrian",
+                        [(0, 0, 0), (5, 0, 0)],
+                        spawn_time_s=3.0,
+                    ),
+                ]
+            )
+        )
+        actor = backend.actors[0]
+        actor.loaded = True
+        actor.hidden_at_route_end_printed = True
+        calls = []
+        backend._write_command_file = lambda: None
+        backend._apply_actor_pose = lambda *_args: calls.append("pose")
+        backend._set_walk_animation = lambda *_args, **_kwargs: calls.append("anim")
+        backend._set_actor_visible = lambda _actor, visible, **_kwargs: calls.append(("visible", visible))
+
+        backend.reset()
+
+        self.assertFalse(actor.hidden_at_route_end_printed)
+        self.assertEqual(calls, ["pose", ("visible", False)])
+
+    def test_route_control_pre_spawn_actor_stays_hidden_and_skips_updates(self):
+        backend = IsaacPeopleDynamicAgentBackend(control_mode="route")
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor(
+                        "pedestrian_001",
+                        "pedestrian",
+                        [(0, 0, 0), (5, 0, 0)],
+                        spawn_time_s=2.0,
+                    ),
+                ]
+            )
+        )
+        actor = backend.actors[0]
+        actor.loaded = True
+        actor.translate_op = object()
+        actor.orient_op = object()
+        calls = []
+        backend._advance_people_timeline_frame = lambda _dt: None
+        backend._ensure_actor_transform_ops = lambda _actor: None
+        backend._apply_actor_pose = lambda *_args: calls.append("pose")
+        backend._set_walk_animation = lambda *_args, **_kwargs: calls.append("anim")
+        backend._set_actor_visible = lambda _actor, visible, **_kwargs: calls.append(("visible", visible))
+
+        backend.step(1.0)
+
+        self.assertEqual(calls, [("visible", False)])
+
+    def test_route_control_actor_appears_when_spawn_time_reached(self):
+        backend = IsaacPeopleDynamicAgentBackend(control_mode="route")
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor(
+                        "pedestrian_001",
+                        "pedestrian",
+                        [(0, 0, 0), (5, 0, 0)],
+                        spawn_time_s=1.0,
+                    ),
+                ]
+            )
+        )
+        actor = backend.actors[0]
+        actor.loaded = True
+        actor.translate_op = object()
+        actor.orient_op = object()
+        calls = []
+        backend._advance_people_timeline_frame = lambda _dt: None
+        backend._ensure_actor_transform_ops = lambda _actor: None
+        backend._apply_actor_pose = lambda *_args: calls.append("pose")
+        backend._debug_route_progress = lambda *_args: None
+        backend._set_walk_animation = lambda *_args, **_kwargs: calls.append("anim")
+        backend._set_actor_visible = lambda _actor, visible, **_kwargs: calls.append(("visible", visible))
+
+        backend.step(1.1)
+
+        self.assertIn("pose", calls)
+        self.assertIn(("visible", True), calls)
+        self.assertIn("anim", calls)
 
     def test_route_control_once_hide_transition_logs_once_in_debug_mode(self):
         backend = IsaacPeopleDynamicAgentBackend(control_mode="route", debug_enabled=True)
@@ -369,8 +514,8 @@ class IsaacPeopleBackendTest(unittest.TestCase):
 
         output = io.StringIO()
         with redirect_stdout(output):
-            backend._set_actor_visible(actor, False)
-            backend._set_actor_visible(actor, False)
+            backend._set_actor_visible(actor, False, reason="route_end")
+            backend._set_actor_visible(actor, False, reason="route_end")
 
         self.assertTrue(actor.hidden)
         self.assertEqual(
@@ -431,6 +576,28 @@ class IsaacPeopleBackendTest(unittest.TestCase):
                 "Character",
             ],
         )
+
+    def test_ignore_spawn_time_treats_staggered_people_as_immediate(self):
+        backend = IsaacPeopleDynamicAgentBackend(control_mode="route")
+        backend.build_from_plan(
+            DynamicScenePlan(
+                actors=[
+                    _actor(
+                        "pedestrian_001",
+                        "pedestrian",
+                        [(0, 0, 0), (1, 0, 0)],
+                        spawn_time_s=5.0,
+                    ),
+                ]
+            )
+        )
+        actor = backend.actors[0]
+
+        backend.ignore_spawn_time = False
+        self.assertEqual(backend._effective_spawn_time_s(actor), 5.0)
+
+        backend.ignore_spawn_time = True
+        self.assertEqual(backend._effective_spawn_time_s(actor), 0.0)
 
     def test_route_walk_animation_keeps_loop_routes_walking_after_first_lap(self):
         backend = IsaacPeopleDynamicAgentBackend(control_mode="route")

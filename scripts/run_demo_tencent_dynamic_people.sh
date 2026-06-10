@@ -11,8 +11,15 @@ if [[ -d "${LOCAL_ISAAC_ASSET_ROOT}/Isaac/People" ]]; then
   export ISAAC_ASSET_ROOT="${ISAAC_ASSET_ROOT:-${LOCAL_ISAAC_ASSET_ROOT}}"
 fi
 
-#DEFAULT_SCENE_USD="${PROJECT_ROOT}/assets/blocks/demo_tencent_test_simplified.usdc"
-DEFAULT_SCENE_USD="${PROJECT_ROOT}/assets/blocks/demo_all_simplified.usd"
+DEFAULT_SCENE_USD="${PROJECT_ROOT}/assets/blocks/demo_tencent_test_simplified.usdc"
+DEMO_PEOPLE_SCENARIO="${DEMO_PEOPLE_SCENARIO:-people_3}"
+DEMO_DYNAMIC_ROUTES_DIR="${DEMO_DYNAMIC_ROUTES_DIR:-${PROJECT_ROOT}/configs/demo_agents/generated/demo_tencent_test_simplified}"
+DEMO_DYNAMIC_ROUTES_PREFIX="${DEMO_DYNAMIC_ROUTES_PREFIX:-demo_tencent}"
+DEFAULT_DYNAMIC_ROUTES_JSON="${DEMO_DYNAMIC_ROUTES_DIR}/${DEMO_DYNAMIC_ROUTES_PREFIX}_${DEMO_PEOPLE_SCENARIO}_dynamic_routes.json"
+export DYNAMIC_ROUTES_JSON="${DYNAMIC_ROUTES_JSON:-${DEFAULT_DYNAMIC_ROUTES_JSON}}"
+DEMO_PEOPLE_USE_STATIC_PLAN="${DEMO_PEOPLE_USE_STATIC_PLAN:-false}"
+DEMO_PEOPLE_PRESET_DIR="${DEMO_PEOPLE_PRESET_DIR:-${PROJECT_ROOT}/configs/demo_people/generated}"
+DEMO_PEOPLE_PLACEMENT_PLAN="${DEMO_PEOPLE_PLACEMENT_PLAN:-}"
 
 # LCSTD public-space USD library (see assets/lcstd_assets_library/static/).
 resolve_public_space_asset_name_map() {
@@ -46,6 +53,7 @@ export DYNAMIC_ISAAC_PEOPLE_CONTROL="${DYNAMIC_ISAAC_PEOPLE_CONTROL:-route}"
 export DYNAMIC_ISAAC_PEOPLE_NAVMESH="${DYNAMIC_ISAAC_PEOPLE_NAVMESH:-false}"
 export DYNAMIC_ISAAC_PEOPLE_YAW_OFFSET_DEG="${DYNAMIC_ISAAC_PEOPLE_YAW_OFFSET_DEG:-90}"
 export DYNAMIC_ISAAC_PEOPLE_DEBUG="${DYNAMIC_ISAAC_PEOPLE_DEBUG:-false}"
+export DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME="${DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME:-true}"
 
 LAYOUT_OUTPUT_DIR="${LAYOUT_OUTPUT_DIR:-${PROJECT_ROOT}/outputs/area_placement/demo_tencent_dynamic_people}"
 USE_DUMMY_PUBLIC_SPACE_ASSETS="${USE_DUMMY_PUBLIC_SPACE_ASSETS:-false}"
@@ -59,19 +67,25 @@ args=(
 )
 
 if [[ "${DEMO_PEOPLE_USE_STATIC_PLAN}" == "true" ]]; then
+  if [[ -z "${DEMO_PEOPLE_PLACEMENT_PLAN}" ]]; then
+    DEMO_PEOPLE_PLACEMENT_PLAN="${DEMO_PEOPLE_PRESET_DIR}/tencent_${DEMO_PEOPLE_SCENARIO}_placement_plan.json"
+  fi
   if [[ -f "${DEMO_PEOPLE_PLACEMENT_PLAN}" ]]; then
     args+=(--placement-plan-json "${DEMO_PEOPLE_PLACEMENT_PLAN}")
+    echo "[INFO] Legacy demo static placement plan: ${DEMO_PEOPLE_PLACEMENT_PLAN}"
   else
     echo "[ERROR] Demo people preset plan not found: ${DEMO_PEOPLE_PLACEMENT_PLAN}" >&2
-    echo "        Set DEMO_PEOPLE_SCENARIO=people_1|people_2|people_3|people_4|people_5|people_6" >&2
-    echo "        or set DEMO_PEOPLE_USE_STATIC_PLAN=false to regenerate from config." >&2
     exit 2
   fi
-elif [[ -n "${DEMO_PEOPLE_CONFIG}" && -f "${DEMO_PEOPLE_CONFIG}" ]]; then
-  args+=(--demo-people-config "${DEMO_PEOPLE_CONFIG}")
-  args+=(--demo-people-scenario "${DEMO_PEOPLE_SCENARIO}")
-elif [[ -n "${DEMO_PEOPLE_CONFIG}" ]]; then
-  echo "[WARN] Demo people config not found: ${DEMO_PEOPLE_CONFIG}" >&2
+elif [[ -n "${DYNAMIC_ROUTES_JSON}" ]]; then
+  if [[ -f "${DYNAMIC_ROUTES_JSON}" ]]; then
+    echo "[INFO] Dynamic routes JSON: ${DYNAMIC_ROUTES_JSON}"
+  else
+    echo "[ERROR] Dynamic routes JSON not found: ${DYNAMIC_ROUTES_JSON}" >&2
+    echo "        Generate it first with scripts/build_demo_dynamic_agent_presets.sh" >&2
+    echo "        or set DYNAMIC_ROUTES_JSON to a scene-specific dynamic-only routes file." >&2
+    exit 2
+  fi
 fi
 
 if [[ -n "${PUBLIC_SPACE_ASSET_NAME_MAP}" && -f "${PUBLIC_SPACE_ASSET_NAME_MAP}" ]]; then

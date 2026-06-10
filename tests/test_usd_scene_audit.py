@@ -45,6 +45,12 @@ class UsdSceneAuditLogicTests(unittest.TestCase):
         self.assertTrue(matched)
         self.assertEqual(matched[0].pipeline, Pipeline.STATIC_SCENE)
 
+    def test_vehicle_line_matches_dynamic_agents_rule(self):
+        info = parse_prim_name("placeholder_vehicle_line_001")
+        matched = _matching_rules(info)
+        self.assertTrue(matched)
+        self.assertTrue(any(spec.pipeline == Pipeline.DYNAMIC_AGENTS for spec in matched))
+
     def test_classify_simworld_attribute_required_on_region(self):
         rel = _classify_attribute("custom:simworld:public_space_type", PUBLIC_SPACE_REGION_ROLE)
         self.assertEqual(rel, FieldRelevance.REQUIRED_LAYOUT)

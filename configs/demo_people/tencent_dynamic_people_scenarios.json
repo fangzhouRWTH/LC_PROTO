@@ -7,6 +7,8 @@
     "node_merge_tolerance_m": 0.1,
     "end_candidates_per_start": 5,
     "max_source_routes_per_region": 96,
+    "balance_source_routes_by_region": true,
+    "prefer_routes_near_vehicle_routes": true,
     "zone_margin_m": 0.05,
     "zone_sample_spacing_m": 0.75,
     "offset_range_m": [

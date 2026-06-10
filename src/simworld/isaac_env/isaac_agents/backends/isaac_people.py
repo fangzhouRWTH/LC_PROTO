@@ -39,6 +39,7 @@ PEOPLE_COMMAND_FILE = PEOPLE_COMMAND_DIR / "dynamic_people_commands.txt"
 ISAAC_PEOPLE_NAVMESH_ENV = "DYNAMIC_ISAAC_PEOPLE_NAVMESH"
 ISAAC_PEOPLE_CONTROL_ENV = "DYNAMIC_ISAAC_PEOPLE_CONTROL"
 ISAAC_PEOPLE_DEBUG_ENV = "DYNAMIC_ISAAC_PEOPLE_DEBUG"
+ISAAC_PEOPLE_IGNORE_SPAWN_TIME_ENV = "DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME"
 DEFAULT_ISAAC_PEOPLE_NAVMESH_ENABLED = False
 DEFAULT_ISAAC_PEOPLE_CONTROL_MODE = "route"
 DEFAULT_ROUTE_ANIM_HANDLE_WARMUP_FRAMES = 180
@@ -148,6 +149,7 @@ class IsaacPeopleDynamicAgentBackend:
             if debug_enabled is None
             else bool(debug_enabled)
         )
+        self.ignore_spawn_time = resolve_bool_env(ISAAC_PEOPLE_IGNORE_SPAWN_TIME_ENV, False)
         self.route_yaw_offset_degrees = resolve_isaac_people_yaw_offset_degrees()
         self.context = None
         self.stage = None
@@ -243,10 +245,12 @@ class IsaacPeopleDynamicAgentBackend:
                 actor.debug_frame_count = 0
                 actor.debug_start_position = None
                 actor.animation_update_printed = False
-                self._set_actor_visible(actor, True)
+                actor.hidden_at_route_end_printed = False
                 position, yaw = self._pose_at_distance(actor, 0.0)
                 self._apply_actor_pose(actor, position, yaw)
-                if not actor.walk_clip_bound:
+                visible_at_reset = self._effective_spawn_time_s(actor) <= 0.0
+                self._set_actor_visible(actor, visible_at_reset)
+                if visible_at_reset and not actor.walk_clip_bound:
                     self._set_walk_animation(actor, moving=False, position=position, distance=0.0)
         except Exception as exc:  # pragma: no cover - Isaac runtime path
             print(f"[WARN] Isaac People reset failed: {exc}")
@@ -265,12 +269,17 @@ class IsaacPeopleDynamicAgentBackend:
                 continue
 
             actor.elapsed_s += float(dt)
-            travel_time_s = max(0.0, actor.elapsed_s - actor.plan.spawn_time_s)
+            spawn_time_s = self._effective_spawn_time_s(actor)
+            if actor.elapsed_s + 1e-9 < spawn_time_s:
+                self._set_actor_visible(actor, False)
+                continue
+
+            travel_time_s = max(0.0, actor.elapsed_s - spawn_time_s)
             raw_distance = travel_time_s * max(0.0, float(actor.plan.speed_mps))
             distance = self._distance_along_route(raw_distance, actor.total_length, actor.route_mode)
             hidden = self._should_hide_actor_at_distance(actor, raw_distance)
             if hidden:
-                self._set_actor_visible(actor, False)
+                self._set_actor_visible(actor, False, reason="route_end")
                 continue
 
             position, yaw = self._pose_at_distance(actor, distance)
@@ -472,6 +481,8 @@ class IsaacPeopleDynamicAgentBackend:
             actor.anim_graph_path = str(anim_graph_prim.GetPath()) if anim_graph_prim and anim_graph_prim.IsValid() else ""
             actor.behavior_script_path = str(behavior_script_path)
             self._ensure_actor_transform_ops(actor)
+            position, yaw = self._pose_at_distance(actor, 0.0)
+            self._apply_actor_pose(actor, position, yaw)
 
             skelroot = CharacterUtil.get_character_skelroot_by_root(prim)
             if skelroot is not None and skelroot.IsValid():
@@ -495,6 +506,16 @@ class IsaacPeopleDynamicAgentBackend:
                     anim_graph_prim,
                     behavior_script_path,
                 )
+                self._apply_route_spawn_visibility()
+
+    def _apply_route_spawn_visibility(self):
+        for actor in self.actors:
+            if not actor.loaded:
+                continue
+            self._ensure_actor_transform_ops(actor)
+            position, yaw = self._pose_at_distance(actor, 0.0)
+            self._apply_actor_pose(actor, position, yaw)
+            self._set_actor_visible(actor, self._effective_spawn_time_s(actor) <= 0.0)
 
     def _ensure_character_root(self):
         from isaacsim.core.utils import prims
@@ -665,13 +686,14 @@ class IsaacPeopleDynamicAgentBackend:
         actor.translate_op.Set(Gf.Vec3d(position[0], position[1], position[2]))
         set_orient_op_yaw(actor.orient_op, Gf, yaw, self.route_yaw_offset_degrees)
 
-    def _set_actor_visible(self, actor: IsaacPeopleActorRuntime, visible: bool):
+    def _set_actor_visible(self, actor: IsaacPeopleActorRuntime, visible: bool, reason: str = ""):
         was_hidden = actor.hidden
         actor.hidden = not visible
         if (
             self.debug_enabled
             and actor.hidden
             and not was_hidden
+            and reason == "route_end"
             and not actor.hidden_at_route_end_printed
             and _is_stop_at_end_mode(actor.route_mode)
         ):
@@ -726,6 +748,11 @@ class IsaacPeopleDynamicAgentBackend:
     def _should_hide_actor_at_distance(self, actor: IsaacPeopleActorRuntime, raw_distance: float) -> bool:
         threshold = max(0.0, actor.total_length - ROUTE_END_HIDE_EPSILON_M)
         return _is_stop_at_end_mode(actor.route_mode) and raw_distance >= threshold
+
+    def _effective_spawn_time_s(self, actor: IsaacPeopleActorRuntime) -> float:
+        if self.ignore_spawn_time:
+            return 0.0
+        return max(0.0, float(actor.plan.spawn_time_s))
 
     def _set_walk_animation(
         self,

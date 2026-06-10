@@ -706,6 +706,13 @@ PROCESSING_RULES = [
         actions=[record_vehicle_route],
     ),
     ProcessingRule(
+        name="placeholder vehicle line",
+        mobility="placeholder",
+        domain="vehicle",
+        category="line",
+        actions=[record_vehicle_route],
+    ),
+    ProcessingRule(
         name="placeholder vehicle lane",
         mobility="placeholder",
         domain="vehicle",

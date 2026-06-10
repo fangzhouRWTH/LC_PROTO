@@ -32,8 +32,8 @@ class ExportDynamicPlanTest(unittest.TestCase):
                             [-8.0, -1.0, 0.0],
                             [8.0, -1.0, 0.0],
                         ],
-                        "prim_path": "/World/vehicle_route_001",
-                        "raw_name": "placeholder_vehicle_route_001",
+                        "prim_path": "/World/vehicle_line_001",
+                        "raw_name": "placeholder_vehicle_line_001",
                         "index": "001",
                     }
                 ],

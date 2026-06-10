@@ -1,0 +1,69 @@
+{
+  "schema_version": "simworld.demo_dynamic_agent_runtime_summary.v1",
+  "scene_usd": "assets/blocks/demo_tencent_test_simplified.usdc",
+  "people_plan_dir": "configs/demo_agents/generated/demo_tencent_test_simplified",
+  "output_dir": "configs/demo_agents/generated/demo_tencent_test_simplified",
+  "preset_prefix": "demo_tencent",
+  "scenarios": [
+    {
+      "scenario": "people_1",
+      "preset_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_1_dynamic_agent_preset.json",
+      "placement_plan_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_1_placement_plan.json",
+      "dynamic_routes_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_1_dynamic_routes.json",
+      "people_count": 6,
+      "max_vehicle_actors": 1,
+      "vehicles_per_line": 1,
+      "vehicle_speed_mps": 7.5
+    },
+    {
+      "scenario": "people_2",
+      "preset_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_2_dynamic_agent_preset.json",
+      "placement_plan_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_2_placement_plan.json",
+      "dynamic_routes_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_2_dynamic_routes.json",
+      "people_count": 10,
+      "max_vehicle_actors": 2,
+      "vehicles_per_line": 1,
+      "vehicle_speed_mps": 8.0
+    },
+    {
+      "scenario": "people_3",
+      "preset_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_3_dynamic_agent_preset.json",
+      "placement_plan_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_3_placement_plan.json",
+      "dynamic_routes_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_3_dynamic_routes.json",
+      "people_count": 16,
+      "max_vehicle_actors": 4,
+      "vehicles_per_line": 2,
+      "vehicle_speed_mps": 9.0
+    },
+    {
+      "scenario": "people_4",
+      "preset_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_4_dynamic_agent_preset.json",
+      "placement_plan_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_4_placement_plan.json",
+      "dynamic_routes_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_4_dynamic_routes.json",
+      "people_count": 22,
+      "max_vehicle_actors": 5,
+      "vehicles_per_line": 2,
+      "vehicle_speed_mps": 9.5
+    },
+    {
+      "scenario": "people_5",
+      "preset_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_5_dynamic_agent_preset.json",
+      "placement_plan_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_5_placement_plan.json",
+      "dynamic_routes_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_5_dynamic_routes.json",
+      "people_count": 30,
+      "max_vehicle_actors": 6,
+      "vehicles_per_line": 3,
+      "vehicle_speed_mps": 9.5
+    },
+    {
+      "scenario": "people_6",
+      "preset_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_6_dynamic_agent_preset.json",
+      "placement_plan_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_6_placement_plan.json",
+      "dynamic_routes_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_6_dynamic_routes.json",
+      "people_count": 40,
+      "max_vehicle_actors": 8,
+      "vehicles_per_line": 4,
+      "vehicle_speed_mps": 10.0
+    }
+  ]
+}

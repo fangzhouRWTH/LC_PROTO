@@ -81,6 +81,7 @@ def apply_demo_people_scenario(
     selected, debug = select_demo_people_routes(
         source_routes,
         dynamic_zones=plan.get("dynamic_zones") or [],
+        vehicle_routes=plan.get("vehicle_routes") or [],
         scenario=scenario,
         scenario_name=scenario_key,
     )
@@ -193,13 +194,12 @@ def generate_demo_people_source_routes_from_walkable_lines(
             grouped[region] = []
             region_order.append(region)
         grouped[region].append(line)
+    region_order = _ordered_regions_for_demo(region_order, scenario)
 
-    routes: list[dict[str, Any]] = []
     debug_regions: list[dict[str, Any]] = []
     seen: set[tuple[tuple[int, int, int], ...]] = set()
+    route_buckets: list[list[dict[str, Any]]] = []
     for region in region_order:
-        if len(routes) >= max_sources:
-            break
         region_routes, region_debug = _generate_region_walkable_graph_routes(
             grouped[region],
             region_id=region,
@@ -208,12 +208,21 @@ def generate_demo_people_source_routes_from_walkable_lines(
             target_length_m=target_length,
             max_length_m=max_length,
             node_merge_tolerance_m=node_tolerance,
-            max_routes=min(per_region_limit, max_sources - len(routes)),
+            max_routes=min(per_region_limit, max_sources),
             end_candidates_per_start=end_candidates_per_start,
             seen=seen,
         )
-        routes.extend(region_routes)
+        route_buckets.append(region_routes)
         debug_regions.append(region_debug)
+
+    balance_by_region = bool(scenario.get("balance_source_routes_by_region", True))
+    if balance_by_region:
+        routes = _balanced_routes_from_region_buckets(
+            route_buckets,
+            max_routes=max_sources,
+        )
+    else:
+        routes = [route for bucket in route_buckets for route in bucket][:max_sources]
 
     return routes, {
         "walkable_line_count": len(walkable_lines),
@@ -228,8 +237,57 @@ def generate_demo_people_source_routes_from_walkable_lines(
             "max_source_routes": max_sources,
             "max_source_routes_per_region": per_region_limit,
             "end_candidates_per_start": end_candidates_per_start,
+            "balance_source_routes_by_region": balance_by_region,
+            "source_region_priority_patterns": _string_list(
+                scenario.get("source_region_priority_patterns")
+            ),
         },
     }
+
+
+def _balanced_routes_from_region_buckets(
+    route_buckets: list[list[dict[str, Any]]],
+    *,
+    max_routes: int,
+) -> list[dict[str, Any]]:
+    routes: list[dict[str, Any]] = []
+    index = 0
+    while len(routes) < max_routes:
+        appended = False
+        for bucket in route_buckets:
+            if index < len(bucket):
+                routes.append(bucket[index])
+                appended = True
+                if len(routes) >= max_routes:
+                    break
+        if not appended:
+            break
+        index += 1
+    return routes
+
+
+def _ordered_regions_for_demo(
+    region_order: list[str],
+    scenario: dict[str, Any],
+) -> list[str]:
+    patterns = [
+        item.lower()
+        for item in _string_list(scenario.get("source_region_priority_patterns"))
+        if item
+    ]
+    if not patterns:
+        return region_order
+
+    original_index = {region: index for index, region in enumerate(region_order)}
+
+    def sort_key(region: str) -> tuple[int, int]:
+        normalized = region.lower()
+        for index, pattern in enumerate(patterns):
+            if pattern in normalized:
+                return (index, original_index[region])
+        return (len(patterns), original_index[region])
+
+    return sorted(region_order, key=sort_key)
 
 
 def _generate_region_walkable_graph_routes(
@@ -374,6 +432,7 @@ def select_demo_people_routes(
     routes: list[dict[str, Any]],
     *,
     dynamic_zones: list[dict[str, Any]],
+    vehicle_routes: list[dict[str, Any]] | None = None,
     scenario: dict[str, Any],
     scenario_name: str,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -410,7 +469,15 @@ def select_demo_people_routes(
     offset_range_m = _float_range(scenario.get("offset_range_m"))
 
     polygons = _zone_polygons(dynamic_zones)
-    ordered_routes = _round_robin_routes_by_region(routes)
+    prefer_near_vehicle_routes = bool(
+        scenario.get("prefer_routes_near_vehicle_routes", False)
+    )
+    proximity_ordered_routes = (
+        _routes_ordered_by_vehicle_proximity(routes, vehicle_routes or [])
+        if prefer_near_vehicle_routes
+        else routes
+    )
+    ordered_routes = _round_robin_routes_by_region(proximity_ordered_routes)
     rehearsal_settings = _collision_rehearsal_settings(scenario)
     pool_target_count = target_count
     if rehearsal_settings.get("enabled"):
@@ -570,6 +637,7 @@ def select_demo_people_routes(
         "offset_jitter_m": offset_jitter_m,
         "offset_range_m": list(offset_range_m) if offset_range_m is not None else None,
         "route_mode": route_mode,
+        "prefer_routes_near_vehicle_routes": prefer_near_vehicle_routes,
         "collision_rehearsal": rehearsal_debug,
         "max_route_length_m": max_route_length_m,
         "rejected_candidate_count": len(rejected),
@@ -1379,6 +1447,32 @@ def _round_robin_routes_by_region(routes: list[dict[str, Any]]) -> list[dict[str
     return ordered
 
 
+def _routes_ordered_by_vehicle_proximity(
+    routes: list[dict[str, Any]],
+    vehicle_routes: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    vehicle_geometries = [
+        vertices
+        for vertices in (_route_vertices(route) for route in vehicle_routes)
+        if len(vertices) >= 2
+    ]
+    if not vehicle_geometries:
+        return routes
+
+    def score(route: dict[str, Any]) -> float:
+        vertices = _route_vertices(route)
+        if len(vertices) < 2:
+            return float("inf")
+        return min(_route_distance_2d(vertices, vehicle) for vehicle in vehicle_geometries)
+
+    return [
+        route
+        for _score, original_index, route in sorted(
+            (score(route), index, route) for index, route in enumerate(routes)
+        )
+    ]
+
+
 def _iter_route_offset_candidates(
     routes: list[dict[str, Any]],
     offsets: list[float],
@@ -1836,6 +1930,13 @@ def _metadata_float(metadata: dict[str, Any], key: str, default: float) -> float
     except (TypeError, ValueError):
         return float(default)
 
+
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, (list, tuple)):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
 
 def _float_range(value: Any) -> tuple[float, float] | None:
     values = _float_list(value, default=[])

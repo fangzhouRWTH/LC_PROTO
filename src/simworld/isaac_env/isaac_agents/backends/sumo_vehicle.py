@@ -118,7 +118,7 @@ class SumoVehicleDynamicAgentBackend:
             refreshed = state_by_id.get(actor.actor_id)
             if refreshed is not None:
                 actor.planner_state = refreshed
-            self._set_actor_visible(actor, True)
+            self._set_actor_visible(actor, self._should_show_actor(actor))
             position = actor.planner_state.position
             yaw = self._yaw_from_velocity(actor.planner_state.velocity)
             self._apply_actor_pose(actor, position, yaw)
@@ -141,7 +141,13 @@ class SumoVehicleDynamicAgentBackend:
             position = actor.planner_state.position
             yaw = self._yaw_from_velocity(actor.planner_state.velocity)
             self._apply_actor_pose(actor, position, yaw)
-            self._set_actor_visible(actor, not actor.planner_state.finished)
+            self._set_actor_visible(actor, self._should_show_actor(actor))
+
+    def _should_show_actor(self, actor: _ActorRuntime) -> bool:
+        return (
+            self.sim_time_s >= actor.planner_state.spawn_time_s
+            and not actor.planner_state.finished
+        )
 
     def _get_context(self):
         if self.context is None:

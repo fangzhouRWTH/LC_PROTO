@@ -117,7 +117,7 @@ class SumoVehiclePlannerTest(unittest.TestCase):
         self.assertAlmostEqual(_max_yaw_delta(path), 1.57079632679, places=6)
         self.assertLess(_max_yaw_delta(smoothed), 0.5)
 
-    def test_build_states_smooths_vehicle_lane_centerline(self):
+    def test_build_states_prefers_vehicle_line_waypoints_over_lane_centerline(self):
         plan = DynamicScenePlan(
             lanes=[
                 DynamicLanePlan(
@@ -131,6 +131,32 @@ class SumoVehiclePlannerTest(unittest.TestCase):
                 waypoints=[(0.0, 0.0, 0.0), (10.0, 10.0, 0.0)],
                 lane_ids=["vehicle_lane_001"],
             ))],
+        )
+
+        states = build_vehicle_states_from_plan(
+            plan,
+            traffic_config=TrafficConfig(smooth_turns=False),
+        )
+
+        self.assertEqual(states[0].path, [(0.0, 0.0, 0.0), (10.0, 10.0, 0.0)])
+
+    def test_build_states_uses_lane_centerline_when_line_is_absent(self):
+        plan = DynamicScenePlan(
+            lanes=[
+                DynamicLanePlan(
+                    lane_id="vehicle_lane_001",
+                    centerline=[(0.0, 0.0, 0.0), (10.0, 0.0, 0.0), (10.0, 10.0, 0.0)],
+                )
+            ],
+            actors=[_vehicle_actor(
+                route=[],
+                route_plan=DynamicRoutePlan(
+                    route_id="vehicle_route_001",
+                    route_type="lane_ids",
+                    waypoints=[],
+                    lane_ids=["vehicle_lane_001"],
+                ),
+            )],
         )
 
         states = build_vehicle_states_from_plan(

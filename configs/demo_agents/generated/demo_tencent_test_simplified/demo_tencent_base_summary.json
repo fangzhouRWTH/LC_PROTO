@@ -1,0 +1,27 @@
+{
+  "schema_version": "simworld.public_space_base_plan_summary.v1",
+  "scene_usd": "/home/sstormw/LeapsCora/LC_PROTO/assets/blocks/demo_tencent_test_simplified.usdc",
+  "visited_prims": 86,
+  "matched_rules": 18,
+  "public_space_region_count": 9,
+  "public_space_parse_warnings": [
+    "/root/placeholder_area_publicspace_005_cityyardroof: synthesized 4 boundary segments (type='city_yard_roof', hint='')",
+    "/root/placeholder_area_publicspace_009_blockentrance: synthesized 4 boundary segments (type='block_entrance', hint='')",
+    "/root/placeholder_area_publicspace_003_buildingentrance: synthesized 4 boundary segments (type='building_entrance', hint='')",
+    "/root/placeholder_area_publicspace_001_cityyardroofless: synthesized 4 boundary segments (type='city_yard_roofless', hint='')",
+    "/root/placeholder_area_publicspace_007_citystreetroof: synthesized 4 boundary segments (type='city_street_roof', hint='')",
+    "/root/placeholder_area_publicspace_002_buildingentrance: synthesized 4 boundary segments (type='building_entrance', hint='')",
+    "/root/placeholder_area_publicspace_008_blockentrance: synthesized 4 boundary segments (type='block_entrance', hint='')",
+    "/root/placeholder_area_publicspace_006_citystreetroofless: synthesized 4 boundary segments (type='city_street_roofless', hint='')",
+    "/root/placeholder_area_publicspace_004_buildingentrance: synthesized 4 boundary segments (type='building_entrance', hint='')"
+  ],
+  "placement_count": 87,
+  "pedestrian_walkable_line_count": 32,
+  "pedestrian_route_count": 20,
+  "dynamic_zone_count": 49,
+  "static_zone_count": 48,
+  "vehicle_route_count": 2,
+  "vehicle_lane_count": 2,
+  "vehicle_spawn_count": 0,
+  "vehicle_goal_count": 0
+}

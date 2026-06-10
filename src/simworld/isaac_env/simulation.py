@@ -65,8 +65,13 @@ DEFAULT_DYNAMIC_PEDESTRIAN_SPEED_MPS = (
     _DEFAULT_DYNAMIC_PLAN_CONFIG.pedestrian_speed_mps
 )
 DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS = _DEFAULT_DYNAMIC_PLAN_CONFIG.vehicle_speed_mps
+DEFAULT_DYNAMIC_VEHICLES_PER_LINE = _DEFAULT_DYNAMIC_PLAN_CONFIG.vehicle_actors_per_line
+DEFAULT_DYNAMIC_VEHICLE_SPAWN_INTERVAL_S = (
+    _DEFAULT_DYNAMIC_PLAN_CONFIG.vehicle_spawn_interval_s
+)
 DEFAULT_DYNAMIC_SPAWN_TIME_S = _DEFAULT_DYNAMIC_PLAN_CONFIG.default_spawn_time_s
 DEFAULT_DYNAMIC_ROUTE_MODE = _DEFAULT_DYNAMIC_PLAN_CONFIG.default_route_mode
+DEFAULT_DYNAMIC_ROUTES_JSON = None
 DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY = "hidden"
 DEFAULT_PLACEHOLDER_DISPOSITION = None
 DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL = "proxy"
@@ -122,8 +127,11 @@ class SimulationConfig:
     dynamic_max_vehicle_actors: int = DEFAULT_DYNAMIC_MAX_VEHICLE_ACTORS
     dynamic_pedestrian_speed_mps: float = DEFAULT_DYNAMIC_PEDESTRIAN_SPEED_MPS
     dynamic_vehicle_speed_mps: float = DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS
+    dynamic_vehicles_per_line: int = DEFAULT_DYNAMIC_VEHICLES_PER_LINE
+    dynamic_vehicle_spawn_interval_s: float = DEFAULT_DYNAMIC_VEHICLE_SPAWN_INTERVAL_S
     dynamic_spawn_time_s: float = DEFAULT_DYNAMIC_SPAWN_TIME_S
     dynamic_route_mode: str = DEFAULT_DYNAMIC_ROUTE_MODE
+    dynamic_routes_json: pathlib.Path | None = DEFAULT_DYNAMIC_ROUTES_JSON
     dynamic_placeholder_visibility: str = DEFAULT_DYNAMIC_PLACEHOLDER_VISIBILITY
     placeholder_disposition: str | None = None
     dynamic_pedestrian_visual: str = DEFAULT_DYNAMIC_PEDESTRIAN_VISUAL
@@ -215,6 +223,10 @@ def _make_dynamic_plan_config(config: SimulationConfig) -> dynamic.DynamicPlanCo
         max_vehicle_actors=max(0, int(config.dynamic_max_vehicle_actors)),
         pedestrian_speed_mps=max(0.0, float(config.dynamic_pedestrian_speed_mps)),
         vehicle_speed_mps=max(0.0, float(config.dynamic_vehicle_speed_mps)),
+        vehicle_actors_per_line=max(1, int(config.dynamic_vehicles_per_line)),
+        vehicle_spawn_interval_s=max(
+            0.0, float(config.dynamic_vehicle_spawn_interval_s)
+        ),
         default_spawn_time_s=max(0.0, float(config.dynamic_spawn_time_s)),
         default_route_mode=str(config.dynamic_route_mode or DEFAULT_DYNAMIC_ROUTE_MODE),
     )
@@ -374,6 +386,7 @@ def run(config: SimulationConfig | None = None):
             dynamic_placeholder_visibility=config.dynamic_placeholder_visibility,
             placeholder_disposition=config.placeholder_disposition,
             area_placement=_make_area_placement_config(config),
+            dynamic_routes_json=config.dynamic_routes_json,
         )
 
         weather_lighting = WeatherLightingManager.from_weather(
