@@ -16,6 +16,11 @@ class RobotFactoryTest(unittest.TestCase):
         self.assertFalse(robot.need_reinit)
         self.assertEqual(robot.root_prim_path, "/World")
 
+    def test_go2_robot_type_is_registered(self):
+        available = factory.available_robot_types()
+        self.assertIn("go2", available)
+        self.assertIn("unitree_go2", available)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -641,6 +641,15 @@ PROCESSING_RULES = [
         ],
     ),
     ProcessingRule(
+        name="placeholder go2 spawn point",
+        mobility="placeholder",
+        domain="go2",
+        category="spawn",
+        actions=[
+            set_spawn_point_from_prim,
+        ],
+    ),
+    ProcessingRule(
         name="placeholder plaza area",
         mobility="placeholder",
         domain="area",
