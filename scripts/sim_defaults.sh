@@ -14,11 +14,16 @@ find_isaac_python() {
     fi
   fi
 
-  candidate="${HOME}/Nvidia/isaacsim-git/isaacsim/_build/linux-x86_64/release/python.sh"
-  if [[ -x "${candidate}" ]]; then
-    printf '%s\n' "${candidate}"
-    return 0
-  fi
+  for candidate in \
+    "${HOME}/IsaacSim/_build/linux-x86_64/release/python.sh" \
+    "${HOME}/isaacsim/_build/linux-x86_64/release/python.sh" \
+    "${HOME}/Nvidia/isaacsim-git/isaacsim/_build/linux-x86_64/release/python.sh"
+  do
+    if [[ -x "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
 
   shopt -s nullglob
   for candidate in "${HOME}"/.local/share/ov/pkg/isaac-sim-*/python.sh; do
@@ -57,8 +62,11 @@ DYNAMIC_MAX_PEDESTRIAN_ACTORS="${DYNAMIC_MAX_PEDESTRIAN_ACTORS:-}"
 DYNAMIC_MAX_VEHICLE_ACTORS="${DYNAMIC_MAX_VEHICLE_ACTORS:-}"
 DYNAMIC_PEDESTRIAN_SPEED_MPS="${DYNAMIC_PEDESTRIAN_SPEED_MPS:-}"
 DYNAMIC_VEHICLE_SPEED_MPS="${DYNAMIC_VEHICLE_SPEED_MPS:-}"
+DYNAMIC_VEHICLES_PER_LINE="${DYNAMIC_VEHICLES_PER_LINE:-}"
+DYNAMIC_VEHICLE_SPAWN_INTERVAL_S="${DYNAMIC_VEHICLE_SPAWN_INTERVAL_S:-}"
 DYNAMIC_SPAWN_TIME_S="${DYNAMIC_SPAWN_TIME_S:-}"
 DYNAMIC_ROUTE_MODE="${DYNAMIC_ROUTE_MODE:-}"
+DYNAMIC_ROUTES_JSON="${DYNAMIC_ROUTES_JSON:-}"
 DYNAMIC_PLACEHOLDER_VISIBILITY="${DYNAMIC_PLACEHOLDER_VISIBILITY:-}"
 DYNAMIC_PEDESTRIAN_VISUAL="${DYNAMIC_PEDESTRIAN_VISUAL:-}"
 DYNAMIC_PEDESTRIAN_ASSET_PATH="${DYNAMIC_PEDESTRIAN_ASSET_PATH:-}"
@@ -120,8 +128,11 @@ build_sim_args() {
   append_sim_arg_if_set "--dynamic-max-vehicle-actors" "${DYNAMIC_MAX_VEHICLE_ACTORS}"
   append_sim_arg_if_set "--dynamic-pedestrian-speed-mps" "${DYNAMIC_PEDESTRIAN_SPEED_MPS}"
   append_sim_arg_if_set "--dynamic-vehicle-speed-mps" "${DYNAMIC_VEHICLE_SPEED_MPS}"
+  append_sim_arg_if_set "--dynamic-vehicles-per-line" "${DYNAMIC_VEHICLES_PER_LINE}"
+  append_sim_arg_if_set "--dynamic-vehicle-spawn-interval-s" "${DYNAMIC_VEHICLE_SPAWN_INTERVAL_S}"
   append_sim_arg_if_set "--dynamic-spawn-time-s" "${DYNAMIC_SPAWN_TIME_S}"
   append_sim_arg_if_set "--dynamic-route-mode" "${DYNAMIC_ROUTE_MODE}"
+  append_sim_arg_if_set "--dynamic-routes-json" "${DYNAMIC_ROUTES_JSON}"
   append_sim_arg_if_set "--dynamic-placeholder-visibility" "${DYNAMIC_PLACEHOLDER_VISIBILITY}"
   append_sim_arg_if_set "--dynamic-pedestrian-visual" "${DYNAMIC_PEDESTRIAN_VISUAL}"
   append_sim_arg_if_set "--dynamic-pedestrian-asset-path" "${DYNAMIC_PEDESTRIAN_ASSET_PATH}"

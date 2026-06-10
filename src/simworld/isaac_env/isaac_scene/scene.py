@@ -5,6 +5,7 @@ import pathlib
 from . import scene_tools as tools
 from . import scene_parser as parser
 from . import scene_generator as generator
+from .dynamic_routes_json import apply_dynamic_routes_json
 from . import scene_asset_allocator as asset_allocator
 from .scene_area_placement import (
     AreaPlacementPrepareConfig,
@@ -104,6 +105,7 @@ class SimScene:
         dynamic_placeholder_visibility: str = "hidden",
         placeholder_disposition: str | None = None,
         area_placement: AreaPlacementPrepareConfig | None = None,
+        dynamic_routes_json: pathlib.Path | None = None,
     ):
         self.stats = parser.SceneStats()
         tools.deactivate_all_lights(self.stage)
@@ -137,6 +139,19 @@ class SimScene:
             self.generated_asset_prim_paths.extend(
                 self._prepare_legacy_placeholder_assets(verbose=verbose)
             )
+
+        if dynamic_routes_json is not None:
+            route_result = apply_dynamic_routes_json(self.stats, dynamic_routes_json)
+            print(
+                "[INFO] Loaded dynamic routes JSON: "
+                f"{route_result.path} "
+                f"pedestrian_routes={route_result.pedestrian_route_count} "
+                f"vehicle_routes={route_result.vehicle_route_count} "
+                f"vehicle_lanes={route_result.vehicle_lane_count} "
+                f"replace_existing={route_result.replace_existing}"
+            )
+            for warning in route_result.warnings:
+                print(f"[WARN] {warning}")
 
         if build_dynamic_plan:
             self.dynamic_plan = dynamic.build_dynamic_actor_plan(

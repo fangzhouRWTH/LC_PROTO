@@ -16,8 +16,95 @@ These large/local assets are not tracked by git in this checkout, so teammates n
 | LCSTD fixed asset library root | `/home/sstormw/LeapsCora/LC_PROTO/assets/lcstd_assets_library./lcstd_assets_library/static/` |
 | LCSTD asset map | `/home/sstormw/LeapsCora/LC_PROTO/assets/lcstd_assets_library./lcstd_assets_library/static/asset_name_map.json` |
 | Isaac People asset pack | `/home/sstormw/isaacsim_assets/Assets/Isaac/5.1/Isaac/People/` |
+| Isaac 4w vehicle demo asset pack | `/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/isaac_vehicle_4w/` |
 
 The LCSTD directory name currently includes a trailing dot: `assets/lcstd_assets_library.`. Keep that spelling unless the command line is updated too.
+
+
+## Scene-Specific People + Vehicle Preset Generation
+
+For short-term demo scenes, use the two-step preset flow instead of manually wiring one-off environment variables. The default Tencent demo scene is:
+
+```text
+assets/blocks/demo_tencent_test_simplified.usdc
+```
+
+Generate six dynamic people/vehicle route presets from the current USD scene:
+
+```bash
+scripts/build_demo_dynamic_agent_presets.sh \
+  --scene-usd assets/blocks/demo_tencent_test_simplified.usdc \
+  --output-dir configs/demo_agents/generated/demo_tencent_test_simplified \
+  --preset-prefix demo_tencent
+```
+
+The command writes:
+
+- `demo_tencent_base_placement_plan.json`: clean scene-derived public-space placement plan
+- `demo_tencent_base_summary.json`: parser summary, including `vehicle_route_count` and `vehicle_lane_count`
+- `demo_tencent_people_1..6_placement_plan.json`: intermediate people-route plans used only by the generator
+- `demo_tencent_people_1..6_dynamic_routes.json`: dynamic-only route layers loaded by runtime
+- `demo_tencent_people_1..6_dynamic_agent_preset.json`: runtime environment presets for people + vehicles
+- optional HTML previews under `outputs/public_space_routes/demo_tencent_test_simplified/`
+
+The `*_dynamic_routes.json` files intentionally contain only `pedestrian_routes`, `vehicle_routes`, and `vehicle_lanes`. They do not contain fixed-asset `placements`, so loading one changes the dynamic layer without overriding the main static asset placement, weather, sensor, or camera flow.
+
+Run one density with:
+
+```bash
+scripts/run_demo_dynamic_agent_preset.py \
+  --preset-json configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_3_dynamic_agent_preset.json
+```
+
+Change density by choosing `people_1` through `people_6` in the preset filename, or by setting `DEMO_PEOPLE_SCENARIO=people_4` when using the Tencent wrapper. The generated Tencent summary from this workstation confirms that `demo_tencent_test_simplified.usdc` currently parses `vehicle_route_count=2` and `vehicle_lane_count=2`. If vehicles do not appear at runtime, first check that the combined/preset runner is being used; the people-only wrapper intentionally defaults `DYNAMIC_MAX_VEHICLE_ACTORS=0`.
+
+## Tencent Demo Vehicle Flow
+
+Vehicle authoring for the short-term Tencent demo uses these USD placeholder names:
+
+```text
+placeholder_vehicle_lane_001  # drivable lane area / bounds
+placeholder_vehicle_line_001  # explicit lane centerline; vertex order is driving direction
+```
+
+The runtime treats `placeholder_vehicle_line_*` as the authoritative driving line when it exists. A same-index `placeholder_vehicle_lane_*` is kept as lane context and validation metadata. If a future scene only provides `placeholder_vehicle_lane_*`, the dynamic plan falls back to a lane-derived centerline, but direction quality depends on the lane polygon ordering.
+
+Run the combined people + vehicle demo with:
+
+```bash
+DEMO_PEOPLE_SCENARIO=people_3 \
+DYNAMIC_MAX_VEHICLE_ACTORS=6 \
+DYNAMIC_VEHICLES_PER_LINE=3 \
+DYNAMIC_VEHICLE_SPEED_MPS=9.0 \
+DYNAMIC_VEHICLE_SPAWN_INTERVAL_S=4.0 \
+scripts/run_demo_tencent_dynamic_agents.sh
+```
+
+Useful knobs:
+
+- `DEMO_PEOPLE_SCENARIO=people_1|people_2|people_3|people_4|people_5|people_6` changes pedestrian density.
+- `DYNAMIC_MAX_VEHICLE_ACTORS` caps total visible/generated vehicle actors.
+- `DYNAMIC_VEHICLES_PER_LINE` creates multiple staggered vehicles from each `vehicle_line`.
+- `DYNAMIC_VEHICLE_SPAWN_INTERVAL_S` delays vehicles derived from the same line so they do not all appear at the start.
+- `DYNAMIC_VEHICLE_SPEED_MPS` controls vehicle speed; the combined Tencent demo wrapper defaults to `9.0`.
+- `DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME=false` restores staggered pedestrian starts; the wrapper defaults to immediate starts.
+- `DYNAMIC_VEHICLE_ASSET_PATH` points to the USD car asset; the combined wrapper now prefers the first locally validated sedan asset, then the local Isaac 4w asset pack, then the official remote Isaac USD. If the runtime cannot load the selected asset it falls back to proxy visuals.
+
+On this workstation the default vehicle asset is:
+
+```text
+/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/lc_proto_sedan_vehicle_zup.usda
+```
+
+The local Isaac 4w vehicle pack remains available as a fallback asset. Teammates can either copy this local folder, run the helper below, or rely on the wrapper remote fallback if their machine can access NVIDIA Omniverse content online:
+
+```bash
+scripts/download_isaac_vehicle_4w_asset.sh
+```
+
+```text
+https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Outdoor/Rivermark/dsready_content/nv_core/common_tools/validation/golden_assets/vehicle/4w/main.usda
+```
 
 The generated preview and placement plan are local outputs and can be regenerated:
 
@@ -107,25 +194,30 @@ The scenario names are literal visible-person counts:
 | `people_5` | 30 | dense demo crowd |
 | `people_6` | 40 | maximum current crowd preset |
 
-These presets are demo-only. For the short-term demo, the six final route sets are precomputed and checked in under:
+These presets are demo-only. The normal Tencent wrapper now builds fixed-asset placement from the current USD public-space labels, then applies the selected demo people scenario. This avoids loading one stale placement plan after the scene labels change.
 
-```text
-configs/demo_people/generated/tencent_people_1_placement_plan.json
-configs/demo_people/generated/tencent_people_2_placement_plan.json
-configs/demo_people/generated/tencent_people_3_placement_plan.json
-configs/demo_people/generated/tencent_people_4_placement_plan.json
-configs/demo_people/generated/tencent_people_5_placement_plan.json
-configs/demo_people/generated/tencent_people_6_placement_plan.json
+The default runtime path applies the selected `*_dynamic_routes.json` after normal scene parsing and static placement. Density is selected with:
+
+```bash
+DEMO_PEOPLE_SCENARIO=people_1 scripts/run_demo_tencent_dynamic_people.sh
+DEMO_PEOPLE_SCENARIO=people_6 scripts/run_demo_tencent_dynamic_agents.sh
 ```
 
-The static plans include fixed-asset placements plus the final demo `pedestrian_routes`. Runtime does not rerun route generation, collision rehearsal, or local detour insertion when `scripts/run_demo_tencent_dynamic_people.sh` is used with its defaults. It only chooses the precomputed plan matching `DEMO_PEOPLE_SCENARIO`.
+You can also bypass the scenario naming and point at an exact dynamic layer:
+
+```bash
+DYNAMIC_ROUTES_JSON=configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_4_dynamic_routes.json \
+  scripts/run_demo_tencent_dynamic_agents.sh
+```
+
+Precomputed static plans may still be used explicitly for a locked legacy rehearsal by setting `DEMO_PEOPLE_USE_STATIC_PLAN=true` and `DEMO_PEOPLE_PLACEMENT_PLAN=...`. Static plans include fixed-asset placements plus final `pedestrian_routes`, so they must be regenerated whenever the scene USD labels change.
 
 The offline generator that produced these plans keeps the main public-space output intact, then postprocesses `pedestrian_walkable_lines` into longer demo routes. Each actor has deterministic values for:
 
 - `offset_m`: lateral route offset, using uneven left/right candidates instead of one fixed lane width
 - `start_offset_m`: distance trimmed from the route start, so actors can spawn along the route body instead of only at graph endpoints
 - `speed_mps`: per-actor walking speed
-- `spawn_time_s`: staggered spawn time
+- `spawn_time_s`: staggered spawn time; the current Tencent demo wrapper ignores it by default so all people are visible and walking from frame 0
 - `collision_rehearsal_detours`: optional local bend points inserted around near-collision locations
 
 Run Isaac with the wrapper script:
@@ -134,11 +226,14 @@ Run Isaac with the wrapper script:
 DEMO_PEOPLE_SCENARIO=people_6 \
 DYNAMIC_ISAAC_PEOPLE_DEBUG=true \
 scripts/run_demo_tencent_dynamic_people.sh
+
+# Restore staggered preset starts when desired:
+DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME=false scripts/run_demo_tencent_dynamic_people.sh
 ```
 
-The wrapper defaults to `DEMO_PEOPLE_SCENARIO=people_3`, `DEMO_PEOPLE_USE_STATIC_PLAN=true`, `DYNAMIC_ROUTE_MODE=once`, and `DYNAMIC_MAX_PEDESTRIAN_ACTORS=40`. It does not pass external `asset_configuration/` and does not pass `--demo-people-config` unless `DEMO_PEOPLE_USE_STATIC_PLAN=false` is explicitly set.
+The wrapper defaults to `DEMO_PEOPLE_SCENARIO=people_3`, `DEMO_PEOPLE_USE_STATIC_PLAN=false`, `DYNAMIC_ROUTE_MODE=once`, `DYNAMIC_MAX_PEDESTRIAN_ACTORS=40`, and `DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME=true`. It does not pass external `asset_configuration/`; fixed assets are generated from the current USD labels by default, then the selected dynamic-only JSON replaces only pedestrian/vehicle route fields. Set `DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME=false` to restore the preset staggered starts.
 
-Render the same demo-selected routes without launching Isaac:
+Render an explicitly precomputed static plan without launching Isaac:
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src/simworld \
@@ -153,19 +248,16 @@ scripts/visualize_public_space_routes.py \
 
 Latest fixed-plan previews generated all six requested counts with no scenario warnings: `6 / 10 / 16 / 22 / 30 / 40`. The fixed plans also record the offline collision-rehearsal summary in `demo_people_scenario_debug.collision_rehearsal`. The rehearsal inserts local bend points and small spawn delays where possible, but the current Tencent demo presets can still contain a few residual close passes in dense street segments.
 
-To regenerate fixed presets for a different parcel, first produce a clean/main placement plan for that parcel. For USD-scene-derived regions this is typically the `placement_output.json` produced by area placement before applying demo people presets. Then run:
+To regenerate dynamic route layers for a different parcel, run the same scene-specific preset builder with the new scene USD:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 \
-scripts/build_demo_people_static_presets.py \
-  --base-placement-plan-json outputs/area_placement/<new_parcel_base>/placement_output.json \
-  --demo-people-config configs/demo_people/tencent_dynamic_people_scenarios.json \
-  --output-dir configs/demo_people/generated \
-  --preset-prefix tencent \
-  --summary-json configs/demo_people/generated/tencent_static_preset_summary.json
+scripts/build_demo_dynamic_agent_presets.sh \
+  --scene-usd assets/blocks/<new_scene>.usdc \
+  --output-dir configs/demo_agents/generated/<new_scene_name> \
+  --preset-prefix <new_prefix>
 ```
 
-The command writes six fixed placement plans. After that, runtime still only chooses by `DEMO_PEOPLE_SCENARIO`; it does not rerun the rehearsal. If the new parcel should keep both old and new presets, use a different `--preset-prefix` and set `DEMO_PEOPLE_PLACEMENT_PLAN` or `DEMO_PEOPLE_PRESET_DIR` in the wrapper script environment.
+The command writes six dynamic route JSONs and six preset wrappers. After that, runtime chooses by `DEMO_PEOPLE_SCENARIO` or `DYNAMIC_ROUTES_JSON`; it does not rerun the rehearsal while Isaac is starting. If the new parcel should keep both old and new presets, use a different `--preset-prefix` and point `DEMO_DYNAMIC_ROUTES_DIR` / `DEMO_DYNAMIC_ROUTES_PREFIX` or `DYNAMIC_ROUTES_JSON` at the desired set.
 
 ## HTML Preview
 

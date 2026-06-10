@@ -98,6 +98,18 @@ def parse_args():
         default=simulation.DEFAULT_DYNAMIC_VEHICLE_SPEED_MPS,
     )
     parser.add_argument(
+        "--dynamic-vehicles-per-line",
+        type=int,
+        default=simulation.DEFAULT_DYNAMIC_VEHICLES_PER_LINE,
+        help="Number of vehicle actors to spawn from each vehicle line/lane.",
+    )
+    parser.add_argument(
+        "--dynamic-vehicle-spawn-interval-s",
+        type=float,
+        default=simulation.DEFAULT_DYNAMIC_VEHICLE_SPAWN_INTERVAL_S,
+        help="Spawn-time offset between vehicles derived from the same line/lane.",
+    )
+    parser.add_argument(
         "--dynamic-spawn-time-s",
         type=float,
         default=simulation.DEFAULT_DYNAMIC_SPAWN_TIME_S,
@@ -106,6 +118,16 @@ def parse_args():
         "--dynamic-route-mode",
         default=simulation.DEFAULT_DYNAMIC_ROUTE_MODE,
         choices=("loop", "once", "stop_at_end", "stop-at-end", "ping_pong"),
+    )
+    parser.add_argument(
+        "--dynamic-routes-json",
+        type=pathlib.Path,
+        default=simulation.DEFAULT_DYNAMIC_ROUTES_JSON,
+        help=(
+            "Dynamic-only routes JSON. Injects pedestrian_routes, vehicle_routes, "
+            "and vehicle_lanes before DynamicScenePlan generation without changing "
+            "fixed asset placement."
+        ),
     )
     parser.add_argument(
         "--dynamic-placeholder-visibility",
@@ -378,8 +400,11 @@ if __name__ == "__main__":
             dynamic_max_vehicle_actors=args.dynamic_max_vehicle_actors,
             dynamic_pedestrian_speed_mps=args.dynamic_pedestrian_speed_mps,
             dynamic_vehicle_speed_mps=args.dynamic_vehicle_speed_mps,
+            dynamic_vehicles_per_line=args.dynamic_vehicles_per_line,
+            dynamic_vehicle_spawn_interval_s=args.dynamic_vehicle_spawn_interval_s,
             dynamic_spawn_time_s=args.dynamic_spawn_time_s,
             dynamic_route_mode=args.dynamic_route_mode,
+            dynamic_routes_json=args.dynamic_routes_json,
             dynamic_placeholder_visibility=args.dynamic_placeholder_visibility,
             placeholder_disposition=args.placeholder_disposition,
             dynamic_pedestrian_visual=args.dynamic_pedestrian_visual,

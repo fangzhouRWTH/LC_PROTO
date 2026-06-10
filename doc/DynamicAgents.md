@@ -43,8 +43,9 @@ Currently supported dynamic names include:
 | `placeholder_pedestrian_route_001` | Pedestrian waypoint route geometry | `SceneStats.pedestrian_routes` |
 | `placeholder_vehicle_spawn_001` | Vehicle spawn point | `SceneStats.vehicle_spawn_points` |
 | `placeholder_vehicle_goal_001` | Vehicle goal point | `SceneStats.vehicle_goal_points` |
-| `placeholder_vehicle_route_001` | Vehicle waypoint route geometry | `SceneStats.vehicle_routes` |
-| `placeholder_vehicle_lane_001` | Vehicle lane or route geometry | `SceneStats.vehicle_lanes` |
+| `placeholder_vehicle_line_001` | Vehicle lane centerline; vertex order defines driving direction | `SceneStats.vehicle_routes` |
+| `placeholder_vehicle_route_001` | Legacy vehicle waypoint route geometry | `SceneStats.vehicle_routes` |
+| `placeholder_vehicle_lane_001` | Vehicle drivable lane area; fallback centerline source when no line exists | `SceneStats.vehicle_lanes` |
 | `placeholder_area_sidewalk_001` | Sidewalk area for future pedestrian logic | `SceneStats.sidewalk_areas` |
 | `placeholder_area_crosswalk_001` | Crosswalk area for future pedestrian logic | `SceneStats.crosswalk_areas` |
 
@@ -110,7 +111,9 @@ DynamicLanePlan
   metadata
 ```
 
-The planner uses explicit pedestrian or vehicle route placeholders first. Route placeholder mesh vertices are treated as waypoint order, and the first and last waypoints become the actor `spawn_pose` and `goal_pose`. If no route placeholder exists for an actor type, the planner falls back to pairing spawn/goal placeholders by matching `index` values; unindexed spawn/goal points are paired in list order after indexed pairs. Vehicle lane placeholders are converted into scene-level `DynamicLanePlan` entries; vehicle routes with a matching placeholder index reference those lanes through `DynamicRoutePlan.lane_ids`. The number of generated actors is limited by config. P1.0 keeps the legacy `route`, `speed_mps`, and `spawn_time_s` fields so the kinematic backend stays compatible, while also filling richer optional fields that future adapters can consume.
+The planner uses explicit pedestrian route placeholders and explicit vehicle line/route placeholders first. Route placeholder mesh vertices are treated as waypoint order, and the first and last waypoints become the actor `spawn_pose` and `goal_pose`. If no route placeholder exists for an actor type, the planner falls back to pairing spawn/goal placeholders by matching `index` values; unindexed spawn/goal points are paired in list order after indexed pairs. Vehicle lane placeholders are converted into scene-level `DynamicLanePlan` entries; vehicle lines/routes with a matching placeholder index reference those lanes through `DynamicRoutePlan.lane_ids`. When no vehicle line/route exists, a lane-derived centerline is used as a fallback vehicle path. The number of generated actors is limited by config. P1.0 keeps the legacy `route`, `speed_mps`, and `spawn_time_s` fields so the kinematic backend stays compatible, while also filling richer optional fields that future adapters can consume.
+
+For scene-specific demos, dynamic route data can also be loaded from a generated dynamic-only JSON before the `DynamicScenePlan` is built. Pass it with `--dynamic-routes-json` or `DYNAMIC_ROUTES_JSON`. This file replaces only pedestrian and vehicle route/lane fields by default (`replace_existing=true`) and does not affect fixed-asset placements, weather, sensors, or other mainline scene preparation.
 
 ### P1.3 Route Mode And Kinematic Behavior
 
@@ -207,8 +210,11 @@ Dynamic agent runtime options can be passed through environment variables used b
 | `DYNAMIC_MAX_VEHICLE_ACTORS` | `1` | Max number of vehicle actors generated from route placeholders or spawn/goal pairs. |
 | `DYNAMIC_PEDESTRIAN_SPEED_MPS` | `1.2` | Pedestrian speed in meters per second. |
 | `DYNAMIC_VEHICLE_SPEED_MPS` | `4.0` | Vehicle speed in meters per second. |
+| `DYNAMIC_VEHICLES_PER_LINE` | `1` | Demo helper: number of vehicle actors derived from each vehicle line/lane. |
+| `DYNAMIC_VEHICLE_SPAWN_INTERVAL_S` | `0.0` | Demo helper: spawn-time offset between vehicles derived from the same line/lane. |
 | `DYNAMIC_SPAWN_TIME_S` | `0.0` | Delay before actors begin moving. |
 | `DYNAMIC_ROUTE_MODE` | `loop` | Default route lifecycle. Use `once` for route-end hide/despawn demos. |
+| `DYNAMIC_ROUTES_JSON` | unset | Optional dynamic-only JSON containing `pedestrian_routes`, `vehicle_routes`, and `vehicle_lanes` to apply before dynamic planning. |
 | `DYNAMIC_PLACEHOLDER_VISIBILITY` | `hidden` | Show or hide dynamic authoring placeholders. Use `visible` for route debugging. |
 | `DYNAMIC_PEDESTRIAN_VISUAL` | `proxy` | Pedestrian visual mode. Use `asset` to reference a real USD pedestrian asset. |
 | `DYNAMIC_PEDESTRIAN_ASSET_PATH` | unset | Optional USD file or directory for pedestrian assets. Leave empty to try Isaac People defaults. |
@@ -379,7 +385,7 @@ Run with Isaac People defaults after configuring the Isaac asset root:
 DYNAMIC_PEDESTRIAN_VISUAL=asset scripts/run_sim.sh
 ```
 
-P1.6 originally referenced static USD appearance only. The actor root transform still comes from the LC_PROTO motion backend. The referenced pedestrian asset child is rotated `+90` degrees around Z to match the common Isaac People / NVIDIA biped `-Y-forward` convention. Vehicle USD asset reference is supported as a static visual layer, but no vehicle asset pack is bundled in this branch; if no local/Isaac vehicle USD is found, vehicles still fall back to the proxy visual.
+P1.6 originally referenced static USD appearance only. The actor root transform still comes from the LC_PROTO motion backend. The referenced pedestrian asset child is rotated `+90` degrees around Z to match the common Isaac People / NVIDIA biped `-Y-forward` convention. Vehicle USD asset reference is supported as a static visual layer. The Tencent dynamic-agents wrapper now prefers the first locally validated sedan asset, then a local Isaac 4w vehicle pack under `/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/isaac_vehicle_4w/`, then the official remote Isaac USD. If the selected vehicle USD cannot load, vehicles still fall back to the proxy visual.
 
 ### Pedestrian USD Clip Animation
 
@@ -424,7 +430,7 @@ The backend has two control modes:
 | `DYNAMIC_ISAAC_PEOPLE_CONTROL=route` | Current default demo | LC_PROTO moves the character root along `placeholder_pedestrian_route_*` waypoints; the isolated `isaac_people_route_animation.py` helper binds an Isaac People in-place walk `*.skelanim.usd` clip to the character skeleton for visible leg motion. |
 | `DYNAMIC_ISAAC_PEOPLE_CONTROL=command` | Future navmesh-backed formal parcels | LC_PROTO writes an OAP command file with `GoTo x y z angle` lines and lets `omni.anim.people` consume the command file. |
 
-`DYNAMIC_ISAAC_PEOPLE_NAVMESH` only matters in `command` mode. The current test USD is not authored as a formal Omniverse navigation scene, so route mode is the reliable demo path. `once` / `stop_at_end` route modes hide the character at the route end and reset makes the character visible again. Route mode is intentionally isolated from the existing kinematic / ORCA / SUMO runtime logic; only `isaac_people` and `isaac_people_sumo` call the Isaac People animation helper.
+`DYNAMIC_ISAAC_PEOPLE_NAVMESH` only matters in `command` mode. The current test USD is not authored as a formal Omniverse navigation scene, so route mode is the reliable demo path. `once` / `stop_at_end` route modes hide the character at the route end and reset makes the character visible again. `DYNAMIC_ISAAC_PEOPLE_IGNORE_SPAWN_TIME=true` makes preset pedestrians start immediately even when their plan has staggered `spawn_time_s`; the Tencent demo wrapper enables this by default for clearer first-frame playback. Route mode is intentionally isolated from the existing kinematic / ORCA / SUMO runtime logic; only `isaac_people` and `isaac_people_sumo` call the Isaac People animation helper.
 
 Isaac People/NVIDIA biped characters commonly use a `-Y-forward` convention while LC_PROTO route yaw treats +X as zero heading. Route mode therefore applies `DYNAMIC_ISAAC_PEOPLE_YAW_OFFSET_DEG=90` by default. If a character appears sideways or reversed, debug by running with `DYNAMIC_ISAAC_PEOPLE_YAW_OFFSET_DEG=0`, `-90`, or `180` without changing route data.
 
@@ -468,18 +474,35 @@ Notes for authoring: route waypoints still come from LC_PROTO `placeholder_pedes
 
 ### Vehicle USD Asset Plan
 
-Vehicle assets now follow the same runtime-reference pattern as pedestrians: `DYNAMIC_VEHICLE_VISUAL=proxy|asset`, `DYNAMIC_VEHICLE_ASSET_PATH`, and `DYNAMIC_VEHICLE_ASSET_SCALE`. The vehicle root keeps receiving motion/yaw from the backend; the referenced child is auto-fitted inside `DynamicActorShape.length_m`, `width_m`, and `height_m`. For this street-block demo, vehicle assets should be ordinary road cars, not delivery robots, carts, or Coco-style sidewalk vehicles. Use an explicit local USD file or directory for reproducible demos; if no path is provided, the runtime falls back to the proxy instead of guessing an Isaac default vehicle.
+Vehicle assets now follow the same runtime-reference pattern as pedestrians: `DYNAMIC_VEHICLE_VISUAL=proxy|asset`, `DYNAMIC_VEHICLE_ASSET_PATH`, and `DYNAMIC_VEHICLE_ASSET_SCALE`. The vehicle root keeps receiving motion/yaw from the backend; the referenced child is auto-fitted inside `DynamicActorShape.length_m`, `width_m`, and `height_m`. For this street-block demo, vehicle assets should be ordinary road cars, not delivery robots, carts, or sidewalk micro-mobility assets.
 
-Local test vehicle asset installed for this branch:
+The current Tencent demo default is the first locally validated sedan wrapper. It is cached outside the repo so the USD payload is not committed:
 
 ```bash
 /home/sstormw/LeapsCora/local_assets/dynamic_vehicles/lc_proto_sedan_vehicle_zup.usda
 ```
 
-It wraps the CC0 `USD_Mini_Car_Kit` sedan street-car asset from `usd-wg/assets`, converts the source Y-up vehicle into the LC_PROTO Z-up stage, and rotates the model so its long axis is `+X forward` for the runtime yaw convention. The wrapper also carries `lc_proto:visualZOffsetM = -0.25`, which the runtime applies after automatic bounds fitting to keep the current sedan visually on the road surface. This is intentionally a road car placeholder, not a delivery robot.
+The Isaac 4w fallback folder to share with teammates is:
 
-Do not put downloaded vehicle packs under `LC_PROTO/assets/library` unless they are intended for the static placement planner. For shared dynamic demos, prefer a tracked manifest/download helper plus ignored payloads under `assets/dynamic/vehicles/` or a repo-external path such as `/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/`. Candidate sources should prioritize USD / OpenUSD / SimReady assets from Isaac Sim Content Browser, NVIDIA Omniverse downloadable packs, or validated external vendors. If a source vehicle model is not `+X` forward, add a per-asset orientation override in a later pass rather than baking that assumption into route planning.
+```bash
+/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/isaac_vehicle_4w/
+```
 
+It was downloaded from the Isaac official content bucket:
+
+```text
+https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.1/Isaac/Environments/Outdoor/Rivermark/dsready_content/nv_core/common_tools/validation/golden_assets/vehicle/4w/main.usda
+```
+
+`main.usda` references sibling files under `instance/`, so copy the whole `isaac_vehicle_4w/` folder instead of only the main file. Teammates can also install the same local pack with:
+
+```bash
+scripts/download_isaac_vehicle_4w_asset.sh
+```
+
+The combined Tencent wrapper resolves vehicle assets in this order: explicit `DYNAMIC_VEHICLE_ASSET_PATH`, local sedan wrapper, local Isaac 4w pack, official remote Isaac USD. The remote fallback is useful for a quick coworker smoke test, but reproducible demo machines should use a local folder/file.
+
+Do not put downloaded vehicle packs under `LC_PROTO/assets/library` unless they are intended for the static placement planner. For shared dynamic demos, prefer a tracked manifest/download helper plus ignored payloads under a dynamic-asset folder or a repo-external path such as `/home/sstormw/LeapsCora/local_assets/dynamic_vehicles/`. If a source vehicle model is not `+X` forward, add a per-asset orientation override in a later pass rather than baking that assumption into route planning.
 
 Run with an explicit vehicle asset path after downloading one:
 

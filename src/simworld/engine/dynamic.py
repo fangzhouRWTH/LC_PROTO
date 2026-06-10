@@ -59,6 +59,8 @@ class DynamicPlanConfig:
     vehicle_width_m: float = 1.8
     vehicle_height_m: float = 1.6
     default_route_mode: str = "loop"
+    vehicle_actors_per_line: int = 1
+    vehicle_spawn_interval_s: float = 0.0
 
 
 @dataclass
@@ -406,8 +408,10 @@ def _lane_ids_for_placeholder(
 
     placeholder_index = _placeholder_index(route_placeholder)
     lane_id_by_index = _lane_id_by_placeholder_index(lane_plans)
-    if placeholder_index and placeholder_index in lane_id_by_index:
-        return [lane_id_by_index[placeholder_index]]
+    if placeholder_index:
+        if placeholder_index in lane_id_by_index:
+            return [lane_id_by_index[placeholder_index]]
+        return []
 
     if len(lane_plans) == 1:
         return [lane_plans[0].lane_id]
@@ -534,6 +538,7 @@ def _append_route_actor(
     shape: DynamicActorShape,
     lane_ids: list[str] | None = None,
     route_mode: str = "loop",
+    metadata_updates: dict[str, Any] | None = None,
 ) -> bool:
     route = _route_waypoints(route_placeholder)
     if len(route) < 2:
@@ -550,6 +555,8 @@ def _append_route_actor(
     )
     route_id = _route_id_for_placeholder(actor_id, actor_type, route_placeholder)
     metadata = _route_metadata_for_placeholder(route_placeholder)
+    if metadata_updates:
+        metadata.update(metadata_updates)
     actor_speed_mps = _metadata_float(metadata, "speed_mps", speed_mps)
     actor_spawn_time_s = _metadata_float(metadata, "spawn_time_s", spawn_time_s)
     actor_route_mode = _metadata_string(metadata, "route_mode", route_mode)
@@ -595,27 +602,115 @@ def _append_route_actors(
     shape: DynamicActorShape,
     lane_plans: list[DynamicLanePlan] | None = None,
     route_mode: str = "loop",
+    route_instances_per_placeholder: int = 1,
+    route_instance_spawn_interval_s: float = 0.0,
 ) -> int:
-    actor_count = min(len(routes), max(0, int(max_actors)))
+    actor_count = max(0, int(max_actors))
+    instances_per_route = max(1, int(route_instances_per_placeholder))
+    spawn_interval_s = max(0.0, float(route_instance_spawn_interval_s))
     appended_count = 0
-    for index in range(actor_count):
-        route_placeholder = routes[index]
+    for route_index, route_placeholder in enumerate(routes):
         placeholder_index = _placeholder_index(route_placeholder)
-        appended = _append_route_actor(
-            plan=plan,
-            actor_id=f"{actor_type}_{index + 1:03d}",
-            actor_type=actor_type,
-            route_placeholder=route_placeholder,
-            matched_spawn=_find_by_index(spawns, placeholder_index),
-            matched_goal=_find_by_index(goals, placeholder_index),
-            speed_mps=speed_mps,
-            spawn_time_s=spawn_time_s,
-            shape=shape,
-            lane_ids=_lane_ids_for_placeholder(route_placeholder, lane_plans or []),
-            route_mode=route_mode,
-        )
-        if appended:
+        for instance_index in range(instances_per_route):
+            if appended_count >= actor_count:
+                return appended_count
+            appended = _append_route_actor(
+                plan=plan,
+                actor_id=f"{actor_type}_{appended_count + 1:03d}",
+                actor_type=actor_type,
+                route_placeholder=route_placeholder,
+                matched_spawn=_find_by_index(spawns, placeholder_index),
+                matched_goal=_find_by_index(goals, placeholder_index),
+                speed_mps=speed_mps,
+                spawn_time_s=spawn_time_s + instance_index * spawn_interval_s,
+                shape=shape,
+                lane_ids=_lane_ids_for_placeholder(route_placeholder, lane_plans or []),
+                route_mode=route_mode,
+                metadata_updates={
+                    "route_placeholder_sequence": route_index,
+                    "route_instance_index": instance_index,
+                    "route_instances_per_placeholder": instances_per_route,
+                },
+            )
+            if appended:
+                appended_count += 1
+    return appended_count
+
+
+def _append_lane_fallback_vehicle_actors(
+    plan: DynamicScenePlan,
+    max_actors: int,
+    speed_mps: float,
+    spawn_time_s: float,
+    shape: DynamicActorShape,
+    route_mode: str,
+    route_instances_per_lane: int = 1,
+    route_instance_spawn_interval_s: float = 0.0,
+) -> int:
+    if not plan.lanes:
+        return 0
+
+    actor_count = max(0, int(max_actors))
+    instances_per_lane = max(1, int(route_instances_per_lane))
+    spawn_interval_s = max(0.0, float(route_instance_spawn_interval_s))
+    appended_count = 0
+
+    for lane_index, lane in enumerate(plan.lanes):
+        route = list(lane.centerline or lane.polygon)
+        if len(route) < 2:
+            plan.warnings.append(
+                f"Vehicle lane centerline fallback has fewer than 2 waypoint(s): "
+                f"{lane.lane_id or lane.source_prim_paths}"
+            )
+            continue
+
+        metadata = dict(lane.metadata)
+        metadata["source"] = "lane_centerline_fallback"
+        metadata["lane_id"] = lane.lane_id
+        metadata["route_placeholder_sequence"] = lane_index
+        for instance_index in range(instances_per_lane):
+            if appended_count >= actor_count:
+                return appended_count
+
+            actor_id = f"vehicle_{appended_count + 1:03d}"
+            route_id = f"{actor_id}_route"
+            placeholder_index = str(lane.metadata.get("placeholder_index", "") or "")
+            if placeholder_index:
+                route_id = f"vehicle_route_{placeholder_index}_{instance_index + 1:02d}"
+
+            actor_metadata = dict(metadata)
+            actor_metadata["route_instance_index"] = instance_index
+            actor_metadata["route_instances_per_placeholder"] = instances_per_lane
+            actor_spawn_time_s = spawn_time_s + instance_index * spawn_interval_s
+
+            plan.actors.append(
+                DynamicActorPlan(
+                    actor_id=actor_id,
+                    actor_type="vehicle",
+                    route=route,
+                    speed_mps=float(speed_mps),
+                    spawn_time_s=float(actor_spawn_time_s),
+                    source_prim_paths=list(lane.source_prim_paths),
+                    despawn_time_s=None,
+                    spawn_pose=DynamicPose(position=route[0]),
+                    goal_pose=DynamicPose(position=route[-1]),
+                    route_plan=_make_waypoint_route_plan(
+                        route_id,
+                        route,
+                        list(lane.source_prim_paths),
+                        metadata=actor_metadata,
+                        lane_ids=[lane.lane_id] if lane.lane_id else [],
+                        route_mode=route_mode,
+                    ),
+                    route_id=route_id,
+                    speed_profile=_make_speed_profile(speed_mps),
+                    shape=_copy_actor_shape(shape),
+                    asset_category="vehicle",
+                    metadata=actor_metadata,
+                )
+            )
             appended_count += 1
+
     return appended_count
 
 
@@ -705,12 +800,14 @@ def build_dynamic_actor_plan(
             shape=vehicle_shape,
             lane_plans=plan.lanes,
             route_mode=route_mode,
+            route_instances_per_placeholder=config.vehicle_actors_per_line,
+            route_instance_spawn_interval_s=config.vehicle_spawn_interval_s,
         )
         if vehicle_count == 0 and config.max_vehicle_actors > 0:
             plan.warnings.append(
                 "Vehicle route placeholder exists but no actor was generated."
             )
-    else:
+    elif vehicle_spawns or vehicle_goals:
         vehicle_count = _append_spawn_goal_actors(
             plan=plan,
             actor_type="vehicle",
@@ -724,10 +821,6 @@ def build_dynamic_actor_plan(
         )
         if vehicle_count == 0 and config.max_vehicle_actors > 0:
             _warn_incomplete_pair(plan, "vehicle", vehicle_spawns, vehicle_goals)
-            if vehicle_lanes and not (vehicle_spawns and vehicle_goals):
-                plan.warnings.append(
-                    "Vehicle lane exists but no complete vehicle spawn/goal pair was found."
-                )
         _warn_spawn_goal_pairing(
             plan,
             "vehicle",
@@ -735,5 +828,20 @@ def build_dynamic_actor_plan(
             vehicle_goals,
             vehicle_count,
         )
+    else:
+        vehicle_count = _append_lane_fallback_vehicle_actors(
+            plan=plan,
+            max_actors=config.max_vehicle_actors,
+            speed_mps=config.vehicle_speed_mps,
+            spawn_time_s=config.default_spawn_time_s,
+            shape=vehicle_shape,
+            route_mode=route_mode,
+            route_instances_per_lane=config.vehicle_actors_per_line,
+            route_instance_spawn_interval_s=config.vehicle_spawn_interval_s,
+        )
+        if vehicle_count == 0 and config.max_vehicle_actors > 0 and vehicle_lanes:
+            plan.warnings.append(
+                "Vehicle lane exists but no usable vehicle line or lane centerline was found."
+            )
 
     return plan

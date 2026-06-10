@@ -88,8 +88,10 @@ The run scripts search for Isaac Sim Python in this order:
 
 1. `ISAAC_PYTHON=/path/to/isaacsim/python.sh`
 2. `ISAACSIM_ROOT=/path/to/isaacsim`
-3. `${HOME}/Nvidia/isaacsim-git/isaacsim/_build/linux-x86_64/release/python.sh`
-4. `${HOME}/.local/share/ov/pkg/isaac-sim-*/python.sh`
+3. `${HOME}/IsaacSim/_build/linux-x86_64/release/python.sh`
+4. `${HOME}/isaacsim/_build/linux-x86_64/release/python.sh`
+5. `${HOME}/Nvidia/isaacsim-git/isaacsim/_build/linux-x86_64/release/python.sh`
+6. `${HOME}/.local/share/ov/pkg/isaac-sim-*/python.sh`
 
 If auto-detection fails, set `ISAAC_PYTHON` explicitly:
 
@@ -175,6 +177,7 @@ CLI arguments accepted by `src/simworld/main.py`:
 - `--dynamic-max-pedestrian-actors`, `--dynamic-max-vehicle-actors`: count limits for generated dynamic actors.
 - `--dynamic-pedestrian-speed-mps`, `--dynamic-vehicle-speed-mps`: kinematic actor speeds.
 - `--dynamic-spawn-time-s`: actor spawn delay.
+- `--dynamic-routes-json`: optional dynamic-only route layer JSON to load before dynamic planning.
 - `--weather`: weather preset. Available presets are `sunny`, `rain`, `overcast`, `foggy`, and `storm`.
 - `--daytime`: preferred sky time such as `morning`, `day`, `noon`, `sunset`, or `night`.
 - `--sky-texture`: explicit lat-long sky texture or HDRI path.
@@ -201,6 +204,7 @@ Environment variables supported by `scripts/sim_defaults.sh`:
 - `DYNAMIC_PEDESTRIAN_SPEED_MPS`
 - `DYNAMIC_VEHICLE_SPEED_MPS`
 - `DYNAMIC_SPAWN_TIME_S`
+- `DYNAMIC_ROUTES_JSON`
 - `WEATHER`
 - `DAYTIME`
 - `SKY_TEXTURE`
@@ -260,8 +264,9 @@ Current examples:
 - `placeholder_spot_spawn_001`: Spot spawn point.
 - `placeholder_area_plaza_001`: public-space placeholder area for generated static asset layout.
 - `placeholder_pedestrian_spawn_001` and `placeholder_pedestrian_goal_001`: dynamic pedestrian route endpoints.
-- `placeholder_vehicle_spawn_001` and `placeholder_vehicle_goal_001`: dynamic vehicle route endpoints.
-- `placeholder_vehicle_lane_001`: vehicle lane or future route geometry.
+- `placeholder_vehicle_lane_001`: vehicle drivable lane area.
+- `placeholder_vehicle_line_001`: vehicle lane centerline; vertex order defines driving direction.
+- `placeholder_vehicle_spawn_001` and `placeholder_vehicle_goal_001`: legacy dynamic vehicle route endpoints.
 - `placeholder_area_sidewalk_001` and `placeholder_area_crosswalk_001`: future pedestrian navigation regions.
 
 The current asset library convention is:

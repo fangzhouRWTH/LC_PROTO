@@ -1,0 +1,55 @@
+{
+  "schema_version": "simworld.demo_dynamic_agent_scenarios.v1",
+  "default_scenario": "people_3",
+  "defaults": {
+    "dynamic_agent_backend": "isaac_people_sumo",
+    "route_mode": "once",
+    "pedestrian_max_actors": 40,
+    "pedestrian_speed_mps": 0.8,
+    "vehicle_visual": "asset",
+    "vehicle_asset_scale": 1.0,
+    "vehicle_speed_mps": 9.0,
+    "vehicle_spawn_interval_s": 4.0,
+    "vehicles_per_line": 3,
+    "max_vehicle_actors": 6,
+    "ignore_people_spawn_time": true
+  },
+  "scenarios": {
+    "people_1": {
+      "max_vehicle_actors": 1,
+      "vehicles_per_line": 1,
+      "vehicle_speed_mps": 7.5,
+      "vehicle_spawn_interval_s": 8.0
+    },
+    "people_2": {
+      "max_vehicle_actors": 2,
+      "vehicles_per_line": 1,
+      "vehicle_speed_mps": 8.0,
+      "vehicle_spawn_interval_s": 7.0
+    },
+    "people_3": {
+      "max_vehicle_actors": 4,
+      "vehicles_per_line": 2,
+      "vehicle_speed_mps": 9.0,
+      "vehicle_spawn_interval_s": 5.5
+    },
+    "people_4": {
+      "max_vehicle_actors": 5,
+      "vehicles_per_line": 2,
+      "vehicle_speed_mps": 9.5,
+      "vehicle_spawn_interval_s": 4.5
+    },
+    "people_5": {
+      "max_vehicle_actors": 6,
+      "vehicles_per_line": 3,
+      "vehicle_speed_mps": 9.5,
+      "vehicle_spawn_interval_s": 4.0
+    },
+    "people_6": {
+      "max_vehicle_actors": 8,
+      "vehicles_per_line": 4,
+      "vehicle_speed_mps": 10.0,
+      "vehicle_spawn_interval_s": 3.5
+    }
+  }
+}

@@ -337,13 +337,13 @@ class DynamicContractTest(unittest.TestCase):
         self.assertEqual(actor.route_plan.waypoints, actor.route)
         self.assertEqual(plan.warnings, [])
 
-    def test_vehicle_lane_placeholder_builds_lane_plan_and_route_reference(self):
+    def test_vehicle_line_placeholder_builds_lane_plan_and_route_reference(self):
         stats = make_stats(
             vehicle_routes=[
                 PathPlaceholder(
                     vertices=[[-8.0, -1.0, 0.0], [8.0, -1.0, 0.0]],
-                    prim_path="/World/vehicle_route_003",
-                    raw_name="placeholder_vehicle_route_003",
+                    prim_path="/World/vehicle_line_003",
+                    raw_name="placeholder_vehicle_line_003",
                     index="003",
                 )
             ],
@@ -377,7 +377,85 @@ class DynamicContractTest(unittest.TestCase):
         )
         self.assertEqual(lane.width_m, 1.0)
         self.assertEqual(lane.source_prim_paths, ["/World/vehicle_lane_003"])
+        self.assertEqual(actor.route_plan.source_prim_paths, ["/World/vehicle_line_003"])
+        self.assertEqual(actor.route_plan.metadata["raw_name"], "placeholder_vehicle_line_003")
         self.assertEqual(actor.route_plan.lane_ids, ["vehicle_lane_003"])
+
+    def test_vehicle_line_can_expand_into_staggered_demo_traffic(self):
+        stats = make_stats(
+            vehicle_routes=[
+                PathPlaceholder(
+                    vertices=[[-8.0, -1.0, 0.0], [8.0, -1.0, 0.0]],
+                    prim_path="/World/vehicle_line_001",
+                    raw_name="placeholder_vehicle_line_001",
+                    index="001",
+                ),
+                PathPlaceholder(
+                    vertices=[[-8.0, 1.0, 0.0], [8.0, 1.0, 0.0]],
+                    prim_path="/World/vehicle_line_002",
+                    raw_name="placeholder_vehicle_line_002",
+                    index="002",
+                ),
+            ],
+            vehicle_lanes=[
+                AreaPlaceholder(
+                    vertices=[
+                        [-8.0, -1.5, 0.0],
+                        [8.0, -1.5, 0.0],
+                        [8.0, -0.5, 0.0],
+                        [-8.0, -0.5, 0.0],
+                    ],
+                    prim_path="/World/vehicle_lane_001",
+                    raw_name="placeholder_vehicle_lane_001",
+                    index="001",
+                )
+            ],
+        )
+
+        plan = build_dynamic_actor_plan(
+            stats,
+            DynamicPlanConfig(
+                max_pedestrian_actors=0,
+                max_vehicle_actors=4,
+                vehicle_actors_per_line=3,
+                vehicle_spawn_interval_s=4.0,
+            ),
+        )
+
+        vehicles = [actor for actor in plan.actors if actor.actor_type == "vehicle"]
+        self.assertEqual(len(vehicles), 4)
+        self.assertEqual([actor.spawn_time_s for actor in vehicles[:3]], [0.0, 4.0, 8.0])
+        self.assertEqual(vehicles[0].route_plan.source_prim_paths, ["/World/vehicle_line_001"])
+        self.assertEqual(vehicles[0].route_plan.lane_ids, ["vehicle_lane_001"])
+        self.assertEqual(vehicles[3].route_plan.source_prim_paths, ["/World/vehicle_line_002"])
+        self.assertEqual(vehicles[3].route_plan.lane_ids, [])
+
+    def test_vehicle_lane_only_falls_back_to_lane_centerline(self):
+        stats = make_stats(
+            vehicle_lanes=[
+                AreaPlaceholder(
+                    vertices=[
+                        [-8.0, -1.5, 0.0],
+                        [8.0, -1.5, 0.0],
+                        [8.0, -0.5, 0.0],
+                        [-8.0, -0.5, 0.0],
+                    ],
+                    prim_path="/World/vehicle_lane_001",
+                    raw_name="placeholder_vehicle_lane_001",
+                    index="001",
+                )
+            ],
+        )
+
+        plan = build_dynamic_actor_plan(
+            stats,
+            DynamicPlanConfig(max_pedestrian_actors=0, max_vehicle_actors=1),
+        )
+        actor = plan.actors[0]
+
+        self.assertEqual(actor.route, [(-8.0, -1.0, 0.0), (8.0, -1.0, 0.0)])
+        self.assertEqual(actor.route_plan.metadata["source"], "lane_centerline_fallback")
+        self.assertEqual(actor.route_plan.lane_ids, ["vehicle_lane_001"])
 
     def test_route_actor_count_respects_actor_limit(self):
         stats = make_stats(

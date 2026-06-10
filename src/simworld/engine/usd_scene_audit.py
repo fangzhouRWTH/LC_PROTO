@@ -73,6 +73,7 @@ AUDIT_RULE_SPECS: tuple[AuditRuleSpec, ...] = (
     AuditRuleSpec("placeholder vehicle spawn", "placeholder", "vehicle", "spawn", Pipeline.DYNAMIC_AGENTS),
     AuditRuleSpec("placeholder vehicle goal", "placeholder", "vehicle", "goal", Pipeline.DYNAMIC_AGENTS),
     AuditRuleSpec("placeholder vehicle route", "placeholder", "vehicle", "route", Pipeline.DYNAMIC_AGENTS),
+    AuditRuleSpec("placeholder vehicle line", "placeholder", "vehicle", "line", Pipeline.DYNAMIC_AGENTS),
     AuditRuleSpec("placeholder vehicle lane", "placeholder", "vehicle", "lane", Pipeline.DYNAMIC_AGENTS),
     AuditRuleSpec("placeholder sidewalk area", "placeholder", "area", "sidewalk", Pipeline.DYNAMIC_AGENTS),
     AuditRuleSpec("placeholder crosswalk area", "placeholder", "area", "crosswalk", Pipeline.DYNAMIC_AGENTS),

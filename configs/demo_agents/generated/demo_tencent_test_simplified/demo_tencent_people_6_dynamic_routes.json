@@ -1,0 +1,2621 @@
+{
+  "schema_version": "simworld.dynamic_routes.v1",
+  "scenario": "people_6",
+  "scene_usd": "assets/blocks/demo_tencent_test_simplified.usdc",
+  "source_placement_plan_json": "configs/demo_agents/generated/demo_tencent_test_simplified/demo_tencent_people_6_placement_plan.json",
+  "replace_existing": true,
+  "pedestrian_routes": [
+    {
+      "route_id": "demo_people_people_6_001_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_001",
+      "vertices": [
+        [
+          -40.37873673345546,
+          38.75900146123967,
+          0.09999999403953552
+        ],
+        [
+          -37.91474654711738,
+          38.88131644763008,
+          0.09999999403953552
+        ],
+        [
+          -37.792431560726975,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -37.792431560726975,
+          88.71592903137207,
+          0.09999999403953552
+        ],
+        [
+          -37.792431560726975,
+          113.48558807373047,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_001_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_001",
+      "index": "001",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 77.07159430672888,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_001",
+        "offset_m": -0.41760948541560206,
+        "start_offset_m": 3.148749114017681,
+        "speed_mps": 0.7859913351658872,
+        "spawn_time_s": 0.0,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_002_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_001",
+      "vertices": [
+        [
+          -23.800005499698543,
+          115.91607292199025,
+          0.09999999403953552
+        ],
+        [
+          -10.042753855387367,
+          115.91607292199025,
+          0.09999999403953552
+        ],
+        [
+          7.5664812723795585,
+          115.91607292199025,
+          0.09999999403953552
+        ],
+        [
+          25.175716400146484,
+          115.91607292199025,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_002_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_001",
+      "index": "002",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_007_citystreetroof",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 48.97572189984503,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 3,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_001",
+        "offset_m": 0.4020806124199414,
+        "start_offset_m": 3.851983483455753,
+        "speed_mps": 0.9975500569342719,
+        "spawn_time_s": 0.3480656630306893,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_003_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_002",
+      "vertices": [
+        [
+          -39.90506827171346,
+          40.14971045623352,
+          0.09999999403953552
+        ],
+        [
+          -38.89812630813466,
+          39.86469620864735,
+          0.09999999403953552
+        ],
+        [
+          -39.183140555720826,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.89812630813466,
+          88.02784376937998,
+          0.09999999403953552
+        ],
+        [
+          -43.527485847473145,
+          87.74282952179382,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_003_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_002",
+      "index": "003",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 53.85114704884686,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_002",
+        "offset_m": 0.9730995095782451,
+        "start_offset_m": 3.6224175757596826,
+        "speed_mps": 1.4887476416687973,
+        "spawn_time_s": 0.548950153995853,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_004_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_002",
+      "vertices": [
+        [
+          -24.112222512563065,
+          115.87339335832434,
+          0.09999999403953552
+        ],
+        [
+          -10.042753855387367,
+          115.87339335832434,
+          0.09999999403953552
+        ],
+        [
+          7.312346353640027,
+          115.76812722830985,
+          0.09999999403953552
+        ],
+        [
+          7.207080223625528,
+          118.83528852462769,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_004_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_002",
+      "index": "004",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_007_citystreetroof",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 34.49385525669158,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 3,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_002",
+        "offset_m": 0.3594010487540299,
+        "start_offset_m": 3.539766470591232,
+        "speed_mps": 0.7900773424035228,
+        "spawn_time_s": 0.7904993152247168,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_005_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_003",
+      "vertices": [
+        [
+          -38.99579516578934,
+          59.03337383270264,
+          0.09999999403953552
+        ],
+        [
+          -38.99579516578934,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.76565311249007,
+          89.27154109771956,
+          0.09999999403953552
+        ],
+        [
+          -32.89259624481201,
+          89.50168315101884,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_005_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_003",
+      "index": "005",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 36.11677726525396,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_003",
+        "offset_m": 0.7857541196467623,
+        "start_offset_m": 25.17420768737793,
+        "speed_mps": 0.9816512687195986,
+        "spawn_time_s": 1.148384076954891,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_006_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_003",
+      "vertices": [
+        [
+          -27.433518727620438,
+          115.0872200209862,
+          0.09999999403953552
+        ],
+        [
+          -10.042753855387367,
+          115.0872200209862,
+          0.09999999403953552
+        ],
+        [
+          7.5664812723795585,
+          115.0872200209862,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_006_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_003",
+      "index": "006",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_007_citystreetroof",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.0,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 3,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_003",
+        "offset_m": -0.42677228858412036,
+        "start_offset_m": 0.2184702555338589,
+        "speed_mps": 0.8800243731316185,
+        "spawn_time_s": 1.3193371331412,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_007_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_004",
+      "vertices": [
+        [
+          -38.04007062750152,
+          53.71592903137207,
+          0.09999999403953552
+        ],
+        [
+          -38.04007062750152,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.04007062750152,
+          88.71592903137207,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_007_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_004",
+      "index": "007",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.0,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_004",
+        "offset_m": -0.16997041864105375,
+        "start_offset_m": 19.856762886047363,
+        "speed_mps": 0.9648476284237446,
+        "spawn_time_s": 1.4496942396991552,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_008_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_004",
+      "vertices": [
+        [
+          -9.824283599853516,
+          115.53895586556588,
+          0.09999999403953552
+        ],
+        [
+          7.5664812723795585,
+          115.53895586556588,
+          0.09999999403953552
+        ],
+        [
+          25.175716400146484,
+          115.53895586556588,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_008_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_004",
+      "index": "008",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_007_citystreetroof",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.0,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 3,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_004",
+        "offset_m": 0.024963555995573927,
+        "start_offset_m": 3.539766470591225,
+        "speed_mps": 1.341138201433804,
+        "spawn_time_s": 1.7403519859201977,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_009_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_005",
+      "vertices": [
+        [
+          -43.12293720245361,
+          39.757252470580205,
+          0.09999999403953552
+        ],
+        [
+          -38.62061660514839,
+          39.58718650566109,
+          0.09999999403953552
+        ],
+        [
+          -38.62061660514839,
+          63.53569443000786,
+          0.09999999403953552
+        ],
+        [
+          -43.527485847473145,
+          63.36562846508874,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_009_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_005",
+      "index": "009",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 33.36385481888221,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_005",
+        "offset_m": 0.5806415239249335,
+        "start_offset_m": 0.40454864501953125,
+        "speed_mps": 1.4500522763723886,
+        "spawn_time_s": 1.9204979367654775,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_010_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_005",
+      "vertices": [
+        [
+          24.957246144612633,
+          116.346970703769,
+          0.09999999403953552
+        ],
+        [
+          7.5664812723795585,
+          116.346970703769,
+          0.09999999403953552
+        ],
+        [
+          -10.042753855387367,
+          116.346970703769,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_010_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_005",
+      "index": "010",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_007_citystreetroof",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.0,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 3,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_005",
+        "offset_m": -0.8329783941986865,
+        "start_offset_m": 0.2184702555338518,
+        "speed_mps": 1.268330743604062,
+        "spawn_time_s": 2.236147672960925,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_011_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_006",
+      "vertices": [
+        [
+          -37.28289436499563,
+          49.406951904296875,
+          0.09999999403953552
+        ],
+        [
+          -37.28289436499563,
+          39.17661094665527,
+          0.09999999403953552
+        ],
+        [
+          -37.28289436499563,
+          14.406951904296875,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_011_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_006",
+      "index": "011",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.0,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_006",
+        "offset_m": 0.9271466811469521,
+        "start_offset_m": 19.856762886047363,
+        "speed_mps": 1.4932209518391188,
+        "spawn_time_s": 2.537520272629627,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_012_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_007",
+      "vertices": [
+        [
+          -38.347908723154546,
+          76.91822564985713,
+          0.09999999403953552
+        ],
+        [
+          -38.347908723154546,
+          88.71592903137207,
+          0.09999999403953552
+        ],
+        [
+          -38.347908723154546,
+          113.48558807373047,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_012_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_007",
+      "index": "012",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 36.567362423873334,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_007",
+        "offset_m": 0.1378676770119713,
+        "start_offset_m": 18.289400462174033,
+        "speed_mps": 1.30903030276887,
+        "spawn_time_s": 2.7499688403804026,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_013_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_008",
+      "vertices": [
+        [
+          -43.12293720245361,
+          63.16776049158323,
+          0.09999999403953552
+        ],
+        [
+          -41.29058725710897,
+          63.244235547942914,
+          0.09999999403953552
+        ],
+        [
+          -39.85475788663375,
+          63.66197262898879,
+          0.09999999403953552
+        ],
+        [
+          -39.115435708863494,
+          63.88549660411684,
+          0.09999999403953552
+        ],
+        [
+          -38.36005912676881,
+          63.72435545722083,
+          0.09999999403953552
+        ],
+        [
+          -37.659551701291385,
+          64.16158401714851,
+          0.09999999403953552
+        ],
+        [
+          -37.659551701291385,
+          89.26641837622327,
+          0.09999999403953552
+        ],
+        [
+          -43.527485847473145,
+          89.4944385288025,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_013_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_008",
+      "index": "013",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 36.67701135543371,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_008",
+        "offset_m": -0.7785094974304384,
+        "start_offset_m": 0.40454864501953125,
+        "speed_mps": 1.5515173594328822,
+        "spawn_time_s": 3.00604621121415,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 4.033945134525494,
+            "window_m": 2.2,
+            "conflict_time_s": 5.60604621121415,
+            "conflict_route_id": "demo_people_people_6_005_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_003",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_014_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_009",
+      "vertices": [
+        [
+          -43.12293720245361,
+          64.47912417663989,
+          0.09999999403953552
+        ],
+        [
+          -37.83325623668843,
+          64.32305479846782,
+          0.09999999403953552
+        ],
+        [
+          -37.83325623668843,
+          39.553395756109424,
+          0.09999999403953552
+        ],
+        [
+          -32.89259624481201,
+          39.70946513428149,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_014_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_009",
+      "index": "014",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.004766278751525,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_009",
+        "offset_m": 0.5328541876262172,
+        "start_offset_m": 0.40454864501953125,
+        "speed_mps": 0.7321516112610065,
+        "spawn_time_s": 3.4115730892385,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_015_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_010",
+      "vertices": [
+        [
+          -41.758133488539094,
+          88.17606854721181,
+          0.09999999403953552
+        ],
+        [
+          -38.59178005538695,
+          88.3341900221277,
+          0.09999999403953552
+        ],
+        [
+          -38.749901530302836,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.749901530302836,
+          39.17661094665527,
+          0.09999999403953552
+        ],
+        [
+          -38.749901530302836,
+          14.406951904296875,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_015_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_010",
+      "index": "015",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 77.09804982327589,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_010",
+        "offset_m": -0.5398604841602564,
+        "start_offset_m": 1.7693523589340483,
+        "speed_mps": 1.0648097574062745,
+        "spawn_time_s": 3.5793514490352103,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_016_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_011",
+      "vertices": [
+        [
+          -37.341856179213394,
+          80.14685180178196,
+          0.09999999403953552
+        ],
+        [
+          -37.341856179213394,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -37.59614163941341,
+          39.79051035338444,
+          0.09999999403953552
+        ],
+        [
+          -32.89259624481201,
+          40.04479581358446,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_016_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_011",
+      "index": "016",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 45.068093865427485,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_011",
+        "offset_m": 0.8681848669291848,
+        "start_offset_m": 13.886522030920679,
+        "speed_mps": 1.7389532664282252,
+        "spawn_time_s": 3.906881360033984,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_017_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_012",
+      "vertices": [
+        [
+          -38.45282548359325,
+          74.17661094665527,
+          0.09999999403953552
+        ],
+        [
+          -38.45282548359325,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.45282548359325,
+          39.17661094665527,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_017_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_012",
+      "index": "017",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.0,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_012",
+        "offset_m": -0.24278443745067332,
+        "start_offset_m": 19.856762886047363,
+        "speed_mps": 1.3642720149290577,
+        "spawn_time_s": 4.104300262202028,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_018_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_022",
+      "vertices": [
+        [
+          -33.29714488983154,
+          63.86934739701452,
+          0.09999999403953552
+        ],
+        [
+          -38.15564855971353,
+          63.89187750258463,
+          0.09999999403953552
+        ],
+        [
+          -38.15564855971353,
+          39.12221846022623,
+          0.09999999403953552
+        ],
+        [
+          -43.527485847473145,
+          39.099688354656124,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_018_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_022",
+      "index": "018",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.0000994853308,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_022",
+        "offset_m": 0.07692259199915172,
+        "start_offset_m": 0.40454864501953125,
+        "speed_mps": 1.5161139461875734,
+        "spawn_time_s": 4.510018617314304,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_019_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_023",
+      "vertices": [
+        [
+          -33.29714488983154,
+          64.10284800267573,
+          0.09999999403953552
+        ],
+        [
+          -38.09932367089742,
+          64.05698736425883,
+          0.09999999403953552
+        ],
+        [
+          -38.09932367089742,
+          74.39246013030208,
+          0.09999999403953552
+        ],
+        [
+          -38.45682367089742,
+          75.84446013030208,
+          0.09999999403953552
+        ],
+        [
+          -38.64932367089742,
+          76.59246013030207,
+          0.09999999403953552
+        ],
+        [
+          -38.45682367089742,
+          77.34046013030208,
+          0.09999999403953552
+        ],
+        [
+          -38.09932367089742,
+          78.79246013030208,
+          0.09999999403953552
+        ],
+        [
+          -38.09932367089742,
+          88.82664640661723,
+          0.09999999403953552
+        ],
+        [
+          -43.527485847473145,
+          88.87250704503413,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_019_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_023",
+      "index": "019",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.13588479463075,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_023",
+        "offset_m": -0.15657801366205157,
+        "start_offset_m": 0.40454864501953125,
+        "speed_mps": 0.8583104220721863,
+        "spawn_time_s": 4.841151631627742,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 17.337870525858165,
+            "window_m": 2.2,
+            "conflict_time_s": 25.041151631627745,
+            "conflict_route_id": "demo_people_people_6_007_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_004",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_020_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_026",
+      "vertices": [
+        [
+          -33.29714488983154,
+          88.32655628862726,
+          0.09999999403953552
+        ],
+        [
+          -37.93471293933852,
+          88.44060092456802,
+          0.09999999403953552
+        ],
+        [
+          -37.93471293933852,
+          63.67094188220961,
+          0.09999999403953552
+        ],
+        [
+          -43.527485847473145,
+          63.55689724626886,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_020_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_026",
+      "index": "020",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.00256469667939,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_026",
+        "offset_m": 0.3893727427448082,
+        "start_offset_m": 0.40454864501953125,
+        "speed_mps": 0.6670937466572653,
+        "spawn_time_s": 5.251944136941293,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_021_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_013",
+      "vertices": [
+        [
+          -37.41879425532657,
+          14.798622368272433,
+          0.09999999403953552
+        ],
+        [
+          -37.41879425532657,
+          39.17661094665527,
+          0.09999999403953552
+        ],
+        [
+          -37.41879425532657,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -37.65054507476449,
+          88.15643305999397,
+          0.09999999403953552
+        ],
+        [
+          -32.89259624481201,
+          87.92468224055607,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_021_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_013",
+      "index": "021",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 78.12250944058027,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_013",
+        "offset_m": -0.7912467908160083,
+        "start_offset_m": 0.391670463975558,
+        "speed_mps": 1.1542896331110115,
+        "spawn_time_s": 5.473502498147669,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_022_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_014",
+      "vertices": [
+        [
+          -39.06157132949099,
+          27.856546524053677,
+          0.09999999403953552
+        ],
+        [
+          -39.06157132949099,
+          39.17661094665527,
+          0.09999999403953552
+        ],
+        [
+          -39.06157132949099,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -39.06157132949099,
+          88.71592903137207,
+          0.09999999403953552
+        ],
+        [
+          -39.06157132949099,
+          113.48558807373047,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_022_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_014",
+      "index": "022",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 85.6290415496768,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_014",
+        "offset_m": 0.851530283348407,
+        "start_offset_m": 13.449594619756803,
+        "speed_mps": 1.3762445278835362,
+        "spawn_time_s": 5.653449422345532,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_023_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_015",
+      "vertices": [
+        [
+          -38.53421840470165,
+          27.962460561335277,
+          0.09999999403953552
+        ],
+        [
+          -38.53421840470165,
+          39.17661094665527,
+          0.09999999403953552
+        ],
+        [
+          -38.53421840470165,
+          47.6199949948529,
+          0.09999999403953552
+        ],
+        [
+          -38.89171840470165,
+          49.0719949948529,
+          0.09999999403953552
+        ],
+        [
+          -39.084218404701645,
+          49.819994994852905,
+          0.09999999403953552
+        ],
+        [
+          -38.89171840470165,
+          50.5679949948529,
+          0.09999999403953552
+        ],
+        [
+          -38.53421840470165,
+          52.0199949948529,
+          0.09999999403953552
+        ],
+        [
+          -38.53421840470165,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.53421840470165,
+          88.71592903137207,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_023_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_015",
+      "index": "023",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 60.888940559150804,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_015",
+        "offset_m": 0.3241773585590698,
+        "start_offset_m": 13.5555086570384,
+        "speed_mps": 1.3492305205875077,
+        "spawn_time_s": 5.777066446578782,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 21.857534433517625,
+            "window_m": 2.2,
+            "conflict_time_s": 21.97706644657878,
+            "conflict_route_id": "demo_people_people_6_017_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_012",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_024_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_016",
+      "vertices": [
+        [
+          -39.05867961557588,
+          93.1774873865852,
+          0.09999999403953552
+        ],
+        [
+          -39.05867961557588,
+          88.71592903137207,
+          0.09999999403953552
+        ],
+        [
+          -39.05867961557588,
+          74.3161447381627,
+          0.09999999403953552
+        ],
+        [
+          -38.70117961557588,
+          72.86414473816271,
+          0.09999999403953552
+        ],
+        [
+          -38.508679615575886,
+          72.1161447381627,
+          0.09999999403953552
+        ],
+        [
+          -38.70117961557588,
+          71.3681447381627,
+          0.09999999403953552
+        ],
+        [
+          -39.05867961557588,
+          69.9161447381627,
+          0.09999999403953552
+        ],
+        [
+          -39.05867961557588,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.81011913336532,
+          38.57653285943253,
+          0.09999999403953552
+        ],
+        [
+          -32.89259624481201,
+          38.32797237722197,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_024_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_016",
+      "index": "024",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 60.660385098172455,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_016",
+        "offset_m": -0.8486385694333081,
+        "start_offset_m": 20.30810068714527,
+        "speed_mps": 0.6623063725919023,
+        "spawn_time_s": 13.99433364856177,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 21.061342648422496,
+            "window_m": 2.2,
+            "conflict_time_s": 37.794333648561775,
+            "conflict_route_id": "demo_people_people_6_022_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_014",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 8.0,
+        "collision_rehearsal_attempts": 41,
+        "collision_rehearsal_detour_count": 1,
+        "spawn_time_s_original": 5.994333648561771
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_025_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_017",
+      "vertices": [
+        [
+          -37.69383324996741,
+          102.71924170481074,
+          0.09999999403953552
+        ],
+        [
+          -37.69383324996741,
+          88.71592903137207,
+          0.09999999403953552
+        ],
+        [
+          -37.69383324996741,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -37.69383324996741,
+          63.630514475404844,
+          0.09999999403953552
+        ],
+        [
+          -37.33633324996741,
+          62.17851447540484,
+          0.09999999403953552
+        ],
+        [
+          -37.143833249967415,
+          61.43051447540484,
+          0.09999999403953552
+        ],
+        [
+          -37.33633324996741,
+          60.682514475404844,
+          0.09999999403953552
+        ],
+        [
+          -37.69383324996741,
+          59.23051447540484,
+          0.09999999403953552
+        ],
+        [
+          -37.69383324996741,
+          39.17661094665527,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_025_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_017",
+      "index": "025",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 63.67810284726948,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_017",
+        "offset_m": 0.5162077961751673,
+        "start_offset_m": 10.766346368919729,
+        "speed_mps": 1.625540442102594,
+        "spawn_time_s": 6.322574975155392,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 41.2887272294059,
+            "window_m": 2.2,
+            "conflict_time_s": 31.722574975155396,
+            "conflict_route_id": "demo_people_people_6_001_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_001",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_026_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_018",
+      "vertices": [
+        [
+          -37.604932940261236,
+          57.682023850137895,
+          0.09999999403953552
+        ],
+        [
+          -37.604932940261236,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -37.67466774714554,
+          73.52393628870013,
+          0.09999999403953552
+        ],
+        [
+          -38.04272997578396,
+          74.97329492128549,
+          0.09999999403953552
+        ],
+        [
+          -38.24067090299302,
+          75.71987354362585,
+          0.09999999403953552
+        ],
+        [
+          -38.05362203473823,
+          76.46925526937353,
+          0.09999999403953552
+        ],
+        [
+          -37.7067032146581,
+          77.9238196654297,
+          0.09999999403953552
+        ],
+        [
+          -37.782165001122934,
+          88.28805298635243,
+          0.09999999403953552
+        ],
+        [
+          -32.89259624481201,
+          88.11082092549073,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_026_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_018",
+      "index": "026",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.6349261931401,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_018",
+        "offset_m": -0.6051081058813405,
+        "start_offset_m": 23.82285770481319,
+        "speed_mps": 1.1001320917135158,
+        "spawn_time_s": 6.480928275801583,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 18.042166304101666,
+            "window_m": 2.2,
+            "conflict_time_s": 22.880928275801587,
+            "conflict_route_id": "demo_people_people_6_025_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_017",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_027_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_019",
+      "vertices": [
+        [
+          -39.24977001697435,
+          40.00272331226779,
+          0.09999999403953552
+        ],
+        [
+          -39.24977001697435,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -39.24977001697435,
+          88.71592903137207,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_027_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_019",
+      "index": "027",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 48.71320571910428,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_019",
+        "offset_m": 1.0397289708317736,
+        "start_offset_m": 6.143557166943079,
+        "speed_mps": 1.1186409799518373,
+        "spawn_time_s": 6.621618810101851,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_028_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_020",
+      "vertices": [
+        [
+          -38.43158962205025,
+          55.51649066119745,
+          0.09999999403953552
+        ],
+        [
+          -38.43158962205025,
+          45.814774456516126,
+          0.09999999403953552
+        ],
+        [
+          -38.074089622050245,
+          44.36277445651613,
+          0.09999999403953552
+        ],
+        [
+          -37.88158962205025,
+          43.61477445651613,
+          0.09999999403953552
+        ],
+        [
+          -38.074089622050245,
+          42.866774456516126,
+          0.09999999403953552
+        ],
+        [
+          -38.43158962205025,
+          41.41477445651613,
+          0.09999999403953552
+        ],
+        [
+          -38.43158962205025,
+          39.17661094665527,
+          0.09999999403953552
+        ],
+        [
+          -38.43158962205025,
+          14.406951904296875,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_028_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_020",
+      "index": "028",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 41.24501084601459,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_020",
+        "offset_m": -0.22154857590767013,
+        "start_offset_m": 13.747224129146788,
+        "speed_mps": 1.144395788911666,
+        "spawn_time_s": 7.010059604779875,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 11.901716204681325,
+            "window_m": 2.2,
+            "conflict_time_s": 17.410059604779875,
+            "conflict_route_id": "demo_people_people_6_023_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_015",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_029_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_021",
+      "vertices": [
+        [
+          -38.23008944614933,
+          78.48558807373047,
+          0.09999999403953552
+        ],
+        [
+          -38.23008944614933,
+          88.71592903137207,
+          0.09999999403953552
+        ],
+        [
+          -38.23008944614933,
+          96.22125708281015,
+          0.09999999403953552
+        ],
+        [
+          -38.58758944614933,
+          97.67325708281015,
+          0.09999999403953552
+        ],
+        [
+          -38.780089446149326,
+          98.42125708281016,
+          0.09999999403953552
+        ],
+        [
+          -38.58758944614933,
+          99.16925708281016,
+          0.09999999403953552
+        ],
+        [
+          -38.23008944614933,
+          100.62125708281016,
+          0.09999999403953552
+        ],
+        [
+          -38.23008944614933,
+          113.48558807373047,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_029_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_021",
+      "index": "029",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.13547208911401,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_021",
+        "offset_m": 0.020048400006751566,
+        "start_offset_m": 19.856762886047363,
+        "speed_mps": 1.689463475345736,
+        "spawn_time_s": 7.380319646465451,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 19.935669009079685,
+            "window_m": 2.2,
+            "conflict_time_s": 19.180319646465453,
+            "conflict_route_id": "demo_people_people_6_012_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_007",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_030_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_024",
+      "vertices": [
+        [
+          -33.29714488983154,
+          64.31058154432309,
+          0.09999999403953552
+        ],
+        [
+          -35.481517141550334,
+          64.26550235551532,
+          0.09999999403953552
+        ],
+        [
+          -36.92221079080968,
+          63.70265707572362,
+          0.09999999403953552
+        ],
+        [
+          -37.664129960887244,
+          63.400284879463086,
+          0.09999999403953552
+        ],
+        [
+          -38.41789232575352,
+          63.67179049139625,
+          0.09999999403953552
+        ],
+        [
+          -38.46764821736649,
+          62.79064405215398,
+          0.09999999403953552
+        ],
+        [
+          -38.46764821736649,
+          38.919003775431364,
+          0.09999999403953552
+        ],
+        [
+          -32.89259624481201,
+          38.81229939134585,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_030_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_024",
+      "index": "030",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.66417654193253,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_024",
+        "offset_m": -0.3643115553094189,
+        "start_offset_m": 0.40454864501953125,
+        "speed_mps": 0.9135077822696971,
+        "spawn_time_s": 7.57333431954548,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 4.384837354894548,
+            "window_m": 2.2,
+            "conflict_time_s": 12.373334319545481,
+            "conflict_route_id": "demo_people_people_6_026_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_018",
+            "lateral_offset_m": 0.82
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_031_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_025",
+      "vertices": [
+        [
+          -37.863699267206215,
+          80.47346054124151,
+          0.09999999403953552
+        ],
+        [
+          -37.863699267206215,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -37.863699267206215,
+          60.825033758477424,
+          0.09999999403953552
+        ],
+        [
+          -37.50619926720621,
+          59.37303375847743,
+          0.09999999403953552
+        ],
+        [
+          -37.31369926720622,
+          58.62503375847743,
+          0.09999999403953552
+        ],
+        [
+          -37.50619926720621,
+          57.877033758477424,
+          0.09999999403953552
+        ],
+        [
+          -37.863699267206215,
+          56.425033758477426,
+          0.09999999403953552
+        ],
+        [
+          -37.863699267206215,
+          39.17661094665527,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_031_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_025",
+      "index": "031",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 41.432321683700245,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_025",
+        "offset_m": 0.3463417789363632,
+        "start_offset_m": 13.559913291461127,
+        "speed_mps": 1.071001312880592,
+        "spawn_time_s": 7.899074482617432,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 21.84842678276408,
+            "window_m": 2.2,
+            "conflict_time_s": 28.299074482617435,
+            "conflict_route_id": "demo_people_people_6_001_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_001",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_032_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_027",
+      "vertices": [
+        [
+          -37.6389523038481,
+          42.9243130531749,
+          0.09999999403953552
+        ],
+        [
+          -37.6389523038481,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -37.6389523038481,
+          69.73591987473074,
+          0.09999999403953552
+        ],
+        [
+          -37.9964523038481,
+          71.18791987473074,
+          0.09999999403953552
+        ],
+        [
+          -38.1889523038481,
+          71.93591987473074,
+          0.09999999403953552
+        ],
+        [
+          -37.9964523038481,
+          72.68391987473075,
+          0.09999999403953552
+        ],
+        [
+          -37.6389523038481,
+          74.13591987473075,
+          0.09999999403953552
+        ],
+        [
+          -37.6389523038481,
+          88.71592903137207,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_032_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_027",
+      "index": "032",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 45.92708806731118,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_027",
+        "offset_m": -0.5710887422944815,
+        "start_offset_m": 3.747702106519627,
+        "speed_mps": 1.7065651071503436,
+        "spawn_time_s": 8.218592884287947,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 29.01160682155584,
+            "window_m": 2.2,
+            "conflict_time_s": 25.218592884287947,
+            "conflict_route_id": "demo_people_people_6_025_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_017",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_033_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_028",
+      "vertices": [
+        [
+          -37.45889287039602,
+          49.406951904296875,
+          0.09999999403953552
+        ],
+        [
+          -37.45889287039602,
+          39.17661094665527,
+          0.09999999403953552
+        ],
+        [
+          -37.45889287039602,
+          33.629864672153616,
+          0.09999999403953552
+        ],
+        [
+          -37.10139287039602,
+          32.17786467215362,
+          0.09999999403953552
+        ],
+        [
+          -36.90889287039602,
+          31.429864672153613,
+          0.09999999403953552
+        ],
+        [
+          -37.10139287039602,
+          30.681864672153612,
+          0.09999999403953552
+        ],
+        [
+          -37.45889287039602,
+          29.229864672153614,
+          0.09999999403953552
+        ],
+        [
+          -37.45889287039602,
+          14.406951904296875,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_033_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_028",
+      "index": "033",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.13547208911401,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_028",
+        "offset_m": 0.7511481757465555,
+        "start_offset_m": 14.539318084716797,
+        "speed_mps": 1.5769374765037947,
+        "spawn_time_s": 8.445490475761833,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 17.977087232143262,
+            "window_m": 2.2,
+            "conflict_time_s": 19.845490475761835,
+            "conflict_route_id": "demo_people_people_6_021_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_013",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_034_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_029",
+      "vertices": [
+        [
+          -38.386017148542265,
+          67.25689659982105,
+          0.09999999403953552
+        ],
+        [
+          -38.386017148542265,
+          88.71592903137207,
+          0.09999999403953552
+        ],
+        [
+          -38.386017148542265,
+          113.48558807373047,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_034_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_029",
+      "index": "034",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 46.22869147390942,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_029",
+        "offset_m": 0.17597610239969017,
+        "start_offset_m": 3.310626610807372,
+        "speed_mps": 0.713203972626815,
+        "spawn_time_s": 8.76389381897873,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_035_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_001",
+      "vertices": [
+        [
+          -38.768593008195204,
+          50.836829943906096,
+          0.09999999403953552
+        ],
+        [
+          -38.768593008195204,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.768593008195204,
+          67.94812464265438,
+          0.09999999403953552
+        ],
+        [
+          -39.126093008195205,
+          69.40012464265438,
+          0.09999999403953552
+        ],
+        [
+          -39.3185930081952,
+          70.14812464265438,
+          0.09999999403953552
+        ],
+        [
+          -39.126093008195205,
+          70.89612464265439,
+          0.09999999403953552
+        ],
+        [
+          -38.768593008195204,
+          72.34812464265438,
+          0.09999999403953552
+        ],
+        [
+          -38.768593008195204,
+          88.71592903137207,
+          0.09999999403953552
+        ],
+        [
+          -38.768593008195204,
+          113.48558807373047,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_035_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_001",
+      "index": "035",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 62.78423021893838,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_001",
+        "offset_m": 0.5585519620526289,
+        "start_offset_m": 16.97766379858139,
+        "speed_mps": 1.304817209374884,
+        "spawn_time_s": 8.948028118752816,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 19.311294698748284,
+            "window_m": 2.2,
+            "conflict_time_s": 23.748028118752817,
+            "conflict_route_id": "demo_people_people_6_015_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_010",
+            "lateral_offset_m": 0.55
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_036_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_001",
+      "vertices": [
+        [
+          -24.08948770562947,
+          114.68758868544109,
+          0.09999999403953552
+        ],
+        [
+          -10.042753855387367,
+          114.68758868544109,
+          0.09999999403953552
+        ],
+        [
+          7.5664812723795585,
+          114.68758868544109,
+          0.09999999403953552
+        ],
+        [
+          25.175716400146484,
+          114.68758868544109,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_036_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_001",
+      "index": "036",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_007_citystreetroof",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 49.26520410577595,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 3,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_001",
+        "offset_m": -0.8264036241292234,
+        "start_offset_m": 3.562501277524827,
+        "speed_mps": 0.6545062526510783,
+        "spawn_time_s": 9.256159999737875,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_037_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_002",
+      "vertices": [
+        [
+          -38.32349320133126,
+          43.79329712473451,
+          0.09999999403953552
+        ],
+        [
+          -38.32349320133126,
+          46.223766175040865,
+          0.09999999403953552
+        ],
+        [
+          -38.85649320133126,
+          47.67576617504086,
+          0.09999999403953552
+        ],
+        [
+          -39.14349320133126,
+          48.42376617504087,
+          0.09999999403953552
+        ],
+        [
+          -38.85649320133126,
+          49.171766175040865,
+          0.09999999403953552
+        ],
+        [
+          -38.32349320133126,
+          50.62376617504086,
+          0.09999999403953552
+        ],
+        [
+          -38.32349320133126,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.29026383441673,
+          88.63570624309793,
+          0.09999999403953552
+        ],
+        [
+          -43.527485847473145,
+          88.60247687618339,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_037_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_002",
+      "index": "037",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 50.37557093161141,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_002",
+        "offset_m": 0.11345215518868308,
+        "start_offset_m": 9.934130979409797,
+        "speed_mps": 1.2185444869227253,
+        "spawn_time_s": 9.44921755181946,
+        "route_mode": "once",
+        "collision_rehearsal_detours": [
+          {
+            "action": "local_detour",
+            "center_distance_m": 4.630469050306357,
+            "window_m": 2.2,
+            "conflict_time_s": 13.249217551819461,
+            "conflict_route_id": "demo_people_people_6_028_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_020",
+            "lateral_offset_m": 0.82
+          }
+        ],
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 8,
+        "collision_rehearsal_detour_count": 1
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_038_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_003",
+      "vertices": [
+        [
+          -37.690882962858744,
+          41.737652019740565,
+          0.09999999403953552
+        ],
+        [
+          -37.690882962858744,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -37.84294084494477,
+          88.34882883017427,
+          0.09999999403953552
+        ],
+        [
+          -32.89259624481201,
+          88.19677094808824,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_038_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_003",
+      "index": "038",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 51.564329961478634,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_003",
+        "offset_m": -0.5191580832838308,
+        "start_offset_m": 7.878485874415859,
+        "speed_mps": 0.866557059297941,
+        "spawn_time_s": 13.16710144412119,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 3.3,
+        "collision_rehearsal_attempts": 18,
+        "collision_rehearsal_detour_count": 0,
+        "spawn_time_s_original": 9.867101444121191
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_039_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_003",
+      "vertices": [
+        [
+          -27.433518727620438,
+          116.56399230957031,
+          0.09999999403953552
+        ],
+        [
+          -10.042753855387367,
+          116.56399230957031,
+          0.09999999403953552
+        ],
+        [
+          7.5664812723795585,
+          116.56399230957031,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_039_demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_003",
+      "index": "039",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_007_citystreetroof",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 35.0,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 3,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_007_citystreetroof_003",
+        "offset_m": 1.05,
+        "start_offset_m": 0.2184702555338589,
+        "speed_mps": 0.7878424434383757,
+        "spawn_time_s": 10.132487701652217,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    },
+    {
+      "route_id": "demo_people_people_6_040_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_004",
+      "vertices": [
+        [
+          -38.03590788244247,
+          47.95271465540276,
+          0.09999999403953552
+        ],
+        [
+          -38.03590788244247,
+          63.94626998901367,
+          0.09999999403953552
+        ],
+        [
+          -38.03590788244247,
+          88.71592903137207,
+          0.09999999403953552
+        ]
+      ],
+      "raw_name": "demo_people_people_6_040_demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_004",
+      "index": "040",
+      "category": "route",
+      "metadata": {
+        "source": "demo_people_scenario",
+        "source_region_id": "/root/placeholder_area_publicspace_006_citystreetroofless",
+        "route_generation": "demo_people_scenario_offset",
+        "line_role": "demo_trip",
+        "length": 40.76321437596931,
+        "component_index": 1,
+        "target_length": 88.0,
+        "min_length": 35.0,
+        "max_length": 135.0,
+        "source_walkable_line_count": 7,
+        "parent_source": "demo_people_walkable_graph",
+        "demo_only": true,
+        "scenario": "people_6",
+        "parent_route_id": "demo_source_trip_people_6_root_placeholder_area_publicspace_006_citystreetroofless_004",
+        "offset_m": -0.17413316370010776,
+        "start_offset_m": 14.093548510078051,
+        "speed_mps": 0.932114438706316,
+        "spawn_time_s": 10.328272400109483,
+        "route_mode": "once",
+        "collision_rehearsal_delay_s": 0.0,
+        "collision_rehearsal_attempts": 1,
+        "collision_rehearsal_detour_count": 0
+      }
+    }
+  ],
+  "vehicle_routes": [
+    {
+      "vertices": [
+        [
+          -46.91998338699341,
+          -0.5121231079101562,
+          0.1993718147277832
+        ],
+        [
+          -46.91998338699341,
+          114.9129638671875,
+          0.1993718147277832
+        ]
+      ],
+      "prim_path": "/root/placeholder_vehicle_line_001",
+      "raw_name": "placeholder_vehicle_line_001",
+      "category": "line",
+      "index": "001"
+    },
+    {
+      "vertices": [
+        [
+          -53.28796716071317,
+          114.96754984674706,
+          0.1993718147277832
+        ],
+        [
+          -53.28793642115315,
+          -0.4575371283464935,
+          0.1993718147277832
+        ]
+      ],
+      "prim_path": "/root/placeholder_vehicle_line_002",
+      "raw_name": "placeholder_vehicle_line_002",
+      "category": "line",
+      "index": "002"
+    }
+  ],
+  "vehicle_lanes": [
+    {
+      "vertices": [
+        [
+          -49.518476486206055,
+          -0.5121231079101562,
+          0.1993718147277832
+        ],
+        [
+          -44.11172914505005,
+          -0.5121231079101562,
+          0.1993718147277832
+        ],
+        [
+          -49.518476486206055,
+          114.9129638671875,
+          0.1993718147277832
+        ],
+        [
+          -44.11172914505005,
+          114.9129638671875,
+          0.1993718147277832
+        ]
+      ],
+      "prim_path": "/root/placeholder_vehicle_lane_001",
+      "raw_name": "placeholder_vehicle_lane_001",
+      "category": "lane",
+      "index": "001"
+    },
+    {
+      "vertices": [
+        [
+          -50.68947406150072,
+          114.96755128665097,
+          0.1993718147277832
+        ],
+        [
+          -56.09622140265653,
+          114.96754984674706,
+          0.1993718147277832
+        ],
+        [
+          -50.68944332194069,
+          -0.4575356884425801,
+          0.1993718147277832
+        ],
+        [
+          -56.09619066309651,
+          -0.4575371283464935,
+          0.1993718147277832
+        ]
+      ],
+      "prim_path": "/root/placeholder_vehicle_lane_002",
+      "raw_name": "placeholder_vehicle_lane_002",
+      "category": "lane",
+      "index": "002"
+    }
+  ],
+  "metadata": {
+    "source": "demo_dynamic_agent_preset_builder",
+    "note": "Dynamic-only route layer; does not include fixed asset placements."
+  }
+}

@@ -165,6 +165,114 @@ class DemoPedestrianScenarioTests(unittest.TestCase):
             ]
         )
 
+    def test_walkable_graph_source_balances_regions_before_truncating(self):
+        plan = {
+            "pedestrian_walkable_lines": [
+                walkable_line(
+                    "a_east",
+                    [[0.0, 0.0, 0.0], [120.0, 0.0, 0.0]],
+                    region="region_a",
+                ),
+                walkable_line(
+                    "a_north",
+                    [[0.0, 0.0, 0.0], [0.0, 120.0, 0.0]],
+                    region="region_a",
+                ),
+                walkable_line(
+                    "a_west",
+                    [[0.0, 0.0, 0.0], [-120.0, 0.0, 0.0]],
+                    region="region_a",
+                ),
+                walkable_line(
+                    "b_main",
+                    [[0.0, 20.0, 0.0], [120.0, 20.0, 0.0]],
+                    region="region_b",
+                ),
+            ],
+            "dynamic_zones": [zone(-121.0, -2.0, 121.0, 122.0)],
+        }
+        config = {
+            "default_scenario": "balanced",
+            "defaults": {
+                "route_source": "walkable_lines",
+                "offset_candidates_m": [0.0],
+                "zone_margin_m": 0.0,
+                "min_route_length_m": 60.0,
+                "target_route_length_m": 110.0,
+                "max_route_length_m": 120.0,
+                "max_source_routes": 2,
+                "max_source_routes_per_region": 8,
+                "route_clearance_m": 0.0,
+                "parallel_route_clearance_m": 0.0,
+                "collision_rehearsal": {"enabled": False},
+            },
+            "scenarios": {"balanced": {"actor_count": 2}},
+        }
+
+        processed = apply_demo_people_scenario(plan, config)
+
+        selected_regions = {
+            route["metadata"]["source_region_id"]
+            for route in processed["pedestrian_routes"]
+        }
+        self.assertEqual(selected_regions, {"region_a", "region_b"})
+        source_regions = {
+            route["metadata"]["source_region_id"]
+            for route in processed["pedestrian_demo_source_routes"]
+        }
+        self.assertEqual(source_regions, {"region_a", "region_b"})
+        self.assertTrue(
+            processed["demo_people_scenario_debug"]["source_generation"][
+                "walkable_source_config"
+            ]["balance_source_routes_by_region"]
+        )
+
+    def test_demo_routes_can_prefer_pedestrian_routes_near_vehicle_lines(self):
+        plan = {
+            "pedestrian_routes": [
+                {
+                    "route_id": "far",
+                    "vertices": [[100.0, 0.0, 0.0], [120.0, 0.0, 0.0]],
+                    "metadata": {"source_region_id": "far_region"},
+                },
+                {
+                    "route_id": "near",
+                    "vertices": [[0.0, 3.0, 0.0], [20.0, 3.0, 0.0]],
+                    "metadata": {"source_region_id": "near_region"},
+                },
+            ],
+            "vehicle_routes": [
+                {
+                    "route_id": "vehicle",
+                    "vertices": [[0.0, 0.0, 0.0], [20.0, 0.0, 0.0]],
+                }
+            ],
+            "dynamic_zones": [zone(-1.0, -1.0, 121.0, 5.0)],
+        }
+        config = {
+            "default_scenario": "near_vehicle",
+            "defaults": {
+                "offset_candidates_m": [0.0],
+                "prefer_routes_near_vehicle_routes": True,
+                "zone_margin_m": 0.0,
+                "route_clearance_m": 0.0,
+                "parallel_route_clearance_m": 0.0,
+            },
+            "scenarios": {"near_vehicle": {"actor_count": 1}},
+        }
+
+        processed = apply_demo_people_scenario(plan, config)
+
+        self.assertEqual(
+            processed["pedestrian_routes"][0]["metadata"]["parent_route_id"],
+            "near",
+        )
+        self.assertTrue(
+            processed["demo_people_scenario_debug"][
+                "prefer_routes_near_vehicle_routes"
+            ]
+        )
+
     def test_speed_and_spawn_are_deterministic_but_varied(self):
         plan = {
             "pedestrian_routes": [
